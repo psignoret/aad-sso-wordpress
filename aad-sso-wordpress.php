@@ -1,11 +1,11 @@
 <?php
 /**
- * @package AAD_Single_Sign_On
+ * @package AAD_Single_Sign_On_WordPress
  * @version 0.1a
  */
 /*
 Plugin Name: Azure Active Directory Single Sign-on for WordPress
-Plugin URI: http://psignoret.com/aad-sso
+Plugin URI: http://github.com/psignoret/aad-sso-wordpress
 Description: Allows you to use your organization's Azure Active Directory user accounts to log in to WordPress. If your organization is using Office 365, your user accounts are already in Azure Active Directory. This plugin uses OAuth 2.0 to authenticate users, and the Azure Active Directory Graph to get role and group membership and other details.
 Author: Philippe Signoret
 Version: 0.1a
