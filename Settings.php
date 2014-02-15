@@ -26,6 +26,9 @@ class AADSSO_Settings {
 	// The display name of the organization
 	public $org_display_name = 'TransEconomics';
 
+	// When the user is authenticated, their User Principal Name (UPN) is used to find a corresponding WordPress user. 'login', 'email', or 'slug'
+	public $field_to_match_to_upn = 'email';
+
 	// Not likely to change soon...
 	public $resourceURI =        'https://graph.windows.net';
 	public $graphVersion =       '2013-11-08';

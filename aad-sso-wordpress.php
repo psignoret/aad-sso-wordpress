@@ -83,7 +83,7 @@ class AADSSO {
 				$jwt = JWT::decode($token->id_token);
 
 				// TODO: should be able to map to 'email' or 'login' fields.
-				$user = get_user_by( 'login', $jwt->upn );
+				$user = get_user_by( $field_to_match_to_upn, $jwt->upn );
 
 				if ( is_a($user, 'WP_User') ) {
 
