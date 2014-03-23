@@ -1,14 +1,11 @@
 <?php
-/**
- * @package AAD_Single_Sign_On_WordPress
- * @version 0.1a
- */
+
 /*
 Plugin Name: Azure Active Directory Single Sign-on for WordPress
 Plugin URI: http://github.com/psignoret/aad-sso-wordpress
-Description: Allows you to use your organization's Azure Active Directory user accounts to log in to WordPress. If your organization is using Office 365, your user accounts are already in Azure Active Directory. This plugin uses OAuth 2.0 to authenticate users, and the Azure Active Directory Graph to get role and group membership and other details.
+Description: Allows you to use your organization's Azure Active Directory user accounts to log in to WordPress. If your organization is using Office 365, your user accounts are already in Azure Active Directory. This plugin uses OAuth 2.0 to authenticate users, and the Azure Active Directory Graph to get group membership and other details.
 Author: Philippe Signoret
-Version: 0.1a
+Version: 0.2a
 Author URI: http://psignoret.com/
 */
 
@@ -21,10 +18,14 @@ if ( !function_exists( 'add_action' ) ) {
 define('AADSSO_PLUGIN_URL', plugin_dir_url( __FILE__ ));
 define('AADSSO_PLUGIN_DIR', plugin_dir_path( __FILE__ ));
 
+define('AADSSO_SETTINGS_PATH', AADSSO_PLUGIN_DIR . '/Settings.json');
 
 require_once AADSSO_PLUGIN_DIR . '/Settings.php';
 require_once AADSSO_PLUGIN_DIR . '/AuthorizationHelper.php';
+require_once AADSSO_PLUGIN_DIR . '/GraphHelper.php';
 require_once AADSSO_PLUGIN_DIR . '/JWT.php';
+
+$_SESSION['last_request'] = array();
 
 class AADSSO {
 
@@ -37,8 +38,9 @@ class AADSSO {
 
 		$this->settings = $settings;
 
-		// Set the redirect url
+		// Set the redirect urls
 		$this->settings->redirectURI = wp_login_url();
+		$this->settings->logoutRedirectURI = wp_login_url();
 
 		// Add the hook that starts the SESSION
 		//add_action( 'admin_init', array($this, 'startSession'), 1, 0);
@@ -79,16 +81,22 @@ class AADSSO {
 			// Happy path
 			if ( isset($token->access_token) ) {
 				
-				// TODO: validate the token?
+				// BUGBUG: validate the token! Until this is done, DO NOT use in production environment
 				$jwt = JWT::decode($token->id_token);
+				$_SESSION['access_token'] = $token->access_token;
+				$_SESSION['token_type']   = $token->token_type;
 
-				// TODO: should be able to map to 'email' or 'login' fields.
+				// Try to find an existing user in WP where the UPN of the currect AAD user is 
+				// (depending on config) the 'login' or 'email' field
 				$user = get_user_by( $this->settings->field_to_match_to_upn, $jwt->upn );
 
 				if ( is_a($user, 'WP_User') ) {
 
-					// At this point, we got an authorization code, and access token and the user exists.
-					// TODO: Update roles based on group membership
+					// At this point, we have an authorization code, an access token and the user exists in WordPress.
+					// All that's left is to set the roles based on group membership.
+					if ($this->settings->enable_aad_group_to_wp_role) {
+						$this->updateUserRoles($user, $jwt->oid);
+					}
 
 				} else {
 
@@ -121,11 +129,50 @@ class AADSSO {
 		return $user;
 	}
 
+	// Users AAD group memberships to set WordPress role
+	function updateUserRoles($user, $aad_object_id) {
+
+		// Pass the settings to GraphHelper
+		AADSSO_GraphHelper::$settings = $this->settings;
+
+		// Of the AAD groups defined in the settings, get only those where the user is a member
+		$group_ids = array_keys($this->settings->aad_group_to_wp_role_map);
+		$group_memberships = AADSSO_GraphHelper::userCheckMemberGroups($aad_object_id, $group_ids);
+
+		// Determine which WordPress role the AAD group corresponds to. 
+		// TODO: Check for error in the group membership response
+		$role_to_set = $this->settings->default_wp_role;
+		if (!empty($group_memberships->value)) {
+		    foreach ($this->settings->aad_group_to_wp_role_map as $aad_group => $wp_role) {
+		        if (in_array($aad_group, $group_memberships->value)) {
+		            $role_to_set = $wp_role;
+		            break;
+		        }
+		    }
+		}
+
+		if ($role_to_set != NULL) {
+		    
+		    // Set the role on the WordPress user
+		    $user->set_role($role_to_set);
+		} else {
+
+		    $user = new WP_Error( 'user_not_member_of_required_group', 
+				'<p><b>ERROR: The authenticated user \'' . $jwt->upn 
+				. '\' is not a member of any group granting a role.</b></p>' );
+		}
+	}
+
 	function getLoginUrl() {
 		return AADSSO_AuthorizationHelper::getAuthorizationURL($this->settings);
 	}
 
+	function getLogoutUrl() {
+		return $this->settings->signOutEndpoint . 'post_logout_redirect_uri=' . urlencode($this->settings->logoutRedirectURI);
+	}
+
 	function processToken() {
+
 		// Add the token information to the session header so that we can use it to access Graph
         $_SESSION['token_type']=$tokenOutput->{'token_type'};
         $_SESSION['access_token']=$tokenOutput->{'access_token'};
@@ -159,9 +206,10 @@ class AADSSO {
 
 	function printLoginLink() {
 		echo '<p class="aadsso-login-form-text"><a href="' . $this->getLoginUrl() . '">' 
-				. 'Sign in with your ' . $this->settings->org_display_name . ' account</a></p>';
+				. 'Sign in with your ' . htmlentities($this->settings->org_display_name) . ' account</a><br />';
+		echo '<a class="dim" href="' . $this->getLogoutUrl() . '">Sign out</a></p>';
 	}
 }
 
-$settings = AADSSO_Settings::getInstance();
+$settings = AADSSO_Settings::loadSettingsFromJSON(AADSSO_SETTINGS_PATH);
 $aadsso = AADSSO::getInstance($settings);
