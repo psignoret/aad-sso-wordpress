@@ -9,6 +9,7 @@ class AADSSO_AuthorizationHelper
                    http_build_query(
                         array(
                             'response_type' => 'code',
+                            'domain_hint' => $settings->org_domain_hint,
                             'client_id' => $settings->clientId,
                             'resource' => $settings->resourceURI,
                             'redirect_uri' => $settings->redirectURI,

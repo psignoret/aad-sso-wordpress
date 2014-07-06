@@ -1,5 +1,6 @@
 {
 	"org_display_name": "Contoso",
+	"org_domain_hint": "contoso.com",
 	
 	"clientId":   "9054eff5-bfef-4cc5-82fd-8c35534e48f9",
 	"password":   "NTY5MmE5YjMwMGY2MWQ0NjU5MzYxNjdjNzE1OGNiZmY=",
