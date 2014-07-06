@@ -86,7 +86,7 @@ class AADSSO_GraphHelper
     // Add required headers like authorization header, service version etc.
     public static function AddRequiredHeadersAndSettings($ch)
     {
-        //Generate the authentication header
+        // Generate the authentication header
         curl_setopt($ch, CURLOPT_HTTPHEADER, array(
             'Authorization: ' . $_SESSION['token_type'] . ' ' . $_SESSION['access_token'],
             'Accept: application/json;odata=minimalmetadata',

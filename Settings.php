@@ -92,12 +92,12 @@ class AADSSO_Settings {
 	/**
 	 * @var string The URI of the Azure Active Directory Graph API.
 	 */
-	public $resourceURI =        	'https://graph.windows.net';
+	public $resourceURI =           'https://graph.windows.net';
 	
 	/**
 	 * @var string The version of the AAD Graph API to use.
 	 */
-	public $graphVersion =       	'2013-11-08';
+	public $graphVersion =          '2013-11-08';
 
 	public function __construct () {}
 
