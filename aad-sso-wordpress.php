@@ -50,6 +50,9 @@ class AADSSO {
 
 		// Add the link to the organization's sign-in page
 		add_action( 'login_form', array( $this, 'printLoginLink' ) ) ;
+
+		// Clear session variables when logging out
+		add_action( 'wp_logout', array( $this, 'clearSession' ) );
 	}
 
 	public static function getInstance( $settings ) {
@@ -76,14 +79,11 @@ class AADSSO {
 
 			// Looks like we got an authorization code, let's try to get an access token
 			$token = AADSSO_AuthorizationHelper::getAccessToken( $_GET['code'], $this->settings );
-			processToken($token);
 
 			// Happy path
-			if ( isset( $token->access_token ) ) {
-				// BUGBUG: validate the token! Until this is done, DO NOT use in production environment
-				$jwt = JWT::decode( $token->id_token );
-				$_SESSION['access_token'] = $token->access_token;
-				$_SESSION['token_type']   = $token->token_type;
+			if ( isset( $token->access_token ) && isset( $_SESSION['jwt']) ) {
+
+				$jwt = $_SESSION['jwt'];
 
 				// Try to find an existing user in WP where the UPN of the currect AAD user is 
 				// (depending on config) the 'login' or 'email' field
@@ -93,7 +93,7 @@ class AADSSO {
 					// At this point, we have an authorization code, an access token and the user exists in WordPress.
 					// All that's left is to set the roles based on group membership.
 					if ( $this->settings->enable_aad_group_to_wp_role ) {
-						$this->updateUserRoles( $user, $jwt->oid );
+						$this->updateUserRoles( $user, $jwt->oid, $jwt->tid );
 					}
 				} else {
 					// TODO: Auto-provision (if desired).
@@ -116,9 +116,10 @@ class AADSSO {
 	}
 
 	// Users AAD group memberships to set WordPress role
-	function updateUserRoles( $user, $aad_object_id ) {
+	function updateUserRoles( $user, $aad_object_id, $aad_tenant_id ) {
 		// Pass the settings to GraphHelper
 		AADSSO_GraphHelper::$settings = $this->settings;
+		AADSSO_GraphHelper::$tenant_id = $aad_tenant_id;
 
 		// Of the AAD groups defined in the settings, get only those where the user is a member
 		$group_ids = array_keys( $this->settings->aad_group_to_wp_role_map );
@@ -144,6 +145,10 @@ class AADSSO {
 		}
 	}
 
+	function clearSession() {
+		session_destroy();
+	}
+
 	function getLoginUrl() {
 		$antiforgery_id = com_create_guid ();
 		$_SESSION[ self::ANTIFORGERY_ID_KEY ] = $antiforgery_id;
@@ -153,24 +158,6 @@ class AADSSO {
 	function getLogoutUrl() {
 		return $this->settings->signOutEndpoint . http_build_query( array( 'post_logout_redirect_uri' => $this->settings->logoutRedirectURI ) );
 	}
-
-	function processToken() {
-
-		// Add the token information to the session header so that we can use it to access Graph
-        $_SESSION['token_type']=$tokenOutput->{'token_type'};
-        $_SESSION['access_token']=$tokenOutput->{'access_token'};
-        
-        // Get the full response and decode the JWT token
-        $_SESSION['response'] = json_decode($output, TRUE);
-        if(isset($_SESSION['response']['id_token'])) {
-
-            $_SESSION['response']['id_token'] = JWT::decode($_SESSION['response']['id_token']);
-            $_SESSION['tenant_id'] = &$_SESSION['response']['id_token']->tid;
-        
-            // If we got an authorization code _and_ access token, then we're "logged in"
-            $_SESSION['logged_in'] = TRUE;
-        }
-    }
 
 	/*** View ****/
 

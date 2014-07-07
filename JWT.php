@@ -32,7 +32,9 @@ class JWT
         ) {
             throw new UnexpectedValueException('Invalid segment encoding');
         }
+
         $sig = JWT::urlsafeB64Decode($cryptob64);
+
         if ($verify) {
             if (empty($header->alg)) {
                 throw new DomainException('Empty algorithm');
