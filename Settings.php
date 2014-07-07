@@ -45,6 +45,13 @@ class AADSSO_Settings {
 	public $org_display_name = '';
 
 	/**
+	 * @var string Provides a hint about the tenant or domain that the user should use to sign in.
+	 * The value of the domain_hint is a registered domain for the tenant. If the tenant is federated
+	 * to an on-premises directory, AAD redirects to the specified tenant federation server.
+	 */
+	public $org_domain_hint = '';
+
+	/**
 	 * @var string The WordPress field which is matched to the AAD UserPrincipalName.
 	 * When the user is authenticated, their User Principal Name (UPN) is used to find
 	 * a corresponding WordPress user. Valid options are 'login', 'email', or 'slug'.
@@ -92,12 +99,12 @@ class AADSSO_Settings {
 	/**
 	 * @var string The URI of the Azure Active Directory Graph API.
 	 */
-	public $resourceURI =        	'https://graph.windows.net';
+	public $resourceURI =           'https://graph.windows.net';
 	
 	/**
 	 * @var string The version of the AAD Graph API to use.
 	 */
-	public $graphVersion =       	'2013-11-08';
+	public $graphVersion =          '2013-11-08';
 
 	public function __construct () {}
 

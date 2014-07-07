@@ -4,12 +4,18 @@
 class AADSSO_AuthorizationHelper
 {
     // Get the authorization URL which makes the authorization request
-    public static function getAuthorizationURL($settings) {
-        $authUrl = $settings->authorizationEndpoint . "&" .
-                   "response_type=code" . "&" .
-                   "client_id=" . $settings->clientId . "&" .
-                   "resource=" . $settings->resourceURI . "&" .
-                   "redirect_uri=" . $settings->redirectURI;
+    public static function getAuthorizationURL($settings, $antiforgery_id) {
+        $authUrl = $settings->authorizationEndpoint .
+                   http_build_query(
+                        array(
+                            'response_type' => 'code',
+                            'domain_hint' => $settings->org_domain_hint,
+                            'client_id' => $settings->clientId,
+                            'resource' => $settings->resourceURI,
+                            'redirect_uri' => $settings->redirectURI,
+                            'state' => $antiforgery_id
+                        )
+                   );
         return $authUrl;
     }
 
@@ -17,14 +23,18 @@ class AADSSO_AuthorizationHelper
     public function getAccessToken($code, $settings) {
 
         // Construct the body for the access token request
-        $authenticationRequestBody = "grant_type=authorization_code" . "&" .  
-                                     "code=" . $code . "&" .
-                                     "redirect_uri=" . $settings->redirectURI . "&" .
-                                     "resource=" . $settings->resourceURI . "&" .
-                                     "client_id=" . urlencode($settings->clientId) . "&" .
-                                     "client_secret=" . $settings->password;
+        $authenticationRequestBody = http_build_query(
+                                        array(
+                                            'grant_type' => 'authorization_code',
+                                            'code' => $code,
+                                            'redirect_uri' => $settings->redirectURI,
+                                            'resource' => $settings->resourceURI,
+                                            'client_id' => $settings->clientId,
+                                            'client_secret' => $settings->password
+                                        )
+                                    );
         
-        //Using curl to post the information to STS and get back the authentication response    
+        // Using curl to post the information to STS and get back the authentication response    
         $ch = curl_init();
         //curl_setopt($ch, CURLOPT_PROXY, '127.0.0.1:8888');
         curl_setopt($ch, CURLOPT_URL, $settings->tokenEndpoint); 
@@ -36,24 +46,27 @@ class AADSSO_AuthorizationHelper
         $output = curl_exec($ch);                               // Read the output from the post request
         curl_close($ch);                                        // close cURL resource to free up system resources
 
-        //Decode the json response from STS
+        // Decode the json response from STS
         $tokenOutput = json_decode($output);
-        $accessToken = $tokenOutput->{'access_token'};
 
         return $tokenOutput;
     }
 
     // Takes an authorization code and obtains an gets an access token as what AAD calls a "native app"
-    public function getAccessTokenAssNativeApp($code, $settings) {
+    public function getAccessTokenAsNativeApp($code, $settings) {
 
         // Construct the body for the access token request
-        $authenticationRequestBody = "grant_type=authorization_code" . "&".  
-                                     "code=" . $code . "&".                                                                    
-                                     "redirect_uri=" . $settings->redirectURI . "&".
-                                     "resource=" . $settings->resourceURI . "&" .
-                                     "client_id=" . urlencode($settings->clientId);
+        $authenticationRequestBody = http_build_query(
+                                        array(
+                                            'grant_type' => 'authorization_code',
+                                            'code' => $code,
+                                            'redirect_uri' => $settings->redirectURI,
+                                            'resource' => $settings->resourceURI,
+                                            'client_id' => $settings->clientId
+                                        )
+                                    );
         
-        //Using curl to post the information to STS and get back the authentication response    
+        // Using curl to post the information to STS and get back the authentication response    
         $ch = curl_init();
         //curl_setopt($ch, CURLOPT_PROXY, '127.0.0.1:8888');
         curl_setopt($ch, CURLOPT_URL, $settings->tokenEndpoint); 
@@ -65,9 +78,8 @@ class AADSSO_AuthorizationHelper
         $output = curl_exec($ch);                               // Read the output from the post request
         curl_close($ch);                                        // close cURL resource to free up system resources
 
-        //Decode the json response from STS
+        // Decode the json response from STS
         $tokenOutput = json_decode($output);
-        $accessToken = $tokenOutput->{'access_token'};
 
         return $tokenOutput;
     }
