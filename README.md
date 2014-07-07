@@ -34,7 +34,7 @@ For these steps, you must have an Azure subscription with access to the Azure Ac
 1. Sign in to the [Azure portal](https://manage.windowsazure.com), and navigate to the ACTIVE DIRECTORY section. Choose the directory (tenant) that you would like to use. This should be the directory containing the users and (optionally) groups that will have access to your WordPress blog.
 3. Under the APPLICATIONS tab, click ADD to register a new application. Choose 'Add an application my organization is developing', and a recognizable name. Choose values for sign-in URL and App ID URL. The blog's URL is usually a good choice.
 4. When the app is created, under the CONFIGURE tab, generate a key and copy the secret value (it will be visible once only, after you save).
-5. Add a reply URL with the format: `https://<your blog url>/wp-login.php`. Note that this must be HTTPS (with the exception of `http://localhost/...`, which is acceptable for development use.
+5. Add a reply URL with the format: `https://<your blog url>/wp-login.php`. Note that this must be HTTPS (with the exception of `http://localhost/...`, which is acceptable for development use).
 
 ### 3. Configure the plugin
 
@@ -43,8 +43,8 @@ Configuration of the AADSSO plugin is currently done in a `Settings.json` file. 
 The minimal fields required are:
 
 - `org_display_name` The display name of the organization, used only in the link in the login page. 
-- `clientId` The application's client ID (from the application configuration page)
-- `password` The client secret key (from the application configuration page)
+- `client_id` The application's client ID (from the application configuration page)
+- `client_secret` The client secret key (from the application configuration page)
 - `field_to_match_to_upn` The WordPress field which will be used to match a UserPrincipalName (from AAD) to a WordPress user. Valid options are 'login', 'email' or 'slug'.
 
 
@@ -71,8 +71,8 @@ Users are matched by their email address in WordPress, and whichever role they h
 	{
 		"org_display_name": "Contoso",
 
-		"clientId":   "9054eff5-bfef-4cc5-82fd-8c35534e48f9",
-		"password":   "NTY5MmE5YjMwMGY2MWQ0NjU5MzYxNjdjNzE1OGNiZmY=",
+		"client_id":     "9054eff5-bfef-4cc5-82fd-8c35534e48f9",
+		"client_secret": "NTY5MmE5YjMwMGY2MWQ0NjU5MzYxNjdjNzE1OGNiZmY=",
 
 		"field_to_match_to_upn": "email"
 	}
@@ -84,8 +84,8 @@ Users are matched by their login names in WordPress, and WordPress roles are dic
 	{
 		"org_display_name": "Contoso",
 		
-		"clientId":   "9054eff5-bfef-4cc5-82fd-8c35534e48f9",
-		"password":   "NTY5MmE5YjMwMGY2MWQ0NjU5MzYxNjdjNzE1OGNiZmY=",
+		"client_id":     "9054eff5-bfef-4cc5-82fd-8c35534e48f9",
+		"client_secret": "NTY5MmE5YjMwMGY2MWQ0NjU5MzYxNjdjNzE1OGNiZmY=",
 	
 		"field_to_match_to_upn": "login",
 	
@@ -107,8 +107,8 @@ Users are matched by their login names in WordPress, and WordPress roles are dic
 	{
 		"org_display_name": "Contoso",
 		
-		"clientId":   "9054eff5-bfef-4cc5-82fd-8c35534e48f9",
-		"password":   "NTY5MmE5YjMwMGY2MWQ0NjU5MzYxNjdjNzE1OGNiZmY=",
+		"client_id":     "9054eff5-bfef-4cc5-82fd-8c35534e48f9",
+		"client_secret": "NTY5MmE5YjMwMGY2MWQ0NjU5MzYxNjdjNzE1OGNiZmY=",
 	
 		"field_to_match_to_upn": "login",
 	

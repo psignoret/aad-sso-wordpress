@@ -32,8 +32,8 @@ class AADSSO {
 		$this->settings = $settings;
 
 		// Set the redirect urls
-		$this->settings->redirectURI = wp_login_url();
-		$this->settings->logoutRedirectURI = wp_login_url();
+		$this->settings->redirect_uri = wp_login_url();
+		$this->settings->logout_redirect_uri = wp_login_url();
 
 		// Add the hook that starts the SESSION
 		add_action( 'init', array($this, 'register_session') );
@@ -156,7 +156,7 @@ class AADSSO {
 	}
 
 	function getLogoutUrl() {
-		return $this->settings->signOutEndpoint . http_build_query( array( 'post_logout_redirect_uri' => $this->settings->logoutRedirectURI ) );
+		return $this->settings->signOutEndpoint . http_build_query( array( 'post_logout_redirect_uri' => $this->settings->logout_redirect_uri ) );
 	}
 
 	/*** View ****/

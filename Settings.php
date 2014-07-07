@@ -21,23 +21,23 @@ class AADSSO_Settings {
 	/** 
 	 * @var string The client ID obtained after registering an application in AAD.
 	 */
-	public $clientId = '';
+	public $client_id = '';
 	    
 	/**
 	 * @var string The client secret key, which is generated on the app configuration page in AAD. 
 	 * Required if $clientType is 'public'.
 	 */
-	public $password = '';
+	public $client_secret = '';
 	    
 	/**
 	 * @var string The URL to redirect to after signing in. Must also be configured in AAD.
 	 */
-	public $redirectURI =         '';
+	public $redirect_uri =         '';
 
 	/** 
 	 * @var string The URL to redirect to after signing out (of AAD, not WP).
 	 */
-	public $logoutRedirectURI =   '';
+	public $logout_redirect_uri =   '';
 
 	/**
 	 * @var string The display name of the organization, used only in the link in the login page. 

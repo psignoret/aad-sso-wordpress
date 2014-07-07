@@ -10,9 +10,9 @@ class AADSSO_AuthorizationHelper
                         array(
                             'response_type' => 'code',
                             'domain_hint' => $settings->org_domain_hint,
-                            'client_id' => $settings->clientId,
+                            'client_id' => $settings->client_id,
                             'resource' => $settings->resourceURI,
-                            'redirect_uri' => $settings->redirectURI,
+                            'redirect_uri' => $settings->redirect_uri,
                             'state' => $antiforgery_id
                         )
                    );
@@ -27,10 +27,10 @@ class AADSSO_AuthorizationHelper
                                         array(
                                             'grant_type' => 'authorization_code',
                                             'code' => $code,
-                                            'redirect_uri' => $settings->redirectURI,
+                                            'redirect_uri' => $settings->redirect_uri,
                                             'resource' => $settings->resourceURI,
-                                            'client_id' => $settings->clientId,
-                                            'client_secret' => $settings->password
+                                            'client_id' => $settings->client_id,
+                                            'client_secret' => $settings->client_secret
                                         )
                                     );
 
@@ -45,9 +45,9 @@ class AADSSO_AuthorizationHelper
                                         array(
                                             'grant_type' => 'authorization_code',
                                             'code' => $code,
-                                            'redirect_uri' => $settings->redirectURI,
+                                            'redirect_uri' => $settings->redirect_uri,
                                             'resource' => $settings->resourceURI,
-                                            'client_id' => $settings->clientId
+                                            'client_id' => $settings->client_id
                                         )
                                     );
 
