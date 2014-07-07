@@ -9,11 +9,13 @@ class AADSSO_AuthorizationHelper
                    http_build_query(
                         array(
                             'response_type' => 'code',
+                            'scope' => 'openid',
                             'domain_hint' => $settings->org_domain_hint,
                             'client_id' => $settings->client_id,
                             'resource' => $settings->resourceURI,
                             'redirect_uri' => $settings->redirect_uri,
-                            'state' => $antiforgery_id
+                            'state' => $antiforgery_id,
+                            'nonce' => $antiforgery_id,
                         )
                    );
         return $authUrl;
@@ -75,14 +77,17 @@ class AADSSO_AuthorizationHelper
 
         if ( isset($token->access_token) ) {
 
-            // Per section 7 of the current JWT draft [1], and section 5.2 of JWS draft [2],
-            // a JWT with 'alg' == 'none' has no signature to validate, and is therefore valid unless
-            // something else is wrong with it. The JWT class we're using explicitly checks for 3 segments
-            // in the token (making it a JWS per section 9 of current JWE draft [3]).
-            //  [1] http://tools.ietf.org/html/draft-ietf-oauth-json-web-token-25#section-7
-            //  [2] http://tools.ietf.org/html/draft-ietf-jose-json-web-signature-31#section-5.2
-            //  [3] http://tools.ietf.org/html/draft-ietf-jose-json-web-encryption-31#section-9
-            $jwt = JWT::decode( $token->id_token );
+
+            // TODO: put this in a config, cache de keys, and do some real discovery
+            $discovery = json_decode(file_get_contents('https://login.windows.net/common/discovery/keys'));
+            $key_der = $discovery->keys[0]->x5c[0];
+
+            // Per section 4.7 of the current JWK draft [1], the 'x5c' property will be the DER-encoded value
+            // of the X.509 certificate. PHP's openssl functions all require a PEM-encoded value.
+            $key_pem = chunk_split($key_der, 64, "\n");
+            $key_pem = "-----BEGIN CERTIFICATE-----\n".$key_pem."-----END CERTIFICATE-----\n";
+
+            $jwt = JWT::decode( $token->id_token, $key_pem);
 
             // Add the token information to the session so that we can use it later
             // TODO: these probably shouldn't be in SESSION... 

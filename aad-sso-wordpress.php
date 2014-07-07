@@ -85,6 +85,10 @@ class AADSSO {
 
 				$jwt = $_SESSION['jwt'];
 
+				if ( $jwt->nonce != $_SESSION[ self::ANTIFORGERY_ID_KEY ] ) {
+					return new WP_Error( 'nonce_mismatch', sprintf( 'Nonce mismatch. Expecting %s', $_SESSION[ self::ANTIFORGERY_ID_KEY ] ) );
+				} 
+
 				// Try to find an existing user in WP where the UPN of the currect AAD user is 
 				// (depending on config) the 'login' or 'email' field
 				$user = get_user_by( $this->settings->field_to_match_to_upn, $jwt->upn );
