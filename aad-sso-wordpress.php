@@ -42,8 +42,8 @@ class AADSSO {
 		add_filter( 'authenticate', array( $this, 'authenticate' ), 1, 3 );
 
 		// Some debugging locations 
-		add_action( 'admin_notices', array( $this, 'printDebug' ) );
-		add_action( 'login_footer', array( $this, 'printDebug' ) );
+		//add_action( 'admin_notices', array( $this, 'printDebug' ) );
+		//add_action( 'login_footer', array( $this, 'printDebug' ) );
 
 		// Add the <style> element to the login page
 		add_action( 'login_enqueue_scripts', array( $this, 'printLoginCss' ) );
