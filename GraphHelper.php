@@ -5,9 +5,11 @@ class AADSSO_GraphHelper
     public static $ch;
     public static $settings;
     public static $token;
+    public static $tenant_id;
 
+    // TODO: validation if tenat_id is not set
     public static function getResourceUrl() {
-        return self::$settings->resourceURI . '/' . $_SESSION['tenant_id'];
+        return self::$settings->resourceURI . '/' . self::$tenant_id;
     }
 
     public static function getUsers() {
