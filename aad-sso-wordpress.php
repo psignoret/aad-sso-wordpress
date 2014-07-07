@@ -42,8 +42,8 @@ class AADSSO {
 		add_filter( 'authenticate', array( $this, 'authenticate' ), 1, 3 );
 
 		// Some debugging locations 
-		//add_action( 'admin_notices', array( $this, 'printDebug' ) );
-		//add_action( 'login_footer', array( $this, 'printDebug' ) );
+		add_action( 'admin_notices', array( $this, 'printDebug' ) );
+		add_action( 'login_footer', array( $this, 'printDebug' ) );
 
 		// Add the <style> element to the login page
 		add_action( 'login_enqueue_scripts', array( $this, 'printLoginCss' ) );
@@ -74,8 +74,9 @@ class AADSSO {
 				return new WP_Error( 'antiforgery_id_mismatch', sprintf( 'ANTIFORGERY_ID_KEY mismatch. Expecting %s', $_SESSION[ self::ANTIFORGERY_ID_KEY ] ) );
 			}
 
-		// Looks like we got an authorization code, let's try to get an access token
+			// Looks like we got an authorization code, let's try to get an access token
 			$token = AADSSO_AuthorizationHelper::getAccessToken( $_GET['code'], $this->settings );
+			processToken($token);
 
 			// Happy path
 			if ( isset( $token->access_token ) ) {
@@ -152,6 +153,24 @@ class AADSSO {
 	function getLogoutUrl() {
 		return $this->settings->signOutEndpoint . http_build_query( array( 'post_logout_redirect_uri' => $this->settings->logoutRedirectURI ) );
 	}
+
+	function processToken() {
+
+		// Add the token information to the session header so that we can use it to access Graph
+        $_SESSION['token_type']=$tokenOutput->{'token_type'};
+        $_SESSION['access_token']=$tokenOutput->{'access_token'};
+        
+        // Get the full response and decode the JWT token
+        $_SESSION['response'] = json_decode($output, TRUE);
+        if(isset($_SESSION['response']['id_token'])) {
+
+            $_SESSION['response']['id_token'] = JWT::decode($_SESSION['response']['id_token']);
+            $_SESSION['tenant_id'] = &$_SESSION['response']['id_token']->tid;
+        
+            // If we got an authorization code _and_ access token, then we're "logged in"
+            $_SESSION['logged_in'] = TRUE;
+        }
+    }
 
 	/*** View ****/
 
