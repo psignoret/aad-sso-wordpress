@@ -86,7 +86,7 @@ class AADSSO_AuthorizationHelper
         return $token;
     }
 
-    public static function validateIdToken($token, $settings, $antiforgery_id) {
+    public static function validateIdToken($id_token, $settings, $antiforgery_id) {
 
         $jwt = NULL;
         $lastException = NULL;
@@ -94,17 +94,25 @@ class AADSSO_AuthorizationHelper
         // TODO: cache the keys
         $discovery = json_decode(file_get_contents($settings->jwks_uri));
 
+        if ($discovery->keys == NULL) {
+            throw new DomainException('jwks_uri does not contain the keys attribute');
+        }
+
         foreach ($discovery->keys as $key) {
-            $key_der = $key->x5c[0];
-
-            // Per section 4.7 of the current JWK draft [1], the 'x5c' property will be the DER-encoded value
-            // of the X.509 certificate. PHP's openssl functions all require a PEM-encoded value.
-            $key_pem = chunk_split($key_der, 64, "\n");
-            $key_pem = "-----BEGIN CERTIFICATE-----\n".$key_pem."-----END CERTIFICATE-----\n";
-
             try {
-                // This throws exception if the token cannot be validated.
-                $jwt = JWT::decode( $token, $key_pem);
+                if ($key->x5c == NULL) {
+                    throw new DomainException('key does not contain the x5c attribute');
+                }
+
+                $key_der = $key->x5c[0];
+            
+                // Per section 4.7 of the current JWK draft [1], the 'x5c' property will be the DER-encoded value
+                // of the X.509 certificate. PHP's openssl functions all require a PEM-encoded value.
+                $key_pem = chunk_split($key_der, 64, "\n");
+                $key_pem = "-----BEGIN CERTIFICATE-----\n".$key_pem."-----END CERTIFICATE-----\n";
+
+                // This throws exception if the id_token cannot be validated.
+                $jwt = JWT::decode( $id_token, $key_pem);
                 break;
             } catch (Exception $e) {
                 $lastException = $e;
