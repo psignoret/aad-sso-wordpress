@@ -5,7 +5,7 @@ class AADSSO_AuthorizationHelper
 {
     // Get the authorization URL which makes the authorization request
     public static function getAuthorizationURL($settings, $antiforgery_id) {
-        $authUrl = $settings->authorizationEndpoint .
+        $authUrl = $settings->authorization_endpoint . '?' .
                    http_build_query(
                         array(
                             'response_type' => 'code',
@@ -36,7 +36,7 @@ class AADSSO_AuthorizationHelper
                                         )
                                     );
 
-        return self::getAndProcessToken($authenticationRequestBody, $settings);
+        return self::getAndProcessAccessToken($authenticationRequestBody, $settings);
     }
 
     // Takes an authorization code and obtains an gets an access token as what AAD calls a "native app"
@@ -53,16 +53,16 @@ class AADSSO_AuthorizationHelper
                                         )
                                     );
 
-        return getAndProcessToken($authenticationRequestBody, $settings);
+        return self::getAndProcessAccessToken($authenticationRequestBody, $settings);
     }
 
     // Does the request for the access token and some basic processing of the access and JWT tokens
-    static function getAndProcessToken($authenticationRequestBody, $settings) {
+    static function getAndProcessAccessToken($authenticationRequestBody, $settings) {
 
         // Using curl to post the information to STS and get back the authentication response    
         $ch = curl_init();
         //curl_setopt($ch, CURLOPT_PROXY, '127.0.0.1:8888');
-        curl_setopt($ch, CURLOPT_URL, $settings->tokenEndpoint); 
+        curl_setopt($ch, CURLOPT_URL, $settings->token_endpoint);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);            // Get the response back as a string 
         curl_setopt($ch, CURLOPT_POST, 1);                      // Mark as POST request
         curl_setopt($ch, CURLOPT_POSTFIELDS,  $authenticationRequestBody);  // Set the parameters for the request
@@ -77,25 +77,48 @@ class AADSSO_AuthorizationHelper
 
         if ( isset($token->access_token) ) {
 
+            // Add the token information to the session so that we can use it later
+            // TODO: these probably shouldn't be in SESSION... 
+            $_SESSION['token_type'] = $token->token_type;
+            $_SESSION['access_token'] = $token->access_token;
+        }
 
-            // TODO: put this in a config, cache de keys, and do some real discovery
-            $discovery = json_decode(file_get_contents('https://login.windows.net/common/discovery/keys'));
-            $key_der = $discovery->keys[0]->x5c[0];
+        return $token;
+    }
+
+    public static function validateIdToken($token, $settings, $antiforgery_id) {
+
+        $jwt = NULL;
+        $lastException = NULL;
+
+        // TODO: cache the keys
+        $discovery = json_decode(file_get_contents($settings->jwks_uri));
+
+        foreach ($discovery->keys as $key) {
+            $key_der = $key->x5c[0];
 
             // Per section 4.7 of the current JWK draft [1], the 'x5c' property will be the DER-encoded value
             // of the X.509 certificate. PHP's openssl functions all require a PEM-encoded value.
             $key_pem = chunk_split($key_der, 64, "\n");
             $key_pem = "-----BEGIN CERTIFICATE-----\n".$key_pem."-----END CERTIFICATE-----\n";
 
-            $jwt = JWT::decode( $token->id_token, $key_pem);
-
-            // Add the token information to the session so that we can use it later
-            // TODO: these probably shouldn't be in SESSION... 
-            $_SESSION['token_type'] = $token->token_type;
-            $_SESSION['access_token'] = $token->access_token;
-            $_SESSION['jwt'] = $jwt;        
+            try {
+                // This throws exception if the token cannot be validated.
+                $jwt = JWT::decode( $token, $key_pem);
+                break;
+            } catch (Exception $e) {
+                $lastException = $e;
+            }
         }
 
-        return $token;
+        if ($jwt == NULL) {
+            throw $lastException;
+        }
+
+        if ($jwt->nonce != $antiforgery_id) {
+            throw new DomainException(sprintf('Nonce mismatch. Expecting %s', $antiforgery_id));
+        } 
+
+        return $jwt; 
     }
 }
