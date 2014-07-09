@@ -79,22 +79,31 @@ class AADSSO_Settings {
 	 */
 	public $default_wp_role = NULL;
 
+	/** 
+	 * @var string The OpenID Connect configuration discovery endpoint.
+	 */
+	public $openid_configuration_endpoint = 'https://login.windows.net/common/.well-known/openid-configuration';
 
 	// These are the common endpoints that always work, but don't have tenant branding. 
 	/** 
 	 * @var string The OAuth 2.0 authorization endpoint.
 	 */
-	public $authorizationEndpoint = 'https://login.windows.net/common/oauth2/authorize?';
+	public $authorization_endpoint = '';
 	
 	/** 
 	 * @var string The OAuth 2.0 token endpoint.
 	 */
-	public $tokenEndpoint =         'https://login.windows.net/common/oauth2/token?';
-	
+	public $token_endpoint = '';
+
+	/** 
+	 * @var string The OpenID Connect JSON Web Key Set endpoint.
+	 */
+	public $jwks_uri = '';
+
 	/** 
 	 * @var string The sign out endpoint.
 	 */
-	public $signOutEndpoint =       'https://login.windows.net/common/oauth2/logout?';
+	public $end_session_endpoint = '';
 
 	/**
 	 * @var string The URI of the Azure Active Directory Graph API.
@@ -128,18 +137,28 @@ class AADSSO_Settings {
 	*/
 	public static function loadSettingsFromJSON($jsonFile) {
 		$settings = self::getInstance();
-		
+
+		// Import from Settings.json
+		$settings->importSettingsFromJSON($jsonFile);
+
+		// Import from openid-configuration
+		$settings->importSettingsFromJSON($settings->openid_configuration_endpoint);
+
+		return $settings;
+	}
+
+	function importSettingsFromJSON($jsonFile) {
 		// Load the JSON settings
 		$jsonSettings = file_get_contents($jsonFile);
 		$tmpSettings = json_decode($jsonSettings, TRUE);
 
 		// Overwrite any properties defined in the JSON
 		foreach ($tmpSettings as $key => $value) {
-			if (property_exists($settings, $key)) {
-				$settings->{$key} = $value;
+			if (property_exists($this, $key)) {
+				$this->{$key} = $value;
 			}
 		}
 
-		return $settings;
+		return $this;
 	}
 }
