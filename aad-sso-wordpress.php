@@ -81,9 +81,13 @@ class AADSSO {
 			$token = AADSSO_AuthorizationHelper::getAccessToken( $_GET['code'], $this->settings );
 
 			// Happy path
-			if ( isset( $token->access_token ) && isset( $_SESSION['jwt']) ) {
+			if ( isset( $token->access_token ) ) {
 
-				$jwt = $_SESSION['jwt'];
+				try {
+					$jwt = AADSSO_AuthorizationHelper::validateIdToken( $token->id_token, $this->settings, $_SESSION[ self::ANTIFORGERY_ID_KEY ] );
+				} catch ( Exception $e ) {
+					return new WP_Error( 'invalid_id_token' , sprintf( 'ERROR: Invalid id_token. %s', $e->getMessage() ) );
+				}
 
 				// Try to find an existing user in WP where the UPN of the currect AAD user is 
 				// (depending on config) the 'login' or 'email' field
@@ -156,7 +160,7 @@ class AADSSO {
 	}
 
 	function getLogoutUrl() {
-		return $this->settings->signOutEndpoint . http_build_query( array( 'post_logout_redirect_uri' => $this->settings->logout_redirect_uri ) );
+		return $this->settings->end_session_endpoint . '?' . http_build_query( array( 'post_logout_redirect_uri' => $this->settings->logout_redirect_uri ) );
 	}
 
 	/*** View ****/

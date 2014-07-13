@@ -5,15 +5,17 @@ class AADSSO_AuthorizationHelper
 {
     // Get the authorization URL which makes the authorization request
     public static function getAuthorizationURL($settings, $antiforgery_id) {
-        $authUrl = $settings->authorizationEndpoint .
+        $authUrl = $settings->authorization_endpoint . '?' .
                    http_build_query(
                         array(
                             'response_type' => 'code',
+                            'scope' => 'openid',
                             'domain_hint' => $settings->org_domain_hint,
                             'client_id' => $settings->client_id,
                             'resource' => $settings->resourceURI,
                             'redirect_uri' => $settings->redirect_uri,
-                            'state' => $antiforgery_id
+                            'state' => $antiforgery_id,
+                            'nonce' => $antiforgery_id,
                         )
                    );
         return $authUrl;
@@ -34,7 +36,7 @@ class AADSSO_AuthorizationHelper
                                         )
                                     );
 
-        return self::getAndProcessToken($authenticationRequestBody, $settings);
+        return self::getAndProcessAccessToken($authenticationRequestBody, $settings);
     }
 
     // Takes an authorization code and obtains an gets an access token as what AAD calls a "native app"
@@ -51,16 +53,16 @@ class AADSSO_AuthorizationHelper
                                         )
                                     );
 
-        return getAndProcessToken($authenticationRequestBody, $settings);
+        return self::getAndProcessAccessToken($authenticationRequestBody, $settings);
     }
 
     // Does the request for the access token and some basic processing of the access and JWT tokens
-    static function getAndProcessToken($authenticationRequestBody, $settings) {
+    static function getAndProcessAccessToken($authenticationRequestBody, $settings) {
 
         // Using curl to post the information to STS and get back the authentication response    
         $ch = curl_init();
         //curl_setopt($ch, CURLOPT_PROXY, '127.0.0.1:8888');
-        curl_setopt($ch, CURLOPT_URL, $settings->tokenEndpoint); 
+        curl_setopt($ch, CURLOPT_URL, $settings->token_endpoint);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);            // Get the response back as a string 
         curl_setopt($ch, CURLOPT_POST, 1);                      // Mark as POST request
         curl_setopt($ch, CURLOPT_POSTFIELDS,  $authenticationRequestBody);  // Set the parameters for the request
@@ -75,22 +77,56 @@ class AADSSO_AuthorizationHelper
 
         if ( isset($token->access_token) ) {
 
-            // Per section 7 of the current JWT draft [1], and section 5.2 of JWS draft [2],
-            // a JWT with 'alg' == 'none' has no signature to validate, and is therefore valid unless
-            // something else is wrong with it. The JWT class we're using explicitly checks for 3 segments
-            // in the token (making it a JWS per section 9 of current JWE draft [3]).
-            //  [1] http://tools.ietf.org/html/draft-ietf-oauth-json-web-token-25#section-7
-            //  [2] http://tools.ietf.org/html/draft-ietf-jose-json-web-signature-31#section-5.2
-            //  [3] http://tools.ietf.org/html/draft-ietf-jose-json-web-encryption-31#section-9
-            $jwt = JWT::decode( $token->id_token );
-
             // Add the token information to the session so that we can use it later
             // TODO: these probably shouldn't be in SESSION... 
             $_SESSION['token_type'] = $token->token_type;
             $_SESSION['access_token'] = $token->access_token;
-            $_SESSION['jwt'] = $jwt;        
         }
 
         return $token;
+    }
+
+    public static function validateIdToken($id_token, $settings, $antiforgery_id) {
+
+        $jwt = NULL;
+        $lastException = NULL;
+
+        // TODO: cache the keys
+        $discovery = json_decode(file_get_contents($settings->jwks_uri));
+
+        if ($discovery->keys == NULL) {
+            throw new DomainException('jwks_uri does not contain the keys attribute');
+        }
+
+        foreach ($discovery->keys as $key) {
+            try {
+                if ($key->x5c == NULL) {
+                    throw new DomainException('key does not contain the x5c attribute');
+                }
+
+                $key_der = $key->x5c[0];
+            
+                // Per section 4.7 of the current JWK draft [1], the 'x5c' property will be the DER-encoded value
+                // of the X.509 certificate. PHP's openssl functions all require a PEM-encoded value.
+                $key_pem = chunk_split($key_der, 64, "\n");
+                $key_pem = "-----BEGIN CERTIFICATE-----\n".$key_pem."-----END CERTIFICATE-----\n";
+
+                // This throws exception if the id_token cannot be validated.
+                $jwt = JWT::decode( $id_token, $key_pem);
+                break;
+            } catch (Exception $e) {
+                $lastException = $e;
+            }
+        }
+
+        if ($jwt == NULL) {
+            throw $lastException;
+        }
+
+        if ($jwt->nonce != $antiforgery_id) {
+            throw new DomainException(sprintf('Nonce mismatch. Expecting %s', $antiforgery_id));
+        } 
+
+        return $jwt; 
     }
 }
