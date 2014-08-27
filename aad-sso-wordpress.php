@@ -222,19 +222,29 @@ $settings = AADSSO_Settings::loadSettingsFromJSON(AADSSO_SETTINGS_PATH);
 $aadsso = AADSSO::getInstance($settings);
 
 
+if ( ! file_exists( AADSSO_SETTINGS_PATH ) ) {
+	function addsso_settings_missing_noticein () {
+		echo '<div id="message" class="error"><p>'. __( 'Azure Active Directory Single Sign-on for WordPress requires a Settings.json file to be added to the plugin.', 'aad-sso-wordpress' ) .'</p></div>';
+	}
+	add_action( 'all_admin_notices', 'addsso_settings_missing_notice' );
+} else {
+	$settings = AADSSO_Settings::loadSettingsFromJSON(AADSSO_SETTINGS_PATH);
+	$aadsso = AADSSO::getInstance($settings);
+}
+
+
 if ( ! function_exists( 'com_create_guid' ) ) {
 	function com_create_guid(){
-		mt_srand( (double) microtime() * 10000 ); //optional for php 4.2.0 and up.
-		$charid = strtoupper( md5( uniqid( rand(), true ) ) 	);
-		$hyphen = chr( 45 ); // "-"
-		$uuid = chr( 123 ) . // "{"
-			substr( $charid, 0, 8 ) . $hyphen .
-			substr( $charid, 8, 4 ) . $hyphen .
-			substr( $charid, 12, 4 ) . $hyphen .
-			substr( $charid, 16, 4 ) . $hyphen .
-			substr( $charid, 20, 12 ) .
-			chr( 125 ); // "}"
-
+		mt_srand((double)microtime()*10000);//optional for php 4.2.0 and up.
+		$charid = strtoupper(md5(uniqid(rand(), true)));
+		$hyphen = chr(45);// "-"
+		$uuid = chr(123)// "{"
+			.substr($charid, 0, 8).$hyphen
+			.substr($charid, 8, 4).$hyphen
+			.substr($charid,12, 4).$hyphen
+			.substr($charid,16, 4).$hyphen
+			.substr($charid,20,12)
+			.chr(125);// "}"
 		return $uuid;
 	}
-}
+ }
