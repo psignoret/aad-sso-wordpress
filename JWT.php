@@ -32,7 +32,7 @@ class JWT
      * @return object      The JWT's payload as a PHP object
      * @throws UnexpectedValueException Provided JWT was invalid
      * @throws DomainException          Algorithm was not provided
-     * 
+     *
      * @uses jsonDecode
      * @uses urlsafeB64Decode
      */

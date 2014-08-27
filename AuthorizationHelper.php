@@ -59,11 +59,11 @@ class AADSSO_AuthorizationHelper
     // Does the request for the access token and some basic processing of the access and JWT tokens
     static function getAndProcessAccessToken($authenticationRequestBody, $settings) {
 
-        // Using curl to post the information to STS and get back the authentication response    
+        // Using curl to post the information to STS and get back the authentication response
         $ch = curl_init();
         //curl_setopt($ch, CURLOPT_PROXY, '127.0.0.1:8888');
         curl_setopt($ch, CURLOPT_URL, $settings->token_endpoint);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);            // Get the response back as a string 
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);            // Get the response back as a string
         curl_setopt($ch, CURLOPT_POST, 1);                      // Mark as POST request
         curl_setopt($ch, CURLOPT_POSTFIELDS,  $authenticationRequestBody);  // Set the parameters for the request
         //curl_setopt($ch, CURLOPT_PROXY, '127.0.0.1:8888');
@@ -78,7 +78,7 @@ class AADSSO_AuthorizationHelper
         if ( isset($token->access_token) ) {
 
             // Add the token information to the session so that we can use it later
-            // TODO: these probably shouldn't be in SESSION... 
+            // TODO: these probably shouldn't be in SESSION...
             $_SESSION['token_type'] = $token->token_type;
             $_SESSION['access_token'] = $token->access_token;
         }
@@ -105,7 +105,7 @@ class AADSSO_AuthorizationHelper
                 }
 
                 $key_der = $key->x5c[0];
-            
+
                 // Per section 4.7 of the current JWK draft [1], the 'x5c' property will be the DER-encoded value
                 // of the X.509 certificate. PHP's openssl functions all require a PEM-encoded value.
                 $key_pem = chunk_split($key_der, 64, "\n");
@@ -125,8 +125,8 @@ class AADSSO_AuthorizationHelper
 
         if ($jwt->nonce != $antiforgery_id) {
             throw new DomainException(sprintf('Nonce mismatch. Expecting %s', $antiforgery_id));
-        } 
+        }
 
-        return $jwt; 
+        return $jwt;
     }
 }

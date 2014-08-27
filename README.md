@@ -1,10 +1,10 @@
 # Azure Active Directory Single Sign-on for WordPress
 
-A WordPress plugin that allows organizations to use their Azure Active Directory 
-user accounts to sign in to WordPress. Organizations with Office 365 already have 
+A WordPress plugin that allows organizations to use their Azure Active Directory
+user accounts to sign in to WordPress. Organizations with Office 365 already have
 Azure Active Directory and can use this plugin for all of their users.
 
-- Security group membership can be used to 
+- Security group membership can be used to
 - Can always fall back to regular username and password login.
 
 *This is a work in progress, please feel free to contact me for help.*
@@ -16,7 +16,7 @@ In the typical flow:
 3. The plugin uses these claims to attempt to find a WordPress user with an email address or login name that matches the Azure Active Directory user.
 4. If one is found, the user is authenticated in WordPress as that user.
 5. (Optional) Membership to certain groups in Azure AD can be mapped to roles in WordPress.
- 
+
 ## Getting Started
 
 The following instructions will get you started. In this case, we will be configuring the plugin to use the user roles configured in WordPress.
@@ -42,7 +42,7 @@ Configuration of the AADSSO plugin is currently done in a `Settings.json` file. 
 
 The minimal fields required are:
 
-- `org_display_name` The display name of the organization, used only in the link in the login page. 
+- `org_display_name` The display name of the organization, used only in the link in the login page.
 - `client_id` The application's client ID (from the application configuration page)
 - `client_secret` The client secret key (from the application configuration page)
 - `field_to_match_to_upn` The WordPress field which will be used to match a UserPrincipalName (from AAD) to a WordPress user. Valid options are 'login', 'email' or 'slug'.
@@ -83,12 +83,12 @@ Users are matched by their login names in WordPress, and WordPress roles are dic
 
 	{
 		"org_display_name": "Contoso",
-		
+
 		"client_id":     "9054eff5-bfef-4cc5-82fd-8c35534e48f9",
 		"client_secret": "NTY5MmE5YjMwMGY2MWQ0NjU5MzYxNjdjNzE1OGNiZmY=",
-	
+
 		"field_to_match_to_upn": "login",
-	
+
 		"enable_aad_group_to_wp_role": true,
 		"default_wp_role": null,
 		"aad_group_to_wp_role_map": {
@@ -106,14 +106,14 @@ Users are matched by their login names in WordPress, and WordPress roles are dic
 
 	{
 		"org_display_name": "Contoso",
-		
+
 		"client_id":     "9054eff5-bfef-4cc5-82fd-8c35534e48f9",
 		"client_secret": "NTY5MmE5YjMwMGY2MWQ0NjU5MzYxNjdjNzE1OGNiZmY=",
-	
+
 		"field_to_match_to_upn": "login",
-	
+
 		"enable_aad_group_to_wp_role": true,
-		"default_wp_role": "author",		
+		"default_wp_role": "author",
 		"aad_group_to_wp_role_map": {
 			"5d1915c4-2373-42ba-9796-7c092fa1dfc6": "administrator",
 			"21c0f87b-4b65-48c1-9231-2f9295ef601c": "editor",

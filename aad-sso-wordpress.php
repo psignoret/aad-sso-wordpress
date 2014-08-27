@@ -41,7 +41,7 @@ class AADSSO {
 		// The authenticate filter
 		add_filter( 'authenticate', array( $this, 'authenticate' ), 1, 3 );
 
-		// Some debugging locations 
+		// Some debugging locations
 		//add_action( 'admin_notices', array( $this, 'printDebug' ) );
 		//add_action( 'login_footer', array( $this, 'printDebug' ) );
 
@@ -61,7 +61,7 @@ class AADSSO {
 		}
 		return self::$instance;
 	}
-	
+
 	function register_session() {
 		if ( ! session_id() ) {
 			session_start();
@@ -89,7 +89,7 @@ class AADSSO {
 					return new WP_Error( 'invalid_id_token' , sprintf( 'ERROR: Invalid id_token. %s', $e->getMessage() ) );
 				}
 
-				// Try to find an existing user in WP where the UPN of the currect AAD user is 
+				// Try to find an existing user in WP where the UPN of the currect AAD user is
 				// (depending on config) the 'login' or 'email' field
 				$user = get_user_by( $this->settings->field_to_match_to_upn, $jwt->upn );
 
@@ -129,7 +129,7 @@ class AADSSO {
 		$group_ids = array_keys( $this->settings->aad_group_to_wp_role_map );
 		$group_memberships = AADSSO_GraphHelper::userCheckMemberGroups( $aad_object_id, $group_ids );
 
-		// Determine which WordPress role the AAD group corresponds to. 
+		// Determine which WordPress role the AAD group corresponds to.
 		// TODO: Check for error in the group membership response
 		$role_to_set = $this->settings->default_wp_role;
 		if ( ! empty($group_memberships->value ) ) {
@@ -169,8 +169,8 @@ class AADSSO {
 		if ( isset( $_SESSION['aadsso_debug'] ) ) {
 			echo '<pre>'. print_r( $_SESSION['aadsso_var'], TRUE ) . '</pre>';
 		}
-		echo '<p>DEBUG</p><pre>' . print_r( $_SESSION, TRUE ) . '</pre>'; 
-		echo '<pre>' . print_r( $_GET, TRUE ) . '</pre>'; 
+		echo '<p>DEBUG</p><pre>' . print_r( $_SESSION, TRUE ) . '</pre>';
+		echo '<pre>' . print_r( $_GET, TRUE ) . '</pre>';
 	}
 
 	function printLoginCss() {

@@ -92,12 +92,12 @@ class AADSSO_GraphHelper
         curl_setopt($ch, CURLOPT_HTTPHEADER, array(
             'Authorization: ' . $_SESSION['token_type'] . ' ' . $_SESSION['access_token'],
             'Accept: application/json;odata=minimalmetadata',
-            'Content-Type: application/json;odata=minimalmetadata', 
+            'Content-Type: application/json;odata=minimalmetadata',
             'Prefer: return-content'));
 
         // Set the option to recieve the response back as string.
-            
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1); 
+
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
         // By default https does not work for CURL.
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
     }
