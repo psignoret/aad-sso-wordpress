@@ -188,5 +188,12 @@ EOF;
 	}
 }
 
-$settings = AADSSO_Settings::loadSettingsFromJSON(AADSSO_SETTINGS_PATH);
-$aadsso = AADSSO::getInstance($settings);
+if ( ! file_exists( AADSSO_SETTINGS_PATH ) ) {
+	function addsso_settings_missing_noticein () {
+		echo '<div id="message" class="error"><p>'. __( 'Azure Active Directory Single Sign-on for WordPress requires a Settings.json file to be added to the plugin.', 'aad-sso-wordpress' ) .'</p></div>';
+	}
+	add_action( 'all_admin_notices', 'addsso_settings_missing_notice' );
+} else {
+	$settings = AADSSO_Settings::loadSettingsFromJSON(AADSSO_SETTINGS_PATH);
+	$aadsso = AADSSO::getInstance($settings);
+}
