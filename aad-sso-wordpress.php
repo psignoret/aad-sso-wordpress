@@ -14,12 +14,12 @@ defined('ABSPATH') or die("No script kiddies please!");
 define( 'AADSSO_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'AADSSO_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 
-define( 'AADSSO_SETTINGS_PATH', AADSSO_PLUGIN_DIR . '/Settings.json' );
+define( 'AADSSO_SETTINGS_PATH', AADSSO_PLUGIN_DIR . 'Settings.json' );
 
-require_once AADSSO_PLUGIN_DIR . '/Settings.php';
-require_once AADSSO_PLUGIN_DIR . '/AuthorizationHelper.php';
-require_once AADSSO_PLUGIN_DIR . '/GraphHelper.php';
-require_once AADSSO_PLUGIN_DIR . '/JWT.php';
+require_once AADSSO_PLUGIN_DIR . 'Settings.php';
+require_once AADSSO_PLUGIN_DIR . 'AuthorizationHelper.php';
+require_once AADSSO_PLUGIN_DIR . 'GraphHelper.php';
+require_once AADSSO_PLUGIN_DIR . 'JWT.php';
 
 class AADSSO {
 
@@ -154,7 +154,7 @@ class AADSSO {
 	}
 
 	function getLoginUrl() {
-		$antiforgery_id = com_create_guid ();
+		$antiforgery_id = com_create_guid();
 		$_SESSION[ self::ANTIFORGERY_ID_KEY ] = $antiforgery_id;
 		return AADSSO_AuthorizationHelper::getAuthorizationURL( $this->settings, $antiforgery_id );
 	}
