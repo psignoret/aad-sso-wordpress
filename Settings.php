@@ -142,11 +142,11 @@ class AADSSO_Settings {
 	*
 	* @return self Returns the (only) instance of the class.
 	*/
-	public static function loadSettingsFromJSON($jsonFile) {
+	public static function loadSettings() {
 		$settings = self::getInstance();
 
 		// Import from Settings.json
-		$settings->importSettingsFromJSON($jsonFile);
+		$settings->importSettingsFromDB();
 
 		// Import from openid-configuration
 		$settings->importSettingsFromJSON($settings->openid_configuration_endpoint);
@@ -177,6 +177,33 @@ class AADSSO_Settings {
 		return $this;
 	}
 
+	private function importSettingsFromDB() {
+		$defaults = array(
+			'org_display_name' 		=> $this->org_display_name,
+			'org_domain_hint'		=> $this->org_domain_hint,
+			'client_id' 			=> $this->client_id,
+			'client_secret' 		=> $this->client_secret,
+
+			'group_map_admin'		=> '',
+			'group_map_editor'		=> '',
+			'group_map_author'		=> '',
+			'group_map_contributor'	=> '',
+			'group_map_subscriber'	=> ''
+		);
+
+		$settings = get_option( 'aad-settings' );
+
+		$settings = wp_parse_args( $settings, $defaults );
+
+		// Store the whole chunk of settings
+		$this->settings = $settings;
+		// Load the individual class properties
+		// Note: Legacy hack
+		foreach( $settings as $k => $v ) {
+			$this->$k = $v;
+		}
+	}
+
 	public function add_menus() {
 		add_options_page( 'AAD Settings', 'AAD Settings', 'manage_options', 'aad-settings', array( $this, 'render_admin_settings' ) );
 	}
@@ -186,7 +213,7 @@ class AADSSO_Settings {
 	}
 
 	public function register_settings() {
-		
+
 		register_setting( 'aad-settings', 'aad-settings' );
 
 		/*
@@ -254,7 +281,7 @@ class AADSSO_Settings {
 		add_settings_field(
 			'group_map_editor',
 			__( 'Editor' ),
-			array( $this, 'render_group_map_admin' ),
+			array( $this, 'render_group_map_editor' ),
 			'aad-settings',
 			'aad-group-settings'
 		);
@@ -287,41 +314,40 @@ class AADSSO_Settings {
 	public function render_directory_settings_section() {}
 
 	public function render_org_display_name() {
-		$settings = get_option( 'aad-settings' );
-		var_dump( $settings );
+		echo '<input type="text" id="org_display_name" name="aad-settings[org_display_name]" value="' . $this->org_display_name . '" />';
 	}
 
 	public function render_org_domain_hint() {
-		echo 'domain hint';
+		echo '<input type="text" id="org_display_hint" hint="aad-settings[org_display_hint]" value="' . $this->org_domain_hint . '" />';
 	}
 
 	public function render_client_id() {
-		echo 'client id';
+		echo '<input type="text" id="client_id" name="aad-settings[client_id]" value="' . $this->client_id . '" />';
 	}
 
 	public function render_client_secret() {
-		echo 'client secret';
+		echo '<input type="text" id="client_secret" name="aad-settings[client_secret]" value="' . $this->client_secret . '" />';
 	}
 
 	public function render_group_settings_section() {}
 
 	public function render_group_map_admin() {
-		echo 'admin';
+		echo '<input type="text" id="group_map_admin" name="aad-settings[group_map_admin]" value="' . $this->settings['group_map_admin'] . '" />';
 	}
 
 	public function render_group_map_editor() {
-		echo 'editor';
+		echo '<input type="text" id="group_map_editor" name="aad-settings[group_map_editor]" value="' . $this->settings['group_map_editor'] . '" />';
 	}
 
 	public function render_group_map_author() {
-		echo 'author';
+		echo '<input type="text" id="group_map_author" name="aad-settings[group_map_author]" value="' . $this->settings['group_map_author'] . '" />';
 	}
 
 	public function render_group_map_contributor() {
-		echo 'contributor';
+		echo '<input type="text" id="group_map_contributor" name="aad-settings[group_map_contributor]" value="' . $this->settings['group_map_contributor'] . '" />';
 	}
 
 	public function render_group_map_subscriber() {
-		echo 'subscriber';
+		echo '<input type="text" id="group_map_subscriber" name="aad-settings[group_map_subscriber]" value="' . $this->settings['group_map_subscriber'] . '" />';
 	}
 }

@@ -28,8 +28,8 @@ class AADSSO {
 	private $settings = NULL;
 	const ANTIFORGERY_ID_KEY = 'antiforgery-id';
 
-	public function __construct( $settings ) {
-		$this->settings = $settings;
+	public function __construct() {
+		$this->settings = AADSSO_Settings::loadSettings();
 
 		// Set the redirect urls
 		$this->settings->redirect_uri = wp_login_url();
@@ -55,9 +55,9 @@ class AADSSO {
 		add_action( 'wp_logout', array( $this, 'clearSession' ) );
 	}
 
-	public static function getInstance( $settings ) {
+	public static function getInstance() {
 		if ( ! self::$instance ) {
-			self::$instance = new self( $settings );
+			self::$instance = new self();
 		}
 		return self::$instance;
 	}
@@ -186,17 +186,9 @@ class AADSSO {
 EOF;
 		printf ( $html, $this->getLoginUrl(), htmlentities( $this->settings->org_display_name ), $this->getLogoutUrl() );
 	}
-}
+} // end class
 
-if ( ! file_exists( AADSSO_SETTINGS_PATH ) ) {
-	function addsso_settings_missing_notice () {
-		echo '<div id="message" class="error"><p>'. __( 'Azure Active Directory Single Sign-on for WordPress requires a Settings.json file to be added to the plugin.', 'aad-sso-wordpress' ) .'</p></div>';
-	}
-	add_action( 'all_admin_notices', 'addsso_settings_missing_notice' );
-} else {
-	$settings = AADSSO_Settings::loadSettingsFromJSON(AADSSO_SETTINGS_PATH);
-	$aadsso = AADSSO::getInstance($settings);
-}
+$aadsso = AADSSO::getInstance();
 
 
 if ( ! function_exists( 'com_create_guid' ) ) {
