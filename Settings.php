@@ -11,12 +11,7 @@ class AADSSO_Settings {
 	/**
 	 * @var \AADSSO_Settings $instance The settings instance.
 	 */
-	private static $instance = NULL;
-
-	/**
-	 * @var string The OAuth 2.0 client type. Either 'confidential' or 'public'. (Not in use yet.)
-	 */
-	public $clientType = 'confidential';
+	private static $instance = null;
 
 	/**
 	 * @var string The client ID obtained after registering an application in AAD.
