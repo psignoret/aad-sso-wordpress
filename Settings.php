@@ -56,12 +56,12 @@ class AADSSO_Settings {
 	 * When the user is authenticated, their User Principal Name (UPN) is used to find
 	 * a corresponding WordPress user. Valid options are 'login', 'email', or 'slug'.
 	 */
-	public $field_to_match_to_upn = '';
+	public $field_to_match_to_upn = 'email';
 
 	/**
 	 * @var boolean Whether or not to use AAD group memberships to set WordPress roles.
 	 */
-	public $enable_aad_group_to_wp_role = FALSE;
+	public $enable_aad_group_to_wp_role = true;
 
 	/**
 	 * @var string[] The AAD group to WordPress role map.
