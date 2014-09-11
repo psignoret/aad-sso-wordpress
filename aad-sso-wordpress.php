@@ -100,8 +100,29 @@ class AADSSO {
 						$this->updateUserRoles( $user, $jwt->oid, $jwt->tid );
 					}
 				} else {
-					// TODO: Auto-provision (if desired).
-					$user = new WP_Error( 'user_not_registered', sprintf( 'ERROR: The authenticated user %s is not a registered user in this blog.', $jwt->upn ) );
+					/*
+					 * No user found. Now decide if we are allowed to create a new
+					 * user or not. Will use the WordPress setting from Settings > General
+					 *
+					 */
+					$reg_open = get_option( 'users_can_register' );
+					
+					if( $reg_open ) {
+						// Setup the minimum required user data
+						$userdata = array(
+							'user_email' => $jwt->upn, // Hopefully this stays the email!
+							'user_login' => $jwt->upn,
+							'first_name' => $jwt->given_name,
+							'last_name'  => $jwt->family_name,
+							'user_pass'  => null
+						);
+
+						$new_user_id = wp_insert_user( $userdata );
+
+						$user = new WP_User( $new_user_id );
+					} else {
+						$user = new WP_Error( 'user_not_registered', sprintf( 'ERROR: The authenticated user %s is not a registered user in this blog.', $jwt->upn ) );
+					}
 				}
 			} elseif ( isset( $token->error ) ) {
 				// Unable to get an access token (although we did get an authorization code)
@@ -145,6 +166,8 @@ class AADSSO {
 			// Set the role on the WordPress user
 			$user->set_role($role_to_set);
 		} else {
+			$token = AADSSO_AuthorizationHelper::getAccessToken( $_GET['code'], $this->settings );
+			$jwt = AADSSO_AuthorizationHelper::validateIdToken( $token->id_token, $this->settings, $_SESSION[ self::ANTIFORGERY_ID_KEY ] );
 			$user = new WP_Error( 'user_not_member_of_required_group', sprintf( 'ERROR: The authenticated user %s is not a member of any group granting a role.', $jwt->upn ) );
 		}
 	}
