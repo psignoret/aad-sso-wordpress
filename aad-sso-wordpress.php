@@ -120,6 +120,10 @@ class AADSSO {
 						$new_user_id = wp_insert_user( $userdata );
 
 						$user = new WP_User( $new_user_id );
+
+						if( $this->settings->enable_aad_group_to_wp_role ) {
+							$this->updateUserRoles( $user, $jwt->oid, $jwt->tid );
+						}
 					} else {
 						$user = new WP_Error( 'user_not_registered', sprintf( 'ERROR: The authenticated user %s is not a registered user in this blog.', $jwt->upn ) );
 					}

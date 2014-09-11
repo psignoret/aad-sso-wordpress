@@ -183,12 +183,14 @@ class AADSSO_Settings {
 			'org_domain_hint'		=> $this->org_domain_hint,
 			'client_id' 			=> $this->client_id,
 			'client_secret' 		=> $this->client_secret,
-
-			'group_map_admin'		=> '',
-			'group_map_editor'		=> '',
-			'group_map_author'		=> '',
-			'group_map_contributor'	=> '',
-			'group_map_subscriber'	=> ''
+			
+			'group_map'				=> array (
+				'administrator'	=> '',
+				'editor'		=> '',
+				'author'		=> '',
+				'contributor'	=> '',
+				'subscriber'	=> ''
+			)
 		);
 
 		$settings = get_option( 'aad-settings' );
@@ -201,6 +203,12 @@ class AADSSO_Settings {
 		// Note: Legacy hack
 		foreach( $settings as $k => $v ) {
 			$this->$k = $v;
+		}
+
+		// Create group to role map
+		// Note: Legacy hack
+		foreach( $settings['group_map'] as $k => $v ) {
+			$this->aad_group_to_wp_role_map[ $v ] = $k;
 		}
 	}
 
@@ -332,22 +340,22 @@ class AADSSO_Settings {
 	public function render_group_settings_section() {}
 
 	public function render_group_map_admin() {
-		echo '<input type="text" id="group_map_admin" name="aad-settings[group_map_admin]" value="' . $this->settings['group_map_admin'] . '" />';
+		echo '<input type="text" id="group_map_admin" name="aad-settings[group_map][administrator]" value="' . $this->settings['group_map']['administrator'] . '" />';
 	}
 
 	public function render_group_map_editor() {
-		echo '<input type="text" id="group_map_editor" name="aad-settings[group_map_editor]" value="' . $this->settings['group_map_editor'] . '" />';
+		echo '<input type="text" id="group_map_editor" name="aad-settings[group_map][editor]" value="' . $this->settings['group_map']['editor'] . '" />';
 	}
 
 	public function render_group_map_author() {
-		echo '<input type="text" id="group_map_author" name="aad-settings[group_map_author]" value="' . $this->settings['group_map_author'] . '" />';
+		echo '<input type="text" id="group_map_author" name="aad-settings[group_map][author]" value="' . $this->settings['group_map']['author'] . '" />';
 	}
 
 	public function render_group_map_contributor() {
-		echo '<input type="text" id="group_map_contributor" name="aad-settings[group_map_contributor]" value="' . $this->settings['group_map_contributor'] . '" />';
+		echo '<input type="text" id="group_map_contributor" name="aad-settings[group_map][contributor]" value="' . $this->settings['group_map']['contributor'] . '" />';
 	}
 
 	public function render_group_map_subscriber() {
-		echo '<input type="text" id="group_map_subscriber" name="aad-settings[group_map_subscriber]" value="' . $this->settings['group_map_subscriber'] . '" />';
+		echo '<input type="text" id="group_map_subscriber" name="aad-settings[group_map][subscriber]" value="' . $this->settings['group_map']['subscriber'] . '" />';
 	}
 }
