@@ -59,6 +59,13 @@ class AADSSO_Settings {
 	public $field_to_match_to_upn = '';
 
 	/**
+	* @var boolean Wether or not to auto-provision a new user.
+	* If a user is able to authenticate with AAD, but not a current WordPress user, this determines
+	* wether or not a WordPress user will be provisioned on-the-fly.
+	*/
+	public $enable_auto_provisioning = FALSE;
+
+	/**
 	 * @var boolean Whether or not to use AAD group memberships to set WordPress roles.
 	 */
 	public $enable_aad_group_to_wp_role = FALSE;
@@ -74,8 +81,8 @@ class AADSSO_Settings {
 
 	/**
 	 * @var string The default WordPress role to assign a user when not a member of defined AAD groups.
-	 * This is only used if $enable_aad_group_to_wp_role is TRUE. NULL means that access will be denied
-	 * to users who are not members of the groups defined in $aad_group_to_wp_role_map. 
+	 * This is only used if $enable_aad_group_to_wp_role is TRUE. NULL or empty means that access will be 
+	 * denied to users who are not members of the groups defined in $aad_group_to_wp_role_map. 
 	 */
 	public $default_wp_role = NULL;
 
