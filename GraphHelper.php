@@ -23,8 +23,9 @@ class AADSSO_GraphHelper
     }
 
     public static function userCheckMemberGroups($id, $group_ids) {
+    	$group_ids = array_filter( $group_ids ); //remove empty elements
         $url = self::getResourceUrl() . '/users/' . $id . '/checkMemberGroups?api-version=' . self::$settings->graphVersion;
-        return self::postRequest($url, array('groupIds' => $group_ids));
+		return self::postRequest($url, array('groupIds' => $group_ids));
     }
 
     public static function getUser($id) {
