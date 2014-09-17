@@ -53,6 +53,8 @@ class AADSSO {
 
 		// Clear session variables when logging out
 		add_action( 'wp_logout', array( $this, 'clearSession' ) );
+
+		add_action( 'login_init', array( $this, 'maybeBypassLogin' ) );
 	}
 
 	public static function getInstance() {
@@ -60,6 +62,46 @@ class AADSSO {
 			self::$instance = new self();
 		}
 		return self::$instance;
+	}
+
+	/**
+	 * Decides wether or not to bypass the login form and forward straight to AAD login
+	 **/
+	public function maybeBypassLogin() {
+		$bypass = apply_filters( 'aad_auto_forward_login', false );
+
+		/*
+		 * If the user is attempting to logout AND the auto-forward to AAD
+		 * login is set then we need to ensure we do not auto-forward the user and get
+		 * them stuck in an infinite logout loop.
+		 */
+		if( $this->wantsToLogin()  && $bypass && !isset( $_GET['code'] ) ) {
+			wp_redirect( $this->getLoginUrl() );
+			die();
+		}
+	}
+
+	/**
+	* Checks to determine if the user wants to login on wp-login
+	*
+	* This function mostly exists to cover the exceptions to login
+	* that may exist as other parameters to $_GET[action] as $_GET[action]
+	* does not have to exist. By default WordPress assumes login if an action
+	* is not set, however this may not be true, as in the case of logout
+	* where $_GET[loggedout] is instead set
+	*
+	* @return boolean
+	**/
+	private function wantsToLogin() {
+		$wants_to_login = false;
+		// Cover default WordPress behavior
+		$action = isset($_REQUEST['action']) ? $_REQUEST['action'] : 'login';
+		// And now the exceptions
+		$action = isset( $_GET['loggedout'] ) ? 'loggedout' : $action;
+		if( 'login' == $action ) {
+			$wants_to_login = true;
+		}
+		return $wants_to_login;
 	}
 
 	function register_session() {
