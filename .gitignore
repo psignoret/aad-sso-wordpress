@@ -1,1 +1,3 @@
 /Settings.json
+/Settings.*.json
+!/Settings.template.json

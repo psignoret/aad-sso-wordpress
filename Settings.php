@@ -13,34 +13,34 @@ class AADSSO_Settings {
 	 */
 	private static $instance = NULL;
 
-	/** 
+	/**
 	 * @var string The OAuth 2.0 client type. Either 'confidential' or 'public'. (Not in use yet.)
 	 */
 	public $clientType = 'confidential';
 
-	/** 
+	/**
 	 * @var string The client ID obtained after registering an application in AAD.
 	 */
 	public $client_id = '';
-	    
+
 	/**
-	 * @var string The client secret key, which is generated on the app configuration page in AAD. 
+	 * @var string The client secret key, which is generated on the app configuration page in AAD.
 	 * Required if $clientType is 'public'.
 	 */
 	public $client_secret = '';
-	    
+
 	/**
 	 * @var string The URL to redirect to after signing in. Must also be configured in AAD.
 	 */
 	public $redirect_uri =         '';
 
-	/** 
+	/**
 	 * @var string The URL to redirect to after signing out (of AAD, not WP).
 	 */
 	public $logout_redirect_uri =   '';
 
 	/**
-	 * @var string The display name of the organization, used only in the link in the login page. 
+	 * @var string The display name of the organization, used only in the link in the login page.
 	 */
 	public $org_display_name = '';
 
@@ -72,7 +72,7 @@ class AADSSO_Settings {
 
 	/**
 	 * @var string[] The AAD group to WordPress role map.
-	 * An associative array user to match up AAD group object ids (key) to WordPress roles (value). 
+	 * An associative array user to match up AAD group object ids (key) to WordPress roles (value).
 	 * Since the user will be given the first role with a matching group, the order of this array
 	 * is important!
 	 */
@@ -81,33 +81,33 @@ class AADSSO_Settings {
 
 	/**
 	 * @var string The default WordPress role to assign a user when not a member of defined AAD groups.
-	 * This is only used if $enable_aad_group_to_wp_role is TRUE. NULL or empty means that access will be 
-	 * denied to users who are not members of the groups defined in $aad_group_to_wp_role_map. 
+	 * This is only used if $enable_aad_group_to_wp_role is TRUE. NULL or empty means that access will be
+	 * denied to users who are not members of the groups defined in $aad_group_to_wp_role_map.
 	 */
 	public $default_wp_role = NULL;
 
-	/** 
+	/**
 	 * @var string The OpenID Connect configuration discovery endpoint.
 	 */
 	public $openid_configuration_endpoint = 'https://login.windows.net/common/.well-known/openid-configuration';
 
-	// These are the common endpoints that always work, but don't have tenant branding. 
-	/** 
+	// These are the common endpoints that always work, but don't have tenant branding.
+	/**
 	 * @var string The OAuth 2.0 authorization endpoint.
 	 */
 	public $authorization_endpoint = '';
-	
-	/** 
+
+	/**
 	 * @var string The OAuth 2.0 token endpoint.
 	 */
 	public $token_endpoint = '';
 
-	/** 
+	/**
 	 * @var string The OpenID Connect JSON Web Key Set endpoint.
 	 */
 	public $jwks_uri = '';
 
-	/** 
+	/**
 	 * @var string The sign out endpoint.
 	 */
 	public $end_session_endpoint = '';
@@ -116,7 +116,7 @@ class AADSSO_Settings {
 	 * @var string The URI of the Azure Active Directory Graph API.
 	 */
 	public $resourceURI =           'https://graph.windows.net';
-	
+
 	/**
 	 * @var string The version of the AAD Graph API to use.
 	 */
@@ -135,7 +135,7 @@ class AADSSO_Settings {
 	}
 
 	/**
-	* This method loads the settins from a JSON file and uses the contents to overwrite 
+	* This method loads the settins from a JSON file and uses the contents to overwrite
 	* any properties in the settings class.
 	*
 	* @param string $jsonFile The path to the JSON file.

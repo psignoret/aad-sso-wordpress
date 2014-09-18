@@ -61,7 +61,7 @@ class AADSSO {
 		}
 		return self::$instance;
 	}
-	
+
 	function register_session() {
 		if ( ! session_id() ) {
 			session_start();
@@ -69,6 +69,7 @@ class AADSSO {
 	}
 
 	function authenticate( $user, $username, $password ) {
+
 		// Don't re-authenticate if already authenticated
 		if ( is_a( $user, 'WP_User' ) ) { return $user; }
 
