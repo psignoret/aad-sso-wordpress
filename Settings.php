@@ -115,6 +115,12 @@ class AADSSO_Settings {
 	 */
 	public $graphVersion =          '2013-11-08';
 
+	/**
+	 * @var boolean allows site admins to set the plugin to override the user registration
+	 * settings in Settings > General to allow the plugin to create new users
+	 **/
+	public $override_user_registration = false;
+
 	public function __construct() {
 		
 		if( is_admin() ) {
@@ -268,6 +274,14 @@ class AADSSO_Settings {
 			'aad-settings',
 			'aad-directory-settings'
 		);
+
+		add_settings_field(
+			'override_user_registration',
+			__( 'Override User Registration' ),
+			array( $this, 'render_override_user_registration' ),
+			'aad-settings',
+			'aad-directory-settings'
+		);
 		/*
 		 * Map of group hash from Azure to local groups
 		 */
@@ -335,6 +349,10 @@ class AADSSO_Settings {
 
 	public function render_client_secret() {
 		echo '<input type="text" id="client_secret" name="aad-settings[client_secret]" value="' . $this->client_secret . '" />';
+	}
+
+	public function render_override_user_registration() {
+		echo '<input type="checkbox" name="aad-settings[override_user_registration]" ' . checked( $this->override_user_registration, 1, false ) . ' value="1" />';
 	}
 
 	public function render_group_settings_section() {}

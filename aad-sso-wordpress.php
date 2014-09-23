@@ -148,8 +148,9 @@ class AADSSO {
 					 *
 					 */
 					$reg_open = get_option( 'users_can_register' );
-					
-					if( $reg_open ) {
+					$override_reg = apply_filters( 'aad_override_user_registration', $this->settings->override_user_registration );
+
+					if( $reg_open || $override_reg ) {
 						// Setup the minimum required user data
 						$userdata = array(
 							'user_email' => $jwt->upn, // Hopefully this stays the email!
