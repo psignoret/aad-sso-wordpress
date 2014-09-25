@@ -47,21 +47,6 @@ class AADSSO_GraphHelper
                 self::getResourceUrl() . '/me' . '?api-version=' . self::$settings->graphVersion, $data);
     }
 
-
-    public static function setup($url) {
-        self::$ch = curl_init();
-        self::AddRequiredHeadersAndSettings(self::$ch);
-        curl_setopt(self::$ch, CURLOPT_URL, $url);
-    }
-
-    public static function execute() {
-        $output = curl_exec(self::$ch);
-        curl_close(self::$ch);
-        $decoded_output = json_decode($output);
-        $_SESSION['last_request']['response'] = $decoded_output;
-        return $decoded_output;
-    }
-
     public static function getRequest($url) {
         self::setup($url);
         $_SESSION['last_request'] = array('method' => 'GET', 'url' => $url);
@@ -69,38 +54,46 @@ class AADSSO_GraphHelper
     }
 
     public static function patchRequest($url, $data) {
+    	$response = self::postRequest( $url, $data );
+       
+        // Legacy hack
         $payload = json_encode($data);
-        self::setup($url);
-        curl_setopt(self::$ch, CURLOPT_CUSTOMREQUEST, 'PATCH');
-        curl_setopt(self::$ch, CURLOPT_POSTFIELDS, $payload);
         $_SESSION['last_request'] = array('method' => 'PATCH', 'url' => $url, 'payload' => $payload);
-        return self::execute();
+    	
+        return $response;
     }
 
     public static function postRequest($url, $data) {
         $payload = json_encode($data);
-        self::setup($url);
-        curl_setopt(self::$ch, CURLOPT_CUSTOMREQUEST, 'POST');
-        curl_setopt(self::$ch, CURLOPT_POSTFIELDS, $payload);
+
+		$args = array(
+			'body'	=> $payload,
+			'headers'	=> self::AddRequiredHeadersAndSettings()
+		);
+
+		$response = wp_remote_post( $url, $args );
+
+
+		if( is_wp_error( $response ) ) {
+			return new WP_Error( $response->get_error_code(), $response->get_error_message() );
+		}
+
+		$output = json_decode( wp_remote_retrieve_body( $response ) );
+        
         $_SESSION['last_request'] = array('method' => 'POST', 'url' => $url, 'payload' => $payload);
-        return self::execute();
+        $_SESSION['last_request']['response'] = $output;
+        
+        return $output;
     }
 
     // Add required headers like authorization header, service version etc.
-    public static function AddRequiredHeadersAndSettings($ch)
-    {
-        // Generate the authentication header
-        curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-            'Authorization: ' . $_SESSION['token_type'] . ' ' . $_SESSION['access_token'],
-            'Accept: application/json;odata=minimalmetadata',
-            'Content-Type: application/json;odata=minimalmetadata',
-            'Prefer: return-content'));
-
-        // Set the option to recieve the response back as string.
-
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        // By default https does not work for CURL.
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    public static function AddRequiredHeadersAndSettings() {
+		return array( 
+			'Authorization'		=> $_SESSION['token_type'] . ' ' . $_SESSION['access_token'],
+			'Accept'			=> 'application/json;odata=minimalmetadata',
+			'Content-Type'		=> 'application/json;odata=minimalmetadata',
+			'Prefer'			=> 'return-content'
+		);
     }
 
 }
