@@ -122,7 +122,7 @@ class AADSSO_Settings {
 	public $override_user_registration = false;
 
 	public function __construct() {
-		
+
 		if( is_admin() ) {
 			// Setup stuff only needed in wp-admin
 			add_action( 'admin_menu', array( $this, 'add_menus' ) );
@@ -172,9 +172,9 @@ class AADSSO_Settings {
 			$jsonSettings = wp_remote_retrieve_body( $response );
 		}
 		$tmpSettings = json_decode($jsonSettings, TRUE);
-		
+
 		// Overwrite any properties defined in the JSON
-		foreach ($tmpSettings as $key => $value) {
+		foreach ( (array) $tmpSettings as $key => $value) {
 			if (property_exists($this, $key)) {
 				$this->{$key} = $value;
 			}
@@ -189,7 +189,7 @@ class AADSSO_Settings {
 			'org_domain_hint'		=> $this->org_domain_hint,
 			'client_id' 			=> $this->client_id,
 			'client_secret' 		=> $this->client_secret,
-			
+
 			'group_map'				=> array (
 				'administrator'	=> '',
 				'editor'		=> '',
@@ -236,14 +236,14 @@ class AADSSO_Settings {
 		 * - Org domain
 		 * - Secret keys
 		 */
-		add_settings_section( 
-			'aad-directory-settings', 
-			__( 'Directory Settings' ), 
-			array( $this, 'render_directory_settings_section' ), 
-			'aad-settings' 
+		add_settings_section(
+			'aad-directory-settings',
+			__( 'Directory Settings' ),
+			array( $this, 'render_directory_settings_section' ),
+			'aad-settings'
 		);
 
-		add_settings_field( 
+		add_settings_field(
 			'org_display_name',
 			__( 'Organization Display Name' ),
 			array( $this, 'render_org_display_name' ),
@@ -258,7 +258,7 @@ class AADSSO_Settings {
 			'aad-settings',
 			'aad-directory-settings'
 		);
-		
+
 		add_settings_field(
 			'client_id',
 			__( 'Client ID' ),
@@ -285,11 +285,11 @@ class AADSSO_Settings {
 		/*
 		 * Map of group hash from Azure to local groups
 		 */
-		add_settings_section( 
-			'aad-group-settings', 
-			__( 'Group Map' ), 
-			array( $this, 'render_group_settings_section' ), 
-			'aad-settings' 
+		add_settings_section(
+			'aad-group-settings',
+			__( 'Group Map' ),
+			array( $this, 'render_group_settings_section' ),
+			'aad-settings'
 		);
 
 		add_settings_field(
@@ -324,7 +324,7 @@ class AADSSO_Settings {
 			'aad-group-settings'
 		);
 
-		add_settings_field( 
+		add_settings_field(
 			'group_map_subscriber',
 			__( 'Subscriber' ),
 			array( $this, 'render_group_map_subscriber' ),
