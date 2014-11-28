@@ -61,7 +61,7 @@ class AADSSO_Settings {
 	/**
 	 * @var boolean Whether or not to use AAD group memberships to set WordPress roles.
 	 */
-	public $enable_aad_group_to_wp_role = true;
+	public $enable_aad_group_to_wp_role = false;
 
 	/**
 	 * @var string[] The AAD group to WordPress role map.
@@ -190,6 +190,7 @@ class AADSSO_Settings {
 			'client_id' 			=> $this->client_id,
 			'client_secret' 		=> $this->client_secret,
 
+			'enable_group_to_role'	=> $this->aad_group_to_wp_role_map,
 			'group_map'				=> array (
 				'administrator'	=> '',
 				'editor'		=> '',
@@ -200,7 +201,7 @@ class AADSSO_Settings {
 		);
 
 		$settings = get_option( 'aad-settings' );
-
+		
 		$settings = wp_parse_args( $settings, $defaults );
 
 		// Store the whole chunk of settings
@@ -215,6 +216,15 @@ class AADSSO_Settings {
 		// Note: Legacy hack
 		foreach( $settings['group_map'] as $k => $v ) {
 			$this->aad_group_to_wp_role_map[ $v ] = $k;
+		}
+
+		// Hack to preserve original functionality
+		if( !empty( $settings['group_map_enabled'] ) ) {
+			$this->enable_aad_group_to_wp_role = true;
+		}
+		if( false == get_option( 'aad-group-map-set' ) ){
+			update_option( 'aad-group-map-set', 1 );
+			$this->enable_aad_group_to_wp_role = true;
 		}
 	}
 
@@ -293,6 +303,14 @@ class AADSSO_Settings {
 		);
 
 		add_settings_field(
+			'group_map_enabled',
+			__( 'Enable role mapping' ),
+			array( $this, 'render_group_map_enabled' ),
+			'aad-settings',
+			'aad-group-settings'
+		);
+
+		add_settings_field(
 			'group_map_admin',
 			__( 'Administrator' ),
 			array( $this, 'render_group_map_admin' ),
@@ -356,6 +374,12 @@ class AADSSO_Settings {
 	}
 
 	public function render_group_settings_section() {}
+
+	public function render_group_map_enabled() {
+		echo '<input type="checkbox" name="aad-settings[group_map_enabled]" ' 
+			. checked( $this->enable_aad_group_to_wp_role, 1, false ) 
+			. ' value="1" />';
+	}
 
 	public function render_group_map_admin() {
 		echo '<input type="text" id="group_map_admin" name="aad-settings[group_map][administrator]" value="' . $this->settings['group_map']['administrator'] . '" />';
