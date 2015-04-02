@@ -16,6 +16,11 @@ define( 'AADSSO_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 
 define( 'AADSSO_SETTINGS_PATH', AADSSO_PLUGIN_DIR . '/Settings.json' );
 
+// Proxy to be used for calls, should be useful for tracing with Fiddler
+// BUGBUG: Doesn't actually work, at least not with WP running on WAMP stack
+//define( 'WP_PROXY_HOST', '127.0.0.1' );
+//define( 'WP_PROXY_PORT', '8888' );
+
 require_once AADSSO_PLUGIN_DIR . '/Settings.php';
 require_once AADSSO_PLUGIN_DIR . '/AuthorizationHelper.php';
 require_once AADSSO_PLUGIN_DIR . '/GraphHelper.php';

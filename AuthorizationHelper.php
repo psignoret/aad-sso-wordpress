@@ -59,17 +59,14 @@ class AADSSO_AuthorizationHelper
 	// Does the request for the access token and some basic processing of the access and JWT tokens
 	static function getAndProcessAccessToken($authenticationRequestBody, $settings) {
 
-		// Using curl to post the information to STS and get back the authentication response
-		$ch = curl_init();
-		//curl_setopt($ch, CURLOPT_PROXY, '127.0.0.1:8888');
-		curl_setopt($ch, CURLOPT_URL, $settings->token_endpoint);
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);			// Get the response back as a string
-		curl_setopt($ch, CURLOPT_POST, 1);						// Mark as POST request
-		curl_setopt($ch, CURLOPT_POSTFIELDS,  $authenticationRequestBody);	// Set the parameters for the request
-		//curl_setopt($ch, CURLOPT_PROXY, '127.0.0.1:8888');
-		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, FALSE);		// By default, HTTPS does not work with curl.
-		$output = curl_exec($ch);								// Read the output from the post request
-		curl_close($ch);										// close cURL resource to free up system resources
+		// Use WordPress' HTTP API to post the authorization code to the STS and get back the access token 
+		$response = wp_remote_post($settings->token_endpoint, array(
+			'body' => $authenticationRequestBody
+		));
+		if( is_wp_error( $response ) ) {
+			return new WP_Error($response->get_error_code(), $response->get_error_message() );
+		}
+		$output = wp_remote_retrieve_body($response);
 
 		// Decode the JSON response from the STS. If all went well, this will contain the access token and the
 		// id_token (a JWT token telling us about the current user)s
