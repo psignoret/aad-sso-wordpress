@@ -3,6 +3,9 @@
 // A class that provides authorization token for apps that need to access Azure Active Directory Graph Service.
 class AADSSO_AuthorizationHelper
 {
+	// Currently, only RS256 is allowed and expected from AAD.
+	private static $allowed_algorithms = array('RS256');
+
 	// Get the authorization URL which makes the authorization request
 	public static function getAuthorizationURL($settings, $antiforgery_id) {
 		$authUrl = $settings->authorization_endpoint . '?' .
@@ -108,8 +111,8 @@ class AADSSO_AuthorizationHelper
 				$key_pem = chunk_split($key_der, 64, "\n");
 				$key_pem = "-----BEGIN CERTIFICATE-----\n".$key_pem."-----END CERTIFICATE-----\n";
 
-				// This throws exception if the id_token cannot be validated.
-				$jwt = JWT::decode( $id_token, $key_pem);
+				// This throws exception if the id_token cannot be validated. We currently expect RS256 from AAD.
+				$jwt = JWT::decode($id_token, $key_pem, self::$allowed_algorithms);
 				break;
 			} catch (Exception $e) {
 				$lastException = $e;
