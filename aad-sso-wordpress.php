@@ -40,6 +40,11 @@ class AADSSO {
 		$this->settings->redirect_uri = wp_login_url();
 		$this->settings->logout_redirect_uri = wp_login_url();
 
+		// If plugin is not configured, we shouldn't proceed.
+		if ( ! $this->plugin_is_configured() ) {
+			return;
+		}
+
 		// Add the hook that starts the SESSION
 		add_action( 'init', array($this, 'register_session') );
 
@@ -58,6 +63,20 @@ class AADSSO {
 
 		// Clear session variables when logging out
 		add_action( 'wp_logout', array( $this, 'clearSession' ) );
+
+		add_action( 'login_init', array( $this, 'maybeBypassLogin' ) );
+
+		// Redirect user back to original location
+		add_filter( 'login_redirect', array( $this, 'redirect_after_login' ), 20, 3 );
+	}
+
+	/**
+	 * Determine if required plugin settings are stored
+	 *
+	 * @return bool Whether plugin is configured
+	 */
+	public function plugin_is_configured() {
+		return isset( $this->settings->client_id, $this->settings->client_secret ) && $this->settings->client_id && $this->settings->client_secret;
 	}
 
 	public static function getInstance( $settings ) {
