@@ -34,8 +34,11 @@ For these steps, you must have an Azure subscription with access to the Azure Ac
 
 1. Sign in to the [Azure portal](https://manage.windowsazure.com), and navigate to the ACTIVE DIRECTORY section. Choose the directory (tenant) that you would like to use. This should be the directory containing the users and (optionally) groups that will have access to your WordPress blog.
 3. Under the APPLICATIONS tab, click ADD to register a new application. Choose 'Add an application my organization is developing', and a recognizable name. Choose values for sign-in URL and App ID URL. The blog's URL is usually a good choice.
-4. When the app is created, under the CONFIGURE tab, generate a key and copy the secret value (it will be visible once only, after you save).
+4. When the app is created, under the CONFIGURE tab, generate a key (it will be visible once only, after you save).
 5. Add a reply URL with the format: `https://<your blog url>/wp-login.php`.
+6. Grant the application permission to call AAD Graph API. This is done by setting the application permissions to Windows Azure Active Directory, and checking Delegated Permission to "Enable sign-on and read users' profile" and "Read directory data". (The latter is currently only needed if AAD group to WP role mapping is used.)
+   ![Application permissions to AAD Graph API](https://cloud.githubusercontent.com/assets/231140/6990496/fcf02fb0-da21-11e4-9d60-1e6e2fd2cef1.png)
+7. Save the application (and copy the secret key, which will appear after saving).
 
 ### 3. Configure the plugin
 
