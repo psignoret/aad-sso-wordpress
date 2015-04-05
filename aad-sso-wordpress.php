@@ -79,79 +79,133 @@ class AADSSO {
 		if ( is_a( $user, 'WP_User' ) ) { return $user; }
 
 		if ( isset( $_GET['code'] ) ) {
-			if ( ! isset( $_GET['state'] ) || $_GET['state'] != $_SESSION[ self::ANTIFORGERY_ID_KEY ] ) {
-				return new WP_Error( 'antiforgery_id_mismatch', sprintf( 'ANTIFORGERY_ID_KEY mismatch. Expecting %s', $_SESSION[ self::ANTIFORGERY_ID_KEY ] ) );
+
+			$antiforgery_id = $_SESSION[ self::ANTIFORGERY_ID_KEY ];
+			$state_is_missing = !isset( $_GET['state'] );
+			$state_doesnt_match = $_GET['state'] != $antiforgery_id;
+
+			if ( $state_is_missing || $state_doesnt_match ) {
+				return new WP_Error( 
+					'antiforgery_id_mismatch',
+					sprintf( 'ANTIFORGERY_ID mismatch. Expecting %s', $antiforgery_id )
+				);
 			}
 
-			// Looks like we got an authorization code, let's try to get an access token
+			// Looks like we got an authorization code, let's try to get an access token with it
 			$token = AADSSO_AuthorizationHelper::getAccessToken( $_GET['code'], $this->settings );
 
 			// Happy path
 			if ( isset( $token->access_token ) ) {
 
 				try {
-					$jwt = AADSSO_AuthorizationHelper::validateIdToken( $token->id_token, $this->settings, $_SESSION[ self::ANTIFORGERY_ID_KEY ] );
+					$jwt = AADSSO_AuthorizationHelper::validateIdToken(
+						$token->id_token,
+						$this->settings, 
+						$antiforgery_id
+					);
 				} catch ( Exception $e ) {
-					return new WP_Error( 'invalid_id_token' , sprintf( 'ERROR: Invalid id_token. %s', $e->getMessage() ) );
+					return new WP_Error(
+						'invalid_id_token',
+						sprintf( 'ERROR: Invalid id_token. %s', $e->getMessage() )
+					);
 				}
 
-				// Try to find an existing user in WP where the UPN of the current AAD user is
-				// (depending on config) the 'login' or 'email' field
-				$user = get_user_by( $this->settings->field_to_match_to_upn, $jwt->upn );
-
-				if ( !is_a( $user, 'WP_User' ) ) {
-
-					// Since the user was authenticated with AAD, but not found in WordPress, need to decide whether to create
-					// a new user in WP on-the-fly, or to stop here.
-					if( $this->settings->enable_auto_provisioning ) {
-
-						// Setup the minimum required user data
-						// TODO: Is null better than a random password?
-						// TODO: Look for otherMail, or proxyAddresses before UPN for email
-						$userdata = array(
-							'user_email' => $jwt->upn,
-							'user_login' => $jwt->upn,
-							'first_name' => $jwt->given_name,
-							'last_name'  => $jwt->family_name,
-							'user_pass'  => null
-						);
-
-						$new_user_id = wp_insert_user( $userdata );
-
-						$user = new WP_User( $new_user_id );
-					} else {
-
-						// The user was authenticated, but not found in WP and auto-provisioning is disabled
-						return new WP_Error( 'user_not_registered', sprintf( 'ERROR: The authenticated user %s is not a registered user in this blog.', $jwt->upn ) );
-					}
-				}
+				// Invoke any configured matching and auto-provisioning strategy and get the user.
+				$user = $this->getWPUserFromAADUser( $jwt );
 
 				if ( is_a( $user, 'WP_User' ) ) {
-					// At this point, we have an authorization code, an access token and the user exists in WordPress (either because
-					// it already existed, or we created it on-the-fly. All that's left is to set the roles based on group membership.
+
+					// At this point, we have an authorization code, an access token and the user 
+					// exists in WordPress (either because it already existed, or we created it 
+					// on-the-fly. All that's left is to set the roles based on group membership.
 					if ( $this->settings->enable_aad_group_to_wp_role ) {
 						$user = $this->updateUserRoles( $user, $jwt->upn, $jwt->tid );
 					}
 				}
 
 			} elseif ( isset( $token->error ) ) {
+
 				// Unable to get an access token (although we did get an authorization code)
-				return new WP_Error( $token->error, sprintf( 'ERROR: Could not get an access token to Azure Active Directory. %s', $token->error_description ) );
+				return new WP_Error(
+					$token->error,
+					sprintf(
+						'ERROR: Could not get an access token to Azure Active Directory. %s',
+						$token->error_description
+					)
+				);
 			} else {
+
 				// None of the above, I have no idea what happened.
 				return new WP_Error( 'unknown', 'ERROR: An unknown error occured.' );
 			}
 
 		} elseif ( isset( $_GET['error'] ) ) {
-			// The attempt to get an authorization code failed (i.e., the reply from the STS was "No.")
-			return new WP_Error( $_GET['error'], sprintf( 'ERROR: Access denied to Azure Active Directory. %s', $_GET['error_description']) );
+
+			// The attempt to get an authorization code failed.
+			return new WP_Error(
+				$_GET['error'],
+				sprintf(
+					'ERROR: Access denied to Azure Active Directory. %s',
+					$_GET['error_description']
+				)
+			);
 		}
 
 		return $user;
 	}
 
-	// Use user's AAD group memberships to set WordPress role
+	function getWPUserFromAADUser($jwt) {
+
+		// Try to find an existing user in WP where the UPN of the current AAD user is
+		// (depending on config) the 'login' or 'email' field
+		$user = get_user_by( $this->settings->field_to_match_to_upn, $jwt->upn );
+
+		if ( !is_a( $user, 'WP_User' ) ) {
+
+			// Since the user was authenticated with AAD, but not found in WordPress, 
+			// need to decide whether to create a new user in WP on-the-fly, or to stop here.
+			if( $this->settings->enable_auto_provisioning ) {
+
+				// Setup the minimum required user data
+				// TODO: Is null better than a random password?
+				// TODO: Look for otherMail, or proxyAddresses before UPN for email
+				$userdata = array(
+					'user_email' => $jwt->upn,
+					'user_login' => $jwt->upn,
+					'first_name' => $jwt->given_name,
+					'last_name'  => $jwt->family_name,
+					'user_pass'  => null
+				);
+
+				$new_user_id = wp_insert_user( $userdata );
+
+				$user = new WP_User( $new_user_id );
+			} else {
+
+				// The user was authenticated, but not found in WP and auto-provisioning is disabled
+				return new WP_Error(
+					'user_not_registered',
+					sprintf(
+						'ERROR: The authenticated user %s is not a registered user in this blog.',
+						$jwt->upn
+					)
+				);
+			}
+		}
+
+		return $user;
+	}
+
+	/**
+	  * Sets a WordPress user's role based on their AAD group memberships
+	  * 
+	  * @param WP_User $user 
+	  * @param string $aad_user_id The AAD object id of the user
+	  * @param string $aad_tenant_id The AAD directory tenant ID
+	  * @return WP_User|WP_Error Return the WP_User with updated rols, or WP_Error if failed.
+	  */ 
 	function updateUserRoles( $user, $aad_user_id, $aad_tenant_id ) {
+
 		// Pass the settings to GraphHelper
 		AADSSO_GraphHelper::$settings = $this->settings;
 		AADSSO_GraphHelper::$tenant_id = $aad_tenant_id;
@@ -178,7 +232,10 @@ class AADSSO {
 		} else {
 			return new WP_Error(
 				'user_not_member_of_required_group',
-				sprintf( 'ERROR: The authenticated user %s is not a member of any group granting a role.', $aad_user_id )
+				sprintf(
+					'ERROR: AAD user %s is not a member of any group granting a role.',
+					$aad_user_id
+				)
 			);
 		}
 
@@ -196,7 +253,11 @@ class AADSSO {
 	}
 
 	function getLogoutUrl() {
-		return $this->settings->end_session_endpoint . '?' . http_build_query( array( 'post_logout_redirect_uri' => $this->settings->logout_redirect_uri ) );
+		return $this->settings->end_session_endpoint
+			. '?' 
+			. http_build_query(
+				array( 'post_logout_redirect_uri' => $this->settings->logout_redirect_uri )
+			);
 	}
 
 	/*** View ****/
@@ -220,24 +281,33 @@ class AADSSO {
 				<a class="dim" href="%s">Sign out</a>
 			</p>
 EOF;
-		printf ( $html, $this->getLoginUrl(), htmlentities( $this->settings->org_display_name ), $this->getLogoutUrl() );
+		printf(
+			$html,
+			$this->getLoginUrl(),
+			htmlentities( $this->settings->org_display_name ), 
+			$this->getLogoutUrl()
+		);
 	}
 }
 
 $settings = AADSSO_Settings::loadSettingsFromJSON(AADSSO_SETTINGS_PATH);
 $aadsso = AADSSO::getInstance($settings);
 
-
 if ( ! file_exists( AADSSO_SETTINGS_PATH ) ) {
 	function addsso_settings_missing_noticein () {
-		echo '<div id="message" class="error"><p>'. __( 'Azure Active Directory Single Sign-on for WordPress requires a Settings.json file to be added to the plugin.', 'aad-sso-wordpress' ) .'</p></div>';
+		echo '<div id="message" class="error"><p>'
+			. __(
+				'Azure Active Directory Single Sign-on for WordPress requires a Settings.json file '
+					. ' to be added to the plugin.',
+				'aad-sso-wordpress'
+			)
+			.'</p></div>';
 	}
 	add_action( 'all_admin_notices', 'addsso_settings_missing_notice' );
 } else {
 	$settings = AADSSO_Settings::loadSettingsFromJSON(AADSSO_SETTINGS_PATH);
 	$aadsso = AADSSO::getInstance($settings);
 }
-
 
 if ( ! function_exists( 'com_create_guid' ) ) {
 	function com_create_guid(){

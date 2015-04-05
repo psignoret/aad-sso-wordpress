@@ -1,6 +1,8 @@
 <?php
 
-// A class that provides authorization token for apps that need to access Azure Active Directory Graph Service.
+/**
+ * A class used to request authorization and access tokens Azure Active Directory.
+ */
 class AADSSO_AuthorizationHelper
 {
 	// Currently, only RS256 is allowed and expected from AAD.
@@ -42,27 +44,10 @@ class AADSSO_AuthorizationHelper
 		return self::getAndProcessAccessToken($authenticationRequestBody, $settings);
 	}
 
-	// Takes an authorization code and obtains an gets an access token as what AAD calls a "native app"
-	public static function getAccessTokenAsNativeApp($code, $settings) {
-
-		// Construct the body for the access token request
-		$authenticationRequestBody = http_build_query(
-										array(
-											'grant_type' => 'authorization_code',
-											'code' => $code,
-											'redirect_uri' => $settings->redirect_uri,
-											'resource' => $settings->resourceURI,
-											'client_id' => $settings->client_id
-										)
-									);
-
-		return self::getAndProcessAccessToken($authenticationRequestBody, $settings);
-	}
-
-	// Does the request for the access token and some basic processing of the access and JWT tokens
+	// Makes the request for the access token and some does some basic processing of the result
 	static function getAndProcessAccessToken($authenticationRequestBody, $settings) {
 
-		// Use WordPress' HTTP API to post the authorization code to the STS and get back the access token 
+		// Post the authorization code to the STS and get back the access token 
 		$response = wp_remote_post($settings->token_endpoint, array(
 			'body' => $authenticationRequestBody
 		));
@@ -71,8 +56,8 @@ class AADSSO_AuthorizationHelper
 		}
 		$output = wp_remote_retrieve_body($response);
 
-		// Decode the JSON response from the STS. If all went well, this will contain the access token and the
-		// id_token (a JWT token telling us about the current user)s
+		// Decode the JSON response from the STS. If all went well, this will contain the access 
+		// token and the id_token (a JWT token telling us about the current user)
 		$token = json_decode($output);
 
 		if ( isset($token->access_token) ) {
@@ -106,12 +91,15 @@ class AADSSO_AuthorizationHelper
 
 				$key_der = $key->x5c[0];
 
-				// Per section 4.7 of the current JWK draft [1], the 'x5c' property will be the DER-encoded value
-				// of the X.509 certificate. PHP's openssl functions all require a PEM-encoded value.
+				// Per section 4.7 of the current JWK draft [1], the 'x5c' property will be the 
+				// DER-encoded value of the X.509 certificate. PHP's openssl functions all require 
+				// a PEM-encoded value.
 				$key_pem = chunk_split($key_der, 64, "\n");
-				$key_pem = "-----BEGIN CERTIFICATE-----\n".$key_pem."-----END CERTIFICATE-----\n";
+				$key_pem = "-----BEGIN CERTIFICATE-----\n"
+				            . $key_pem
+				            ."-----END CERTIFICATE-----\n";
 
-				// This throws exception if the id_token cannot be validated. We currently expect RS256 from AAD.
+				// This throws ab exception if the id_token cannot be validated.
 				$jwt = JWT::decode($id_token, $key_pem, self::$allowed_algorithms);
 				break;
 			} catch (Exception $e) {
