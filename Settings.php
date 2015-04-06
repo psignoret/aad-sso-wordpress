@@ -59,11 +59,19 @@ class AADSSO_Settings {
 	public $field_to_match_to_upn = '';
 
 	/**
-	* @var boolean Wether or not to auto-provision a new user.
+	* @var boolean Whether or not to auto-provision a new user.
 	* If a user is able to authenticate with AAD, but not a current WordPress user, this determines
 	* wether or not a WordPress user will be provisioned on-the-fly.
 	*/
 	public $enable_auto_provisioning = FALSE;
+
+
+	/**
+	* @var boolean Whether or not to auto-redirect to AAD for sign-in
+	* If set to true, users will be automatically redirected to AAD for login, instead of being
+	* shown the WordPress login form. This can be overridden by the 'aad_auto_forward_login' filter.
+	*/
+	public $enable_auto_forward_to_aad = FALSE;
 
 	/**
 	 * @var boolean Whether or not to use AAD group memberships to set WordPress roles.

@@ -64,7 +64,8 @@ class AADSSO {
 		// Clear session variables when logging out
 		add_action( 'wp_logout', array( $this, 'clearSession' ) );
 
-		add_action( 'login_init', array( $this, 'maybeBypassLogin' ) );
+		// If configured, bypass the login form and redirect straight to AAD
+		add_action( 'login_init', array( $this, 'save_redirect_and_maybe_bypass_login' ) );
 
 		// Redirect user back to original location
 		add_filter( 'login_redirect', array( $this, 'redirect_after_login' ), 20, 3 );
@@ -76,7 +77,10 @@ class AADSSO {
 	 * @return bool Whether plugin is configured
 	 */
 	public function plugin_is_configured() {
-		return isset( $this->settings->client_id, $this->settings->client_secret ) && $this->settings->client_id && $this->settings->client_secret;
+		return 
+			isset( $this->settings->client_id, $this->settings->client_secret )
+			 && $this->settings->client_id
+			 && $this->settings->client_secret;
 	}
 
 	public static function getInstance( $settings ) {
@@ -87,20 +91,51 @@ class AADSSO {
 	}
 
 	/**
-	 * Decides wether or not to bypass the login form and forward straight to AAD login
+	 * Based on settings and current page, bypasses the login form and forwards straight to AAD.
 	 **/
-	public function maybeBypassLogin() {
-		$bypass = apply_filters( 'aad_auto_forward_login', false );
+	public function save_redirect_and_maybe_bypass_login() {
+
+		$_SESSION['settings'] = $this->settings;
+
+		$bypass = apply_filters(
+			'aad_auto_forward_login',
+			$this->settings->enable_auto_forward_to_aad
+		);
 
 		/*
-		 * If the user is attempting to logout AND the auto-forward to AAD
+		 * If the user is attempting to log out AND the auto-forward to AAD
 		 * login is set then we need to ensure we do not auto-forward the user and get
 		 * them stuck in an infinite logout loop.
 		 */
-		if( $this->wantsToLogin()  && $bypass && !isset( $_GET['code'] ) ) {
-			wp_redirect( $this->getLoginUrl() );
-			die();
+		if( $this->wants_to_login() ) {
+
+			// Save the redirect_to query param (if present) to session
+			if ( isset( $_GET['redirect_to'] ) ) {
+				$_SESSION['redirect_to'] = $_GET['redirect_to'];
+			}
+
+			if ( $bypass && ! isset( $_GET['code'] ) ) {
+				wp_redirect( $this->get_login_url() );
+				die();
+			}
 		}
+	}
+
+	/**
+	 * Restores the session variable that stored the original 'redirect_to' so that after
+	 * authenticating with AAD, the user is returned to the right place.
+	 * 
+	 * @param string $redirect_to 
+	 * @param string $requested_redirect_to 
+	 * @param WP_User|WP_Error $user 
+	 * @return string
+	 */
+	public function redirect_after_login( $redirect_to, $requested_redirect_to, $user ) {
+		if ( is_a( $user, 'WP_User' ) && isset( $_SESSION['redirect_to'] ) ) {
+			$redirect_to = $_SESSION['redirect_to'];
+		}
+
+		return $redirect_to;
 	}
 
 	/**
@@ -114,10 +149,10 @@ class AADSSO {
 	*
 	* @return boolean
 	**/
-	private function wantsToLogin() {
+	private function wants_to_login() {
 		$wants_to_login = false;
 		// Cover default WordPress behavior
-		$action = isset($_REQUEST['action']) ? $_REQUEST['action'] : 'login';
+		$action = isset( $_REQUEST['action'] ) ? $_REQUEST['action'] : 'login';
 		// And now the exceptions
 		$action = isset( $_GET['loggedout'] ) ? 'loggedout' : $action;
 		if( 'login' == $action ) {
@@ -305,7 +340,7 @@ class AADSSO {
 		session_destroy();
 	}
 
-	function getLoginUrl() {
+	function get_login_url() {
 		$antiforgery_id = com_create_guid ();
 		$_SESSION[ self::ANTIFORGERY_ID_KEY ] = $antiforgery_id;
 		return AADSSO_AuthorizationHelper::getAuthorizationURL( $this->settings, $antiforgery_id );
@@ -342,7 +377,7 @@ class AADSSO {
 EOF;
 		printf(
 			$html,
-			$this->getLoginUrl(),
+			$this->get_login_url(),
 			htmlentities( $this->settings->org_display_name ), 
 			$this->getLogoutUrl()
 		);
