@@ -24,7 +24,12 @@ define( 'AADSSO_SETTINGS_PATH', AADSSO_PLUGIN_DIR . '/Settings.json' );
 require_once AADSSO_PLUGIN_DIR . '/Settings.php';
 require_once AADSSO_PLUGIN_DIR . '/AuthorizationHelper.php';
 require_once AADSSO_PLUGIN_DIR . '/GraphHelper.php';
+
+// TODO: Auto-load the (the exceptions at least)
 require_once AADSSO_PLUGIN_DIR . '/lib/php-jwt/Authentication/JWT.php';
+require_once AADSSO_PLUGIN_DIR . '/lib/php-jwt/Exceptions/BeforeValidException.php';
+require_once AADSSO_PLUGIN_DIR . '/lib/php-jwt/Exceptions/ExpiredException.php';
+require_once AADSSO_PLUGIN_DIR . '/lib/php-jwt/Exceptions/SignatureInvalidException.php';
 
 class AADSSO {
 
