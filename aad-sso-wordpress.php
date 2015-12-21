@@ -44,12 +44,6 @@ class AADSSO {
 		// Set the redirect urls
 		$this->settings->redirect_uri = wp_login_url();
 		$this->settings->logout_redirect_uri = wp_login_url();
-		
-		// if we don't have the facilities to use fopen, stop plugin initiation.
-		if( ! ini_get('allow_url_fopen') ) {
-			// consider throwing user-friendly error
-			return;
-		} 
 
 		// If plugin is not configured, we shouldn't proceed.
 		if ( ! $this->plugin_is_configured() ) {
@@ -395,23 +389,39 @@ EOF;
 	}
 }
 
-$settings = AADSSO_Settings::loadSettingsFromJSON(AADSSO_SETTINGS_PATH);
-$aadsso = AADSSO::getInstance($settings);
+// $settings = AADSSO_Settings::loadSettingsFromJSON(AADSSO_SETTINGS_PATH);
+// $aadsso = AADSSO::getInstance($settings);
 
-if ( ! file_exists( AADSSO_SETTINGS_PATH ) ) {
-	function addsso_settings_missing_notice () {
+// if we don't have the facilities to use fopen, stop plugin initiation.
+if( ! ini_get('allow_url_fopen') ) {
+	function aadsso_allow_url_fopen () {
 		echo '<div id="message" class="error"><p>'
 			. __(
-				'Azure Active Directory Single Sign-on for WordPress requires a Settings.json file '
-					. ' to be added to the plugin.',
+				'Azure Active Directory Single Sign-on for WordPress requires support for <code>allow_url_fopen</code>. '
+					. ' Check with your host or server administrator for assistance enabling <code>allow_url_fopen</code>',
 				'aad-sso-wordpress'
 			)
 			.'</p></div>';
 	}
-	add_action( 'all_admin_notices', 'addsso_settings_missing_notice' );
-} else {
-	$settings = AADSSO_Settings::loadSettingsFromJSON(AADSSO_SETTINGS_PATH);
-	$aadsso = AADSSO::getInstance($settings);
+	add_action( 'all_admin_notices', 'aadsso_allow_url_fopen');
+}
+else
+{
+	if ( ! file_exists( AADSSO_SETTINGS_PATH ) ) {
+		function addsso_settings_missing_notice () {
+			echo '<div id="message" class="error"><p>'
+				. __(
+					'Azure Active Directory Single Sign-on for WordPress requires a Settings.json file '
+						. ' to be added to the plugin.',
+					'aad-sso-wordpress'
+				)
+				.'</p></div>';
+		}
+		add_action( 'all_admin_notices', 'addsso_settings_missing_notice' );
+	} else {
+		$settings = AADSSO_Settings::loadSettingsFromJSON(AADSSO_SETTINGS_PATH);
+		$aadsso = AADSSO::getInstance($settings);
+	}
 }
 
 // show a warning if Settings.json is in a publicly accessible location.
