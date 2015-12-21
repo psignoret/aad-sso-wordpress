@@ -399,7 +399,7 @@ $settings = AADSSO_Settings::loadSettingsFromJSON(AADSSO_SETTINGS_PATH);
 $aadsso = AADSSO::getInstance($settings);
 
 if ( ! file_exists( AADSSO_SETTINGS_PATH ) ) {
-	function addsso_settings_missing_noticein () {
+	function addsso_settings_missing_notice () {
 		echo '<div id="message" class="error"><p>'
 			. __(
 				'Azure Active Directory Single Sign-on for WordPress requires a Settings.json file '
@@ -412,6 +412,20 @@ if ( ! file_exists( AADSSO_SETTINGS_PATH ) ) {
 } else {
 	$settings = AADSSO_Settings::loadSettingsFromJSON(AADSSO_SETTINGS_PATH);
 	$aadsso = AADSSO::getInstance($settings);
+}
+
+// show a warning if Settings.json is in a publicly accessible location.
+if( strpos(AADSSO_SETTINGS_PATH, get_home_path() ) == 0 ) {
+	function addsso_dangerous_settings_json_location () {
+		echo '<div id="settings_json_location" class="error"><p>'
+			. __(
+				'The Settings.json file is in a publicly accessible location. '
+					.'Consider moving the file and adjusting AADSSO_SETTINGS_PATH.',
+				'aad-sso-wordpress'
+			)
+			.'</p></div>';
+	}
+	add_action( 'all_admin_notices', 'addsso_dangerous_settings_json_location' );
 }
 
 if ( ! function_exists( 'com_create_guid' ) ) {
