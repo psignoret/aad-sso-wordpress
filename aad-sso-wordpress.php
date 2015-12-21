@@ -44,6 +44,12 @@ class AADSSO {
 		// Set the redirect urls
 		$this->settings->redirect_uri = wp_login_url();
 		$this->settings->logout_redirect_uri = wp_login_url();
+		
+		// if we don't have the facilities to use fopen, stop plugin initiation.
+		if( ! ini_get('allow_url_fopen') ) {
+			// consider throwing user-friendly error
+			return;
+		} 
 
 		// If plugin is not configured, we shouldn't proceed.
 		if ( ! $this->plugin_is_configured() ) {
