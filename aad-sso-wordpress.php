@@ -14,7 +14,7 @@ defined('ABSPATH') or die("No script kiddies please!");
 define( 'AADSSO_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'AADSSO_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 
-define( 'AADSSO_SETTINGS_PATH', AADSSO_PLUGIN_DIR . '/Settings.json' );
+define( 'AADSSO_SETTINGS_PATH', '/home/bradkovach/.ad_settings' );
 
 // Proxy to be used for calls, should be useful for tracing with Fiddler
 // BUGBUG: Doesn't actually work, at least not with WP running on WAMP stack
@@ -415,7 +415,7 @@ if ( ! file_exists( AADSSO_SETTINGS_PATH ) ) {
 }
 
 // show a warning if Settings.json is in a publicly accessible location.
-if( strpos(AADSSO_SETTINGS_PATH, get_home_path() ) == 0 ) {
+if( strpos( AADSSO_SETTINGS_PATH, AADSSO_PLUGIN_DIR ) === 0 ) {
 	function addsso_dangerous_settings_json_location () {
 		echo '<div id="settings_json_location" class="error"><p>'
 			. __(
