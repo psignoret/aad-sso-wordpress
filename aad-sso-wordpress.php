@@ -14,8 +14,6 @@ defined('ABSPATH') or die("No script kiddies please!");
 define( 'AADSSO_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'AADSSO_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 
-define( 'AADSSO_SETTINGS_PATH', '/home/bradkovach/.ad_settings' );
-
 // Proxy to be used for calls, should be useful for tracing with Fiddler
 // BUGBUG: Doesn't actually work, at least not with WP running on WAMP stack
 //define( 'WP_PROXY_HOST', '127.0.0.1' );
@@ -389,8 +387,24 @@ EOF;
 	}
 }
 
-// $settings = AADSSO_Settings::loadSettingsFromJSON(AADSSO_SETTINGS_PATH);
-// $aadsso = AADSSO::getInstance($settings);
+// make sure the plugin is configured to find its configuration file
+if( ! defined('AADSSO_SETTINGS_PATH') ) {
+	function aadsso_settings_path_undefined () {
+		echo '<div id="message" class="error"><p>'
+			. __(
+				'Azure Active Directory Single Sign-on does not know where your configuration file is located. '
+					. ' Add the following line to wp-config.php',
+				'aad-sso-wordpress'
+			)
+			. '<p><code>'
+			. "define( 'AADSSO_SETTINGS_PATH', '/path/to/Settings.json' );"
+			. '</code>'
+			.'</p></div>';
+	}
+	add_action( 'all_admin_notices', 'aadsso_settings_path_undefined');
+	
+	return;
+}
 
 // if we don't have the facilities to use fopen, stop plugin initiation.
 if( ! ini_get('allow_url_fopen') ) {
@@ -398,12 +412,14 @@ if( ! ini_get('allow_url_fopen') ) {
 		echo '<div id="message" class="error"><p>'
 			. __(
 				'Azure Active Directory Single Sign-on for WordPress requires support for <code>allow_url_fopen</code>. '
-					. ' Check with your host or server administrator for assistance enabling <code>allow_url_fopen</code>',
+					. ' Check with your host or server administrator for assistance enabling <code>allow_url_fopen</code>.',
 				'aad-sso-wordpress'
 			)
 			.'</p></div>';
 	}
 	add_action( 'all_admin_notices', 'aadsso_allow_url_fopen');
+	
+	return;
 }
 else
 {
@@ -427,7 +443,7 @@ else
 // show a warning if Settings.json is in a publicly accessible location.
 if( strpos( AADSSO_SETTINGS_PATH, AADSSO_PLUGIN_DIR ) === 0 ) {
 	function addsso_dangerous_settings_json_location () {
-		echo '<div id="settings_json_location" class="error"><p>'
+		echo '<div id="settings_json_location" class="update-nag"><p>'
 			. __(
 				'The Settings.json file is in a publicly accessible location. '
 					.'Consider moving the file and adjusting AADSSO_SETTINGS_PATH.',
