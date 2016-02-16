@@ -42,9 +42,13 @@ For these steps, you must have an Azure subscription with access to the Azure Ac
 
 ### 3. Configure the plugin
 
-Configuration of the AADSSO plugin is currently done in a `Settings.json` file. This repo contains a `Settings.template.json` file that can be used as an example. Make a copy and rename it as `Settings.json`.
+Configuration of the AADSSO plugin is currently done in a `Settings.json` file. This repo contains a `Settings.template.json` file that can be used as an example. Make a copy and rename it as `Settings.json`.  Move the `Settings.json` file out of your publicly accessible files, and define its path in `wp-config.php`
 
-The minimal fields required are:
+```php
+define( 'AADSSO_SETTINGS_PATH', '/path/to/Settings.json' );
+```
+
+Edit this file to match your configuration.  The minimal fields required are:
 
 - `org_display_name` The display name of the organization, used only in the link in the login page. 
 - `client_id` The application's client ID (from the application configuration page)
