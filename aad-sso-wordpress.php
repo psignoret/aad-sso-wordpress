@@ -5,7 +5,7 @@ Plugin Name: Azure Active Directory Single Sign-on for WordPress
 Plugin URI: http://github.com/psignoret/aad-sso-wordpress
 Description: Allows you to use your organization's Azure Active Directory user accounts to log in to WordPress. If your organization is using Office 365, your user accounts are already in Azure Active Directory. This plugin uses OAuth 2.0 to authenticate users, and the Azure Active Directory Graph to get group membership and other details.
 Author: Philippe Signoret
-Version: 0.4a
+Version: 0.5a
 Author URI: http://psignoret.com/
 */
 
@@ -80,7 +80,7 @@ class AADSSO {
 	 * @return bool Whether plugin is configured
 	 */
 	public function plugin_is_configured() {
-		return 
+		return
 			isset( $this->settings->client_id, $this->settings->client_secret )
 			 && $this->settings->client_id
 			 && $this->settings->client_secret;
@@ -127,10 +127,10 @@ class AADSSO {
 	/**
 	 * Restores the session variable that stored the original 'redirect_to' so that after
 	 * authenticating with AAD, the user is returned to the right place.
-	 * 
-	 * @param string $redirect_to 
-	 * @param string $requested_redirect_to 
-	 * @param WP_User|WP_Error $user 
+	 *
+	 * @param string $redirect_to
+	 * @param string $requested_redirect_to
+	 * @param WP_User|WP_Error $user
 	 * @return string
 	 */
 	public function redirect_after_login( $redirect_to, $requested_redirect_to, $user ) {
@@ -182,7 +182,7 @@ class AADSSO {
 			$state_doesnt_match = $_GET['state'] != $antiforgery_id;
 
 			if ( $state_is_missing || $state_doesnt_match ) {
-				return new WP_Error( 
+				return new WP_Error(
 					'antiforgery_id_mismatch',
 					sprintf( 'ANTIFORGERY_ID mismatch. Expecting %s', $antiforgery_id )
 				);
@@ -197,7 +197,7 @@ class AADSSO {
 				try {
 					$jwt = AADSSO_AuthorizationHelper::validateIdToken(
 						$token->id_token,
-						$this->settings, 
+						$this->settings,
 						$antiforgery_id
 					);
 				} catch ( Exception $e ) {
@@ -212,8 +212,8 @@ class AADSSO {
 
 				if ( is_a( $user, 'WP_User' ) ) {
 
-					// At this point, we have an authorization code, an access token and the user 
-					// exists in WordPress (either because it already existed, or we created it 
+					// At this point, we have an authorization code, an access token and the user
+					// exists in WordPress (either because it already existed, or we created it
 					// on-the-fly. All that's left is to set the roles based on group membership.
 					if ( $this->settings->enable_aad_group_to_wp_role ) {
 						$user = $this->updateUserRoles( $user, $jwt->upn, $jwt->tid );
@@ -259,7 +259,7 @@ class AADSSO {
 
 		if ( !is_a( $user, 'WP_User' ) ) {
 
-			// Since the user was authenticated with AAD, but not found in WordPress, 
+			// Since the user was authenticated with AAD, but not found in WordPress,
 			// need to decide whether to create a new user in WP on-the-fly, or to stop here.
 			if( $this->settings->enable_auto_provisioning ) {
 
@@ -295,12 +295,12 @@ class AADSSO {
 
 	/**
 	  * Sets a WordPress user's role based on their AAD group memberships
-	  * 
-	  * @param WP_User $user 
+	  *
+	  * @param WP_User $user
 	  * @param string $aad_user_id The AAD object id of the user
 	  * @param string $aad_tenant_id The AAD directory tenant ID
 	  * @return WP_User|WP_Error Return the WP_User with updated rols, or WP_Error if failed.
-	  */ 
+	  */
 	function updateUserRoles( $user, $aad_user_id, $aad_tenant_id ) {
 
 		// Pass the settings to GraphHelper
@@ -351,7 +351,7 @@ class AADSSO {
 
 	function getLogoutUrl() {
 		return $this->settings->end_session_endpoint
-			. '?' 
+			. '?'
 			. http_build_query(
 				array( 'post_logout_redirect_uri' => $this->settings->logout_redirect_uri )
 			);
@@ -381,7 +381,7 @@ EOF;
 		printf(
 			$html,
 			$this->get_login_url(),
-			htmlentities( $this->settings->org_display_name ), 
+			htmlentities( $this->settings->org_display_name ),
 			$this->getLogoutUrl()
 		);
 	}
@@ -402,7 +402,7 @@ if( ! defined('AADSSO_SETTINGS_PATH') ) {
 			.'</p></div>';
 	}
 	add_action( 'all_admin_notices', 'aadsso_settings_path_undefined');
-	
+
 	return;
 }
 
@@ -418,7 +418,7 @@ if( ! ini_get('allow_url_fopen') ) {
 			.'</p></div>';
 	}
 	add_action( 'all_admin_notices', 'aadsso_allow_url_fopen');
-	
+
 	return;
 }
 else
