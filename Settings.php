@@ -3,8 +3,8 @@
 /**
  * Class containing all settings used by the AADSSO plugin.
  *
- * Installation-specific configuration settings should be kept in a JSON file and loaded with the
- * load_settings() method rather than hard-coding here.
+ * Installation-specific configuration settings should be kept in JSON and loaded with
+ * load_settings_from_json() or load_settings_from_json_file() methods rather than hard-coding here.
  */
 class AADSSO_Settings {
 
@@ -27,12 +27,12 @@ class AADSSO_Settings {
 	/**
 	 * @var string The URL to redirect to after signing in. Must also be configured in AAD.
 	 */
-	public $redirect_uri =         '';
+	public $redirect_uri = '';
 
 	/**
 	 * @var string The URL to redirect to after signing out (of AAD, not WP).
 	 */
-	public $logout_redirect_uri =   '';
+	public $logout_redirect_uri = '';
 
 	/**
 	 * @var string The display name of the organization, used only in the link in the login page.
@@ -58,7 +58,7 @@ class AADSSO_Settings {
 	* If a user is able to authenticate with AAD, but not a current WordPress user, this determines
 	* wether or not a WordPress user will be provisioned on-the-fly.
 	*/
-	public $enable_auto_provisioning = FALSE;
+	public $enable_auto_provisioning = false;
 
 
 	/**
@@ -66,12 +66,12 @@ class AADSSO_Settings {
 	* If set to true, users will be automatically redirected to AAD for login, instead of being
 	* shown the WordPress login form. This can be overridden by the 'aad_auto_forward_login' filter.
 	*/
-	public $enable_auto_forward_to_aad = FALSE;
+	public $enable_auto_forward_to_aad = false;
 
 	/**
 	 * @var boolean Whether or not to use AAD group memberships to set WordPress roles.
 	 */
-	public $enable_aad_group_to_wp_role = FALSE;
+	public $enable_aad_group_to_wp_role = false;
 
 	/**
 	 * @var string[] The AAD group to WordPress role map.
@@ -84,15 +84,15 @@ class AADSSO_Settings {
 
 	/**
 	 * @var string The default WordPress role to assign a user when not a member of defined AAD groups.
-	 * This is only used if $enable_aad_group_to_wp_role is TRUE. NULL or empty means that access will be
+	 * This is only used if $enable_aad_group_to_wp_role is TRUE. null or empty means that access will be
 	 * denied to users who are not members of the groups defined in $aad_group_to_wp_role_map.
 	 */
-	public $default_wp_role = NULL;
+	public $default_wp_role = null;
 
 	/**
 	 * @var string The OpenID Connect configuration discovery endpoint.
 	 */
-	public $openid_configuration_endpoint = 'https://login.windows.net/common/.well-known/openid-configuration';
+	public $openid_configuration_endpoint = 'https://login.microsoftonline.com/common/.well-known/openid-configuration';
 
 	// These are the common endpoints that always work, but don't have tenant branding.
 	/**
@@ -118,20 +118,20 @@ class AADSSO_Settings {
 	/**
 	 * @var string The URI of the Azure Active Directory Graph API.
 	 */
-	public $resourceURI =           'https://graph.windows.net';
+	public $graph_endpoint = 'https://graph.windows.net';
 
 	/**
 	 * @var string The version of the AAD Graph API to use.
 	 */
-	public $graphVersion =          '2013-11-08';
-
-	public function __construct () {}
+	public $graph_version = '2013-11-08';
 
 	/**
+	 * Gets the (only) instance of the plugin.
+	 *
 	 * @return self The (only) instance of the class.
 	 */
-	public static function getInstance() {
-		if (!self::$instance) {
+	public static function get_instance() {
+		if ( ! self::$instance ) {
 			self::$instance = new self;
 		}
 		return self::$instance;
@@ -148,7 +148,7 @@ class AADSSO_Settings {
 	* @return self The (only) instance of the class.
 	*/
 	public static function load_settings_from_json( $settings_json ) {
-		$settings = self::getInstance();
+		$settings = self::get_instance();
 
 		if ( '' != $settings_json ) {
 			
