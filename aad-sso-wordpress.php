@@ -5,7 +5,7 @@ Plugin Name: Azure Active Directory Single Sign-on for WordPress
 Plugin URI: http://github.com/psignoret/aad-sso-wordpress
 Description: Allows you to use your organization's Azure Active Directory user accounts to log in to WordPress. If your organization is using Office 365, your user accounts are already in Azure Active Directory. This plugin uses OAuth 2.0 to authenticate users, and the Azure Active Directory Graph to get group membership and other details.
 Author: Philippe Signoret
-Version: 0.5a
+Version: 0.6a
 Author URI: http://psignoret.com/
 */
 
@@ -38,6 +38,9 @@ class AADSSO {
 
 	public function __construct( $settings ) {
 		$this->settings = $settings;
+
+		// Setup the admin settings page
+		$this->setup_admin_settings();
 
 		// Set the redirect urls
 		$this->settings->redirect_uri = wp_login_url();
@@ -358,6 +361,100 @@ class AADSSO {
 			);
 	}
 
+	/*** Settings ***/
+
+	/***
+	 * Add filters and actions for admin settings.
+	 **/
+	public function setup_admin_settings() {
+		if( is_admin() ) {
+			add_action( 'admin_menu', array( $this, 'add_menus' ) );
+			add_action( 'admin_init', array( $this, 'register_settings' ) );
+		}
+	}
+
+	/***
+	 * Add the 'Azure AD' settings menu item.
+	 */
+	public function add_menus() {
+		add_options_page(
+			'Azure Active Directory Single Sign-on Settings', 'Azure AD',
+			'manage_options', 'aadsso_settings', array( $this, 'render_admin_settings' ) );
+	}
+
+	/**
+	 * Render the 'Azure AD' settings page.
+	 */
+	public function render_admin_settings() {
+		require_once( 'view/settings.php' );
+	}
+
+	/***
+	 * Registers the settings with the Settings API.
+	 */
+	public function register_settings() {
+
+		register_setting( 'aadsso_settings', 'aadsso_settings', array( $this, 'validate_settings' ) );
+
+		// We're calling this "advanced" because later we'll have a friendly form for each field,
+		// but the JSON can always be used to override or configure advanced values.
+		add_settings_section(
+			'aadsso_settings-advanced',
+			'Advanced',
+			array( $this, 'render_settings_section_advanced' ),
+			'aadsso_settings'
+		);
+
+		add_settings_field(
+			'aadsso_settings-json',
+			__( 'Settings JSON' ),
+			array( $this, 'render_settings_json' ),
+			'aadsso_settings',
+			'aadsso_settings-advanced'
+		);
+	}
+
+	/***
+	 * Validates the settings that were submitted.
+	 */
+	public function validate_settings( $input ) {
+		$output = array();
+		$previous_settings = get_option('aadsso_settings', null);
+		if ( null == $previous_settings ) {
+			$previous_settings = array( 'aadsso_settings-json' => '' );
+		}
+
+		// Test for valid JSON
+		$test_json_decode = json_decode( $input['aadsso_settings-json'], true );
+		if ( null == $test_json_decode ) {
+			add_settings_error( 'aadsso_settings', 'aadsso_settings-json-invalid', __( 'The settings are not valid JSON.') );
+			$output['aadsso_settings-json'] = $previous_settings['aadsso_settings-json'];
+		} else {
+			$output['aadsso_settings-json'] = $input['aadsso_settings-json'];
+		}
+
+		return $output;
+	}
+
+	/***
+	 * Renders the text area that holds the JSON settings.
+	 */
+	public function render_settings_json() {
+
+		// Empty or null settings should be rendered as empty string
+		$settings_json = '';
+		$options = get_option( 'aadsso_settings', null );
+		if ( null != $options && '' != $options['aadsso_settings-json'] ) {
+			$settings_json = json_encode_pretty( json_decode( $options['aadsso_settings-json'] ) );
+		}
+
+		echo '<textarea name="aadsso_settings[aadsso_settings-json]" id="aadsso_settings-json" '
+					. 'cols="80" rows="17" style="font-family: monospace, fixed-width;">'
+					. $settings_json . '</textarea>';
+	}
+
+	public function render_settings_section_advanced() { }
+
 	/*** View ****/
 
 	function print_plugin_not_configured() {
@@ -396,54 +493,14 @@ EOF;
 	}
 }
 
-// make sure the plugin is configured to find its configuration file
-if( ! defined('AADSSO_SETTINGS_PATH') ) {
-	function aadsso_settings_path_undefined () {
-		echo '<div id="message" class="error"><p>'
-			. __(
-				'Azure Active Directory Single Sign-on does not know where your configuration file is located. '
-					. ' Add the following line to wp-config.php',
-				'aad-sso-wordpress'
-			)
-			. '<p><code>'
-			. "define( 'AADSSO_SETTINGS_PATH', '/path/to/Settings.json' );"
-			. '</code>'
-			.'</p></div>';
-	}
-	add_action( 'all_admin_notices', 'aadsso_settings_path_undefined');
+// Load settings JSON contents from DB
+$aadsso_settings = get_option('aadsso_settings');
 
-	return;
-}
-$settings = AADSSO_Settings::load_settings_from_json_file( AADSSO_SETTINGS_PATH );
+$settings = AADSSO_Settings::load_settings_from_json( $aadsso_settings['aadsso_settings-json'] );
 $aadsso = AADSSO::getInstance($settings);
 
-	if ( ! file_exists( AADSSO_SETTINGS_PATH ) ) {
-		function addsso_settings_missing_notice () {
-			echo '<div id="message" class="error"><p>'
-				. __(
-					'Azure Active Directory Single Sign-on for WordPress requires a Settings.json file '
-						. ' to be added to the plugin.',
-					'aad-sso-wordpress'
-				)
-				.'</p></div>';
-		}
-		add_action( 'all_admin_notices', 'addsso_settings_missing_notice' );
-	} else {
-	}
 
-// show a warning if Settings.json is in a publicly accessible location.
-if( strpos( AADSSO_SETTINGS_PATH, AADSSO_PLUGIN_DIR ) === 0 ) {
-	function addsso_dangerous_settings_json_location () {
-		echo '<div id="settings_json_location" class="update-nag"><p>'
-			. __(
-				'The Settings.json file is in a publicly accessible location. '
-					.'Consider moving the file and adjusting AADSSO_SETTINGS_PATH.',
-				'aad-sso-wordpress'
-			)
-			.'</p></div>';
-	}
-	add_action( 'all_admin_notices', 'addsso_dangerous_settings_json_location' );
-}
+/*** Utility functions ***/
 
 if ( ! function_exists( 'com_create_guid' ) ) {
 	function com_create_guid(){
@@ -459,4 +516,43 @@ if ( ! function_exists( 'com_create_guid' ) ) {
 			.chr(125);// "}"
 		return $uuid;
 	}
- }
+}
+
+/***
+ * Returns a pretty-printed JSON representation of the input object.
+ *
+ * @param $object The object to encode in JSON.
+ *
+ * return string The pretty-printed JSON representation.
+ */
+function json_encode_pretty( $object ) {
+	if ( version_compare( PHP_VERSION, '5.4.0', '<' ) ) {
+		// Credits: http://www.daveperrett.com/articles/2008/03/11/format-json-with-php/
+		$json = json_encode( $object );
+		$result = ''; $pos = 0; $strLen = strlen($json);
+		$indentStr = '  '; $newLine = "\n";
+		$prevChar = ''; $outOfQuotes = true;
+		for ( $i=0; $i<=$strLen; $i++ ) {
+			$char = substr($json, $i, 1);
+			if ($char == '"' && $prevChar != '\\') {
+				$outOfQuotes = !$outOfQuotes;
+			} else if(($char == '}' || $char == ']') && $outOfQuotes) {
+				$result .= $newLine;
+				$pos --;
+				for ($j=0; $j<$pos; $j++) {	$result .= $indentStr; }
+			}
+			$result .= $char;
+			if (($char == ',' || $char == '{' || $char == '[') && $outOfQuotes) {
+				$result .= $newLine;
+				if ($char == '{' || $char == '[') { $pos ++; }
+				for ($j = 0; $j < $pos; $j++) { $result .= $indentStr; }
+			} elseif ( ':' == $char && $outOfQuotes) {
+				$result .= ' ';
+			}
+			$prevChar = $char;
+		}
+		return $result;
+	} else {
+		return json_encode( $object, JSON_PRETTY_PRINT );
+	}
+}
