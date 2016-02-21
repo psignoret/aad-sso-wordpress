@@ -69,7 +69,7 @@ Here is a minimal sample configuration, which you can update with your applicati
 
 The AADSSO plugin can be configured to set different WordPress roles based on the user's membership to a set of user-defined groups. This is a great way to control who has access to the blog, and under what role.
 
-The configuration is also done in `Settings.json`. The following fields should be included:
+This is also configured in the JSON in  **Settings** > **Azure AD** (from the WordPress admin console). The following fields should be included:
 
 - `enable_aad_group_to_wp_role` Must be set to `true` to enable group-based roles.
 - `aad_group_to_wp_role_map` Contains a key-value map of Azure Active Directory group object IDs (the keys) and WordPress roles (values). Valid values for roles are `'administrator'`, `'editor'`, `'author'`, `'contributor'`, `'subscriber'` and `''` (empty string).
