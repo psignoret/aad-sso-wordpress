@@ -43,8 +43,13 @@ class AADSSO {
 		$this->settings->redirect_uri = wp_login_url();
 		$this->settings->logout_redirect_uri = wp_login_url();
 
+		// Some debugging locations
+		//add_action( 'admin_notices', array( $this, 'printDebug' ) );
+		//add_action( 'login_footer', array( $this, 'printDebug' ) );
+
 		// If plugin is not configured, we shouldn't proceed.
 		if ( ! $this->plugin_is_configured() ) {
+			add_action( 'all_admin_notices', array( $this, 'print_plugin_not_configured' ) );
 			return;
 		}
 
@@ -53,10 +58,6 @@ class AADSSO {
 
 		// The authenticate filter
 		add_filter( 'authenticate', array( $this, 'authenticate' ), 1, 3 );
-
-		// Some debugging locations
-		//add_action( 'admin_notices', array( $this, 'printDebug' ) );
-		//add_action( 'login_footer', array( $this, 'printDebug' ) );
 
 		// Add the <style> element to the login page
 		add_action( 'login_enqueue_scripts', array( $this, 'printLoginCss' ) );
@@ -359,12 +360,20 @@ class AADSSO {
 
 	/*** View ****/
 
+	function print_plugin_not_configured() {
+		echo '<div id="message" class="error"><p>'
+			. __( 'Azure Active Directory Single Sign-on for WordPress required settings are not defined. Update them under '
+			. 'Settings > Azure AD.', 'aad-sso-wordpress' )
+			.'</p></div>';
+	}
+
 	function printDebug() {
 		if ( isset( $_SESSION['aadsso_debug'] ) ) {
 			echo '<pre>'. print_r( $_SESSION['aadsso_var'], TRUE ) . '</pre>';
 		}
 		echo '<p>DEBUG</p><pre>' . print_r( $_SESSION, TRUE ) . '</pre>';
 		echo '<pre>' . print_r( $_GET, TRUE ) . '</pre>';
+		echo '<pre>' . print_r( $this->settings, true ) . '</pre>';
 	}
 
 	function printLoginCss() {
@@ -405,24 +414,9 @@ if( ! defined('AADSSO_SETTINGS_PATH') ) {
 
 	return;
 }
+$settings = AADSSO_Settings::load_settings_from_json_file( AADSSO_SETTINGS_PATH );
+$aadsso = AADSSO::getInstance($settings);
 
-// if we don't have the facilities to use fopen, stop plugin initiation.
-if( ! ini_get('allow_url_fopen') ) {
-	function aadsso_allow_url_fopen () {
-		echo '<div id="message" class="error"><p>'
-			. __(
-				'Azure Active Directory Single Sign-on for WordPress requires support for <code>allow_url_fopen</code>. '
-					. ' Check with your host or server administrator for assistance enabling <code>allow_url_fopen</code>.',
-				'aad-sso-wordpress'
-			)
-			.'</p></div>';
-	}
-	add_action( 'all_admin_notices', 'aadsso_allow_url_fopen');
-
-	return;
-}
-else
-{
 	if ( ! file_exists( AADSSO_SETTINGS_PATH ) ) {
 		function addsso_settings_missing_notice () {
 			echo '<div id="message" class="error"><p>'
@@ -435,10 +429,7 @@ else
 		}
 		add_action( 'all_admin_notices', 'addsso_settings_missing_notice' );
 	} else {
-		$settings = AADSSO_Settings::loadSettingsFromJSON(AADSSO_SETTINGS_PATH);
-		$aadsso = AADSSO::getInstance($settings);
 	}
-}
 
 // show a warning if Settings.json is in a publicly accessible location.
 if( strpos( AADSSO_SETTINGS_PATH, AADSSO_PLUGIN_DIR ) === 0 ) {

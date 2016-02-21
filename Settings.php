@@ -4,7 +4,7 @@
  * Class containing all settings used by the AADSSO plugin.
  *
  * Installation-specific configuration settings should be kept in a JSON file and loaded with the
- * loadSettingsFromJSON() method rather than hard-coding here.
+ * load_settings() method rather than hard-coding here.
  */
 class AADSSO_Settings {
 
@@ -138,37 +138,76 @@ class AADSSO_Settings {
 	}
 
 	/**
-	* This method loads the settins from a JSON file and uses the contents to overwrite
-	* any properties in the settings class.
+	* Loads the initial settings from a JSON string and loads additional settings from OpenID Connect configuration
+	* endpoint. The contents of the JSON and the OpenID Connect configuration (in that order) overwrite defaults.
 	*
-	* @param string $jsonFile The path to the JSON file.
+	* If the provided JSON is null or an empty string, the class in instantitated with the default values.
 	*
-	* @return self Returns the (only) instance of the class.
+	* @param string $settings_json Valid JSON with settings values.
+	*
+	* @return self The (only) instance of the class.
 	*/
-	public static function loadSettingsFromJSON($jsonFile) {
+	public static function load_settings_from_json( $settings_json ) {
 		$settings = self::getInstance();
 
-		// Import from Settings.json
-		$settings->importSettingsFromJSON($jsonFile);
+		if ( '' != $settings_json ) {
+			
+			// Import initial settings from JSON
+			$settings->set_settings_from_json( $settings_json );
 
-		// Import from openid-configuration
-		$settings->importSettingsFromJSON($settings->openid_configuration_endpoint);
+			// Import additional settings from OpenID Connect configuration endpoint
+			$settings->set_settings_from_json( self::load_file_contents( $settings->openid_configuration_endpoint ) );
+		}
 
 		return $settings;
 	}
 
-	function importSettingsFromJSON($jsonFile) {
-		// Load the JSON settings
-		$jsonSettings = file_get_contents($jsonFile);
-		$tmpSettings = json_decode($jsonSettings, TRUE);
+	/**
+	* loads the initial settings from a JSON file and loads additional settings from OpenID Connect configuration
+	* endpoint. The contents of the JSON file and the OpenID Connect configuration (in that order) overwrite defaults.
+	*
+	* @param string $json_file_path The path to the JSON file.
+	*
+	* @return self The (only) instance of the class.
+	*/
+	public static function load_settings_from_json_file( $json_file_path ) {
+		return self::load_settings_from_json( self::load_file_contents( $json_file_path ) );
+	}
 
-		// Overwrite any properties defined in the JSON
+	/***
+	 * Loads contents of a text file (local or remote).
+	 *
+	 * @param string $file_path The path to the file. May be local or remote.
+	 *
+	 * @return string The contents of the file.
+	 */
+	static function load_file_contents( $file_path ) {
+		if( file_exists( $file_path ) ) {
+			$f = fopen( $file_path, 'r' ) or die( 'Unable to open settings file.' );
+			$file_contents = fread( $f, filesize( $file_path ) );
+			fclose( $f );
+		} else {
+			$response = wp_remote_get( $file_path );
+			$file_contents = wp_remote_retrieve_body( $response );
+		}
+		return $file_contents;
+	}
+
+	/***
+	 * Imports the settings from a JSON string, overwriting any setting value
+	 * defined in the JSON.
+	 *
+	 * @param string $settings_json The valid JSON containing setting values.
+	 *
+	 * @return self Returns the (only) instance of the class.
+	 */
+	function set_settings_from_json( $settings_json ) {
+		$tmpSettings = json_decode( $settings_json, true );
 		foreach ($tmpSettings as $key => $value) {
 			if (property_exists($this, $key)) {
 				$this->{$key} = $value;
 			}
 		}
-
 		return $this;
 	}
 }
