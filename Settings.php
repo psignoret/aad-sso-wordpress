@@ -92,7 +92,7 @@ class AADSSO_Settings {
 	/**
 	 * @var string The OpenID Connect configuration discovery endpoint.
 	 */
-	public $openid_configuration_endpoint = 'https://login.windows.net/common/.well-known/openid-configuration';
+	public $openid_configuration_endpoint = 'https://login.microsoftonline.com/common/.well-known/openid-configuration';
 
 	// These are the common endpoints that always work, but don't have tenant branding.
 	/**
