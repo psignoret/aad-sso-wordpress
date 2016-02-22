@@ -215,7 +215,7 @@ class AADSSO_Settings {
 	function set_settings( $settings ) {
 		
 		// Expecting $settings to be an associative array. Do nothing if it isn't.
-		if ( ! is_array( $settings ) || empty( $setting ) ) {
+		if ( ! is_array( $settings ) || empty( $settings ) ) {
 			return $this;
 		}
 		
