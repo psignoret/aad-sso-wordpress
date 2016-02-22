@@ -9,7 +9,7 @@ Version: 0.6a
 Author URI: http://psignoret.com/
 */
 
-defined( 'ABSPATH' ) or die( "No script kiddies please!" );
+defined( 'ABSPATH' ) or die( 'No script kiddies please!' );
 
 define( 'AADSSO_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'AADSSO_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
@@ -92,9 +92,9 @@ class AADSSO {
 	}
 
 	/**
-	 * Gets the ( only ) instance of the plugin. Initializes an instance if it hasn't yet.
+	 * Gets the (only) instance of the plugin. Initializes an instance if it hasn't yet.
 	 *
-	 * @return \AADSSO The ( only ) instance of the class.
+	 * @return \AADSSO The (only) instance of the class.
 	 */
 	public static function get_instance( $settings ) {
 		if ( ! self::$instance ) {
@@ -178,9 +178,10 @@ class AADSSO {
 	/**
 	 * Authenticates the user with Azure AD and WordPress.
 	 *
-	 * This method, invoked as an 'authenticate' filter, implements the OpenID Connect Authorization Code Flow granting
-	 * to sign the user in to Azure AD ( if they aren't already ), obtain an ID Token to identify the current user, and
-	 * obtain an Access Token to access the Azure AD Graph API.
+	 * This method, invoked as an 'authenticate' filter, implements the OpenID Connect
+	 * Authorization Code Flow grant to sign the user in to Azure AD (if they aren't already),
+	 * obtain an ID Token to identify the current user, and obtain an Access Token to access
+	 * the Azure AD Graph API.
 	 *
 	 * @param WP_User|WP_Error $user A WP_User, if the user has already authenticated.
 	 * @param string $username The username provided during form-based signing. Not used.
@@ -234,9 +235,9 @@ class AADSSO {
 				if ( is_a( $user, 'WP_User' ) ) {
 
 					// At this point, we have an authorization code, an access token and the user
-					// exists in WordPress ( either because it already existed, or we created it
-					// on-the-fly. All that's left is to set the roles based on group membership.
-					if ( $this->settings->enable_aad_group_to_wp_role === true ) {
+					// exists in WordPress (either because it already existed, or we created it
+					// on-the-fly). All that's left is to set the roles based on group membership.
+					if ( true === $this->settings->enable_aad_group_to_wp_role ) {
 						$user = $this->update_wp_user_roles( $user, $jwt->upn, $jwt->tid );
 					}
 				}
@@ -275,14 +276,14 @@ class AADSSO {
 	function get_wp_user_from_aad_user( $jwt ) {
 
 		// Try to find an existing user in WP where the UPN of the current AAD user is
-		// ( depending on config ) the 'login' or 'email' field
+		// (depending on config) the 'login' or 'email' field
 		$user = get_user_by( $this->settings->field_to_match_to_upn, $jwt->upn );
 
-		if ( !is_a( $user, 'WP_User' ) ) {
+		if ( ! is_a( $user, 'WP_User' ) ) {
 
 			// Since the user was authenticated with AAD, but not found in WordPress,
 			// need to decide whether to create a new user in WP on-the-fly, or to stop here.
-			if( $this->settings->enable_auto_provisioning === true ) {
+			if( true === $this->settings->enable_auto_provisioning ) {
 
 				// Setup the minimum required user data
 				// TODO: Is null better than a random password?
@@ -373,7 +374,7 @@ class AADSSO {
 	}
 
 	/**
-	 * Generates the URL for logging out of Azure AD. ( Does not log out of WordPress. )
+	 * Generates the URL for logging out of Azure AD. (Does not log out of WordPress.)
 	 */
 	function get_logout_url() {
 		return $this->settings->end_session_endpoint
@@ -393,7 +394,7 @@ class AADSSO {
 	}
 
 	/**
-	 * Clears the current the session ( e.g. as part of logout ).
+	 * Clears the current the session (e.g. as part of logout).
 	 */
 	function clear_session() {
 		session_destroy();
@@ -405,8 +406,9 @@ class AADSSO {
 	 * Add filters and actions for admin settings.
 	 */
 	public function setup_admin_settings() {
-		if ( is_admin() )
+		if ( is_admin() ) {
 			$azure_active_directory_settings = new AADSSO_Settings_Page();
+		}
 	}
 
 
@@ -426,13 +428,10 @@ class AADSSO {
 	 * Renders some debugging data.
 	 */
 	function print_debug() {
-		if ( isset( $_SESSION['aadsso_debug'] ) ) {
-			echo '<pre>'. print_r( $_SESSION['aadsso_var'], TRUE ) . '</pre>';
-		}
-		echo '<p>session</p><pre>' . var_export( $_SESSION, TRUE ) . '</pre>';
+		echo '<p>SESSION</p><pre>' . var_export( $_SESSION, TRUE ) . '</pre>';
 		echo '<p>GET</pre><pre>' . var_export( $_GET, TRUE ) . '</pre>';
-		echo '<p>DB SETTINGS</p><pre>' .var_export( get_option( 'aadsso_settings' ), true ) . '</pre>';
-		echo '<p>used settings</p><pre>' . var_export( $this->settings, true ) . '</pre>';
+		echo '<p>Database settings</p><pre>' .var_export( get_option( 'aadsso_settings' ), true ) . '</pre>';
+		echo '<p>Plugin settings</p><pre>' . var_export( $this->settings, true ) . '</pre>';
 	}
 
 	/**
