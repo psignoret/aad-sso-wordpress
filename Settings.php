@@ -30,7 +30,7 @@ class AADSSO_Settings {
 	public $redirect_uri = '';
 
 	/**
-	 * @var string The URL to redirect to after signing out ( of AAD, not WP ).
+	 * @var string The URL to redirect to after signing out (of AAD, not WP).
 	 */
 	public $logout_redirect_uri = '';
 
@@ -48,7 +48,7 @@ class AADSSO_Settings {
 
 	/**
 	 * @var string The WordPress field which is matched to the AAD UserPrincipalName.
-	 * When the user is authenticated, their User Principal Name ( UPN ) is used to find
+	 * When the user is authenticated, their User Principal Name (UPN) is used to find
 	 * a corresponding WordPress user. Valid options are 'login', 'email', or 'slug'.
 	 */
 	public $field_to_match_to_upn = '';
@@ -75,7 +75,7 @@ class AADSSO_Settings {
 
 	/**
 	 * @var string[] The AAD group to WordPress role map.
-	 * An associative array user to match up AAD group object ids ( key ) to WordPress roles ( value ).
+	 * An associative array user to match up AAD group object ids (key) to WordPress roles (value).
 	 * Since the user will be given the first role with a matching group, the order of this array
 	 * is important!
 	 */
@@ -142,9 +142,9 @@ class AADSSO_Settings {
 	}
 
 	/**
-	 * Gets the ( only ) instance of the plugin.
+	 * Gets the (only) instance of the plugin.
 	 *
-	 * @return self The ( only ) instance of the class.
+	 * @return self The (only) instance of the class.
 	 */
 	public static function get_instance() {
 		if ( ! self::$instance ) {
@@ -156,7 +156,7 @@ class AADSSO_Settings {
 	/**
 	 * Instantiates the AADSSO_Settings instance using DB and cached Azure configuration.
 	 * 
-	 * @return AADSSO_Settings the ( only ) configured instance of this AADSSSO_Settings object.
+	 * @return AADSSO_Settings the (only) configured instance of this AADSSSO_Settings object.
 	 */
 	public static function init() {
 		$instance = self::get_instance();
@@ -181,7 +181,7 @@ class AADSSO_Settings {
 	}
 
 	/***
-	 * Loads contents of a text file ( local or remote ).
+	 * Loads contents of a text file (local or remote).
 	 *
 	 * @param string $file_path The path to the file. May be local or remote.
 	 *
@@ -200,7 +200,7 @@ class AADSSO_Settings {
 	 * 
 	 * @param array $settings Key-Value information to be used as configuration.
 	 * 
-	 * @return AADSSO_Settings $this The current ( only ) instance with new configuration.
+	 * @return AADSSO_Settings $this The current (only) instance with new configuration.
 	 * 
 	 */
 	function set_settings( $settings ) {
