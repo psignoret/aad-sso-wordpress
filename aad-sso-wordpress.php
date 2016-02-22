@@ -9,7 +9,7 @@ Version: 0.6a
 Author URI: http://psignoret.com/
 */
 
-defined('ABSPATH') or die("No script kiddies please!");
+defined( 'ABSPATH' ) or die( "No script kiddies please!" );
 
 define( 'AADSSO_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'AADSSO_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
@@ -20,10 +20,11 @@ define( 'AADSSO_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 //define( 'WP_PROXY_PORT', '8888' );
 
 require_once AADSSO_PLUGIN_DIR . '/Settings.php';
+require_once AADSSO_PLUGIN_DIR . '/SettingsPage.php';
 require_once AADSSO_PLUGIN_DIR . '/AuthorizationHelper.php';
 require_once AADSSO_PLUGIN_DIR . '/GraphHelper.php';
 
-// TODO: Auto-load the (the exceptions at least)
+// TODO: Auto-load the ( the exceptions at least )
 require_once AADSSO_PLUGIN_DIR . '/lib/php-jwt/Authentication/JWT.php';
 require_once AADSSO_PLUGIN_DIR . '/lib/php-jwt/Exceptions/BeforeValidException.php';
 require_once AADSSO_PLUGIN_DIR . '/lib/php-jwt/Exceptions/ExpiredException.php';
@@ -91,9 +92,9 @@ class AADSSO {
 	}
 
 	/**
-	 * Gets the (only) instance of the plugin. Initializes an instance if it hasn't yet.
+	 * Gets the ( only ) instance of the plugin. Initializes an instance if it hasn't yet.
 	 *
-	 * @return \AADSSO The (only) instance of the class.
+	 * @return \AADSSO The ( only ) instance of the class.
 	 */
 	public static function get_instance( $settings ) {
 		if ( ! self::$instance ) {
@@ -121,7 +122,7 @@ class AADSSO {
 		 */
 		if( $this->wants_to_login() ) {
 
-			// Save the redirect_to query param (if present) to session
+			// Save the redirect_to query param ( if present ) to session
 			if ( isset( $_GET['redirect_to'] ) ) {
 				$_SESSION['redirect_to'] = $_GET['redirect_to'];
 			}
@@ -178,7 +179,7 @@ class AADSSO {
 	 * Authenticates the user with Azure AD and WordPress.
 	 *
 	 * This method, invoked as an 'authenticate' filter, implements the OpenID Connect Authorization Code Flow granting
-	 * to sign the user in to Azure AD (if they aren't already), obtain an ID Token to identify the current user, and
+	 * to sign the user in to Azure AD ( if they aren't already ), obtain an ID Token to identify the current user, and
 	 * obtain an Access Token to access the Azure AD Graph API.
 	 *
 	 * @param WP_User|WP_Error $user A WP_User, if the user has already authenticated.
@@ -233,16 +234,16 @@ class AADSSO {
 				if ( is_a( $user, 'WP_User' ) ) {
 
 					// At this point, we have an authorization code, an access token and the user
-					// exists in WordPress (either because it already existed, or we created it
+					// exists in WordPress ( either because it already existed, or we created it
 					// on-the-fly. All that's left is to set the roles based on group membership.
-					if ( $this->settings->enable_aad_group_to_wp_role ) {
+					if ( $this->settings->enable_aad_group_to_wp_role === true ) {
 						$user = $this->update_wp_user_roles( $user, $jwt->upn, $jwt->tid );
 					}
 				}
 
 			} elseif ( isset( $token->error ) ) {
 
-				// Unable to get an access token (although we did get an authorization code)
+				// Unable to get an access token ( although we did get an authorization code )
 				return new WP_Error(
 					$token->error,
 					sprintf(
@@ -271,17 +272,17 @@ class AADSSO {
 		return $user;
 	}
 
-	function get_wp_user_from_aad_user($jwt) {
+	function get_wp_user_from_aad_user( $jwt ) {
 
 		// Try to find an existing user in WP where the UPN of the current AAD user is
-		// (depending on config) the 'login' or 'email' field
+		// ( depending on config ) the 'login' or 'email' field
 		$user = get_user_by( $this->settings->field_to_match_to_upn, $jwt->upn );
 
 		if ( !is_a( $user, 'WP_User' ) ) {
 
 			// Since the user was authenticated with AAD, but not found in WordPress,
 			// need to decide whether to create a new user in WP on-the-fly, or to stop here.
-			if( $this->settings->enable_auto_provisioning ) {
+			if( $this->settings->enable_auto_provisioning === true ) {
 
 				// Setup the minimum required user data
 				// TODO: Is null better than a random password?
@@ -335,8 +336,8 @@ class AADSSO {
 		// Determine which WordPress role the AAD group corresponds to.
 		// TODO: Check for error in the group membership response
 		$role_to_set = $this->settings->default_wp_role;
-		if ( ! empty($group_memberships->value ) ) {
-			foreach ( $this->settings->aad_group_to_wp_role_map as $aad_group => $wp_role) {
+		if ( ! empty( $group_memberships->value ) ) {
+			foreach ( $this->settings->aad_group_to_wp_role_map as $aad_group => $wp_role ) {
 				if ( in_array( $aad_group, $group_memberships->value ) ) {
 					$role_to_set = $wp_role;
 					break;
@@ -346,7 +347,7 @@ class AADSSO {
 
 		if ( null != $role_to_set || "" != $role_to_set ) {
 			// Set the role on the WordPress user
-			$user->set_role($role_to_set);
+			$user->set_role( $role_to_set );
 		} else {
 			return new WP_Error(
 				'user_not_member_of_required_group',
@@ -372,7 +373,7 @@ class AADSSO {
 	}
 
 	/**
-	 * Generates the URL for logging out of Azure AD. (Does not log out of WordPress.)
+	 * Generates the URL for logging out of Azure AD. ( Does not log out of WordPress. )
 	 */
 	function get_logout_url() {
 		return $this->settings->end_session_endpoint
@@ -392,7 +393,7 @@ class AADSSO {
 	}
 
 	/**
-	 * Clears the current the session (e.g. as part of logout).
+	 * Clears the current the session ( e.g. as part of logout ).
 	 */
 	function clear_session() {
 		session_destroy();
@@ -404,93 +405,10 @@ class AADSSO {
 	 * Add filters and actions for admin settings.
 	 */
 	public function setup_admin_settings() {
-		if( is_admin() ) {
-			add_action( 'admin_menu', array( $this, 'add_menus' ) );
-			add_action( 'admin_init', array( $this, 'register_settings' ) );
-		}
+		if ( is_admin() )
+			$azure_active_directory_settings = new AADSSO_Settings_Page();
 	}
 
-	/**
-	 * Add the 'Azure AD' settings menu item.
-	 */
-	public function add_menus() {
-		add_options_page(
-			'Azure Active Directory Single Sign-on Settings', 'Azure AD',
-			'manage_options', 'aadsso_settings', array( $this, 'render_admin_settings' ) );
-	}
-
-	/**
-	 * Render the 'Azure AD' settings page.
-	 */
-	public function render_admin_settings() {
-		require_once( 'view/settings.php' );
-	}
-
-	/**
-	 * Registers the settings with the Settings API.
-	 */
-	public function register_settings() {
-
-		register_setting( 'aadsso_settings', 'aadsso_settings', array( $this, 'validate_settings' ) );
-
-		// We're calling this "advanced" because later we'll have a friendly form for each field,
-		// but the JSON can always be used to override or configure advanced values.
-		add_settings_section(
-			'aadsso_settings-advanced',
-			'Advanced',
-			array( $this, 'render_settings_section_advanced' ),
-			'aadsso_settings'
-		);
-
-		add_settings_field(
-			'aadsso_settings-json',
-			__( 'Settings JSON' ),
-			array( $this, 'render_settings_json' ),
-			'aadsso_settings',
-			'aadsso_settings-advanced'
-		);
-	}
-
-	/**
-	 * Validates the settings that were submitted.
-	 */
-	public function validate_settings( $input ) {
-		$output = array();
-		$previous_settings = get_option('aadsso_settings', null);
-		if ( null == $previous_settings ) {
-			$previous_settings = array( 'aadsso_settings-json' => '' );
-		}
-
-		// Test for valid JSON
-		$test_json_decode = json_decode( $input['aadsso_settings-json'], true );
-		if ( null == $test_json_decode ) {
-			add_settings_error( 'aadsso_settings', 'aadsso_settings-json-invalid', __( 'The settings are not valid JSON.') );
-			$output['aadsso_settings-json'] = $previous_settings['aadsso_settings-json'];
-		} else {
-			$output['aadsso_settings-json'] = $input['aadsso_settings-json'];
-		}
-
-		return $output;
-	}
-
-	/**
-	 * Renders the text area that holds the JSON settings.
-	 */
-	public function render_settings_json() {
-
-		// Empty or null settings should be rendered as empty string
-		$settings_json = '';
-		$options = get_option( 'aadsso_settings', null );
-		if ( null != $options && '' != $options['aadsso_settings-json'] ) {
-			$settings_json = json_encode_pretty( json_decode( $options['aadsso_settings-json'] ) );
-		}
-
-		echo '<textarea name="aadsso_settings[aadsso_settings-json]" id="aadsso_settings-json" '
-					. 'cols="80" rows="17" style="font-family: monospace, fixed-width;">'
-					. $settings_json . '</textarea>';
-	}
-
-	public function render_settings_section_advanced() { }
 
 	/*** View ***/
 
@@ -511,9 +429,10 @@ class AADSSO {
 		if ( isset( $_SESSION['aadsso_debug'] ) ) {
 			echo '<pre>'. print_r( $_SESSION['aadsso_var'], TRUE ) . '</pre>';
 		}
-		echo '<p>DEBUG</p><pre>' . print_r( $_SESSION, TRUE ) . '</pre>';
-		echo '<pre>' . print_r( $_GET, TRUE ) . '</pre>';
-		echo '<pre>' . print_r( $this->settings, true ) . '</pre>';
+		echo '<p>session</p><pre>' . var_export( $_SESSION, TRUE ) . '</pre>';
+		echo '<p>GET</pre><pre>' . var_export( $_GET, TRUE ) . '</pre>';
+		echo '<p>DB SETTINGS</p><pre>' .var_export( get_option( 'aadsso_settings' ), true ) . '</pre>';
+		echo '<p>used settings</p><pre>' . var_export( $this->settings, true ) . '</pre>';
 	}
 
 	/**
@@ -543,21 +462,20 @@ EOF;
 }
 
 // Load settings JSON contents from DB and initialize the plugin
-$aadsso_settings = get_option('aadsso_settings');
-$settings = AADSSO_Settings::load_settings_from_json( $aadsso_settings['aadsso_settings-json'] );
-$aadsso = AADSSO::get_instance($settings);
+$aadsso_settings_instance = AADSSO_Settings::init();
+$aadsso = AADSSO::get_instance( $aadsso_settings_instance );
 
 
 /*** Utility functions ***/
 
 if ( ! function_exists( 'com_create_guid' ) ) {
 	/**
-	 * Generates a globally unique identifier (Guid).
+	 * Generates a globally unique identifier ( Guid ).
 	 *
 	 * @return string A new random globally unique identifier.
 	 */
 	function com_create_guid() {
-		mt_srand( (double)microtime() * 10000 );
+		mt_srand( ( double )microtime() * 10000 );
 		$charid = strtoupper( md5( uniqid( rand(), true ) ) );
 		$hyphen = chr( 45 ); // "-"
 		$uuid = chr( 123 ) // "{"
@@ -568,47 +486,5 @@ if ( ! function_exists( 'com_create_guid' ) ) {
 			.substr( $charid, 20, 12 )
 			.chr( 125 ); // "}"
 		return $uuid;
-	}
-}
-
-/***
- * Returns a pretty-printed JSON representation of the input object.
- *
- * If PHP >= 5.4.0, this uses the JSON_PRETTY_PRINT option of PHP's json_encode method.
- *
- * @param mixed $object The object to encode into JSON.
- *
- * return string The pretty-printed JSON representation.
- */
-function json_encode_pretty( $object ) {
-	if ( version_compare( PHP_VERSION, '5.4.0', '<' ) ) {
-
-		// Credits: http://www.daveperrett.com/articles/2008/03/11/format-json-with-php/
-		$json = json_encode( $object );
-		$result = ''; $pos = 0; $strLen = strlen( $json );
-		$indentStr = '  '; $newLine = "\n";
-		$prevChar = ''; $outOfQuotes = true;
-		for ( $i = 0; $i <= $strLen; $i++ ) {
-			$char = substr( $json, $i, 1 );
-			if ( '"' == $char && '\\' != $prevChar ) {
-				$outOfQuotes = !$outOfQuotes;
-			} else if ( ( '}' == $char || ']' == $char) && $outOfQuotes ) {
-				$result .= $newLine;
-				$pos --;
-				for ( $j = 0; $j < $pos; $j++ ) { $result .= $indentStr; }
-			}
-			$result .= $char;
-			if ( ( ',' == $char || '{' == $char || '[' == $char ) && $outOfQuotes ) {
-				$result .= $newLine;
-				if ( '{' == $char || '[' == $char ) { $pos ++; }
-				for ( $j = 0; $j < $pos; $j++) { $result .= $indentStr; }
-			} elseif ( ':' == $char && $outOfQuotes) {
-				$result .= ' ';
-			}
-			$prevChar = $char;
-		}
-		return $result;
-	} else {
-		return json_encode( $object, JSON_PRETTY_PRINT );
 	}
 }
