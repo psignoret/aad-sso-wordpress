@@ -36,7 +36,7 @@ class AADSSO_Settings_Page {
 	}
 	
 	
-	public function reset_successful( )
+	public function aadsso_reset_successful( )
 	{
 		echo '<div id="message" class="notice notice-warning"><p>'
 			. __( 'Azure Active Directory Single Sign-on for WordPress Settings have been reset to default.', 'aad-sso-wordpress' )
@@ -66,7 +66,7 @@ class AADSSO_Settings_Page {
 
 			<form method="post" action="options.php">
 				<?php
-					settings_fields( 'settings_group' );
+					settings_fields( 'aadsso_settings_group' );
 					do_settings_sections( 'aadsso_admin_page' );
 					submit_button( );
 				?>
