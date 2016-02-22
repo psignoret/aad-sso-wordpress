@@ -259,7 +259,7 @@ class AADSSO_Settings_Page {
 		if ( isset( $input['role_map'] ) ) {
 			foreach( $input['role_map'] as $role_slug => $azure_guid )
 			{
-				if( trim( azure_guid ) === "" )
+				if( "" === trim( $azure_guid ) )
 					unset( $input['role_map'][$role_slug] );
 			}
 			$sanitary_values['role_map'] = $input['role_map'];
