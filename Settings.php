@@ -20,7 +20,6 @@ class AADSSO_Settings {
 
 	/**
 	 * @var string The client secret key, which is generated on the app configuration page in AAD.
-	 * Required if $clientType is 'public'.
 	 */
 	public $client_secret = '';
 
@@ -30,7 +29,7 @@ class AADSSO_Settings {
 	public $redirect_uri = '';
 
 	/**
-	 * @var string The URL to redirect to after signing out (of AAD, not WP).
+	 * @var string The URL to redirect to after signing out (of Azure AD, not WordPress).
 	 */
 	public $logout_redirect_uri = '';
 
@@ -40,31 +39,35 @@ class AADSSO_Settings {
 	public $org_display_name = '';
 
 	/**
-	 * @var string Provides a hint about the tenant or domain that the user should use to sign in.
 	 * The value of the domain_hint is a registered domain for the tenant. If the tenant is federated
 	 * to an on-premises directory, AAD redirects to the specified tenant federation server.
+	 *
+	 * @var string Provides a hint about the tenant or domain that the user should use to sign in.
 	 */
 	public $org_domain_hint = '';
 
 	/**
+	 * Indicates which field is matched against the authenticated user's User Principal Name (UPN)
+	* to find a corresponding WordPress user. Valid options are 'login', 'email', or 'slug'.
+	 *
 	 * @var string The WordPress field which is matched to the AAD UserPrincipalName.
-	 * When the user is authenticated, their User Principal Name (UPN) is used to find
-	 * a corresponding WordPress user. Valid options are 'login', 'email', or 'slug'.
 	 */
 	public $field_to_match_to_upn = '';
 
 	/**
+	* Indicates whether or not a WordPress user should be auto-provisioned if a user is able to
+	* authenticate with Azure AD, but was not matched to a current WordPress user.
+	*
 	* @var boolean Whether or not to auto-provision a new user.
-	* If a user is able to authenticate with AAD, but not a current WordPress user, this determines
-	* wether or not a WordPress user will be provisioned on-the-fly.
 	*/
 	public $enable_auto_provisioning = false;
 
 
 	/**
+	* Indicates if unauthenticated users are automatically redirecteded to AAD for login, instead of
+	* being shown the WordPress login form. Can be overridden with 'aad_auto_forward_login' filter.
+	*
 	* @var boolean Whether or not to auto-redirect to AAD for sign-in
-	* If set to true, users will be automatically redirected to AAD for login, instead of being
-	* shown the WordPress login form. This can be overridden by the 'aad_auto_forward_login' filter.
 	*/
 	public $enable_auto_forward_to_aad = false;
 
@@ -74,18 +77,22 @@ class AADSSO_Settings {
 	public $enable_aad_group_to_wp_role = false;
 
 	/**
-	 * @var string[] The AAD group to WordPress role map.
-	 * An associative array user to match up AAD group object ids (key) to WordPress roles (value).
+	 * An associative array used to match up AAD group object ids (key) to WordPress roles (value).
+	 *
 	 * Since the user will be given the first role with a matching group, the order of this array
 	 * is important!
+	 *
+	 * @var string[] The AAD group to WordPress role map.
 	 */
-	// TODO: A user-friendly method of specifying the groups.
 	public $aad_group_to_wp_role_map = array();
 
 	/**
-	 * @var string The default WordPress role to assign a user when not a member of defined AAD groups.
-	 * This is only used if $enable_aad_group_to_wp_role is TRUE. null or empty means that access will be
-	 * denied to users who are not members of the groups defined in $aad_group_to_wp_role_map.
+	 * The default WordPress role to assign to a user when not a member of defined AAD groups.
+	 *
+	 * This used only if $enable_aad_group_to_wp_role is true. Empty or null means that access will
+	 * be denied to users who are not members of the groups defined in $aad_group_to_wp_role_map.
+	 *
+	 * @var string The default WordPress role to assign a user if not in any Azure AD group.
 	 */
 	public $default_wp_role = null;
 
@@ -94,7 +101,6 @@ class AADSSO_Settings {
 	 */
 	public $openid_configuration_endpoint = 'https://login.microsoftonline.com/common/.well-known/openid-configuration';
 
-	// These are the common endpoints that always work, but don't have tenant branding.
 	/**
 	 * @var string The OAuth 2.0 authorization endpoint.
 	 */
@@ -124,20 +130,20 @@ class AADSSO_Settings {
 	 * @var string The version of the AAD Graph API to use.
 	 */
 	public $graph_version = '2013-11-08';
-	
+
 	/**
 	 * Returns a sensible set of defaults for the plugin.
-	 * 
+	 *
 	 * @return array Sensible default settings for the plugin.
 	 */
 	public static function get_defaults() {
 		return array(
 			'org_display_name' => get_bloginfo( 'name' ),
 			'field_to_match_to_upn' => 'email',
-			'default_wp_role' => 'subscriber',
+			'default_wp_role' => null,
 			'enable_auto_provisioning' => false,
 			'enable_auto_forward_to_aad' => false,
-			'enable_aad_group_to_wp_role' => false
+			'enable_aad_group_to_wp_role' => false,
 		);
 	}
 
@@ -152,35 +158,39 @@ class AADSSO_Settings {
 		}
 		return self::$instance;
 	}
-	
+
 	/**
-	 * Instantiates the AADSSO_Settings instance using DB and cached Azure configuration.
-	 * 
-	 * @return AADSSO_Settings the (only) configured instance of this AADSSSO_Settings object.
+	 * Initializes values for using stored settings and cached Azure AD configuration.
+	 *
+	 * @return \AADSSO_Settings The (only) configured instance of this class.
 	 */
 	public static function init() {
+
 		$instance = self::get_instance();
 		
+		// First, set the settings stored in the WordPress database.
 		$instance->set_settings( get_option( 'aadsso_settings' ) );
-			
+
 		/*
-			Storing to transient prevents this from using an HTTP request on every WP page load.
-			Default transient expiration is one hour ( 3600 seconds ).
-			DO NOT REMOVE THE CAST TO ARRAY
-		*/
-		$openid_configuration = ( array ) get_transient( 'aadsso_openid_configuration_endpoint' );
-		if( false === $openid_configuration ) {
-			$openid_configuration = json_decode( self::get_remote_contents( $instance->openid_configuration_endpoint ), true );
-			set_transient( 'aadsso_openid_configuration_endpoint', $openid_configuration, 3600 );
+		 * Then, add the settings stored in the OpenID Connect configuration endpoint.
+		 * We're using transient as a cache, to prevent from making a request on every WP page load.
+		 * Default transient expiration is one hour (3600 seconds), but in case a forced load is 
+		 * required, adding aadsso_reload_openid_configuration=1 in the URL will do the trick.  
+		 */
+		$openid_configuration = get_transient( 'aadsso_openid_configuration' );
+		if( false === $openid_configuration || isset( $_GET['aadsso_reload_openid_config'] ) ) {
+			$openid_configuration = json_decode(
+				self::get_remote_contents( $instance->openid_configuration_endpoint ),
+				true // Return associative array
+			);
+			set_transient( 'aadsso_openid_configuration', $openid_configuration, 3600 );
 		}
-		
 		$instance->set_settings( $openid_configuration );
 
 		return $instance;
-		
 	}
 
-	/***
+	/**
 	 * Loads contents of a text file (local or remote).
 	 *
 	 * @param string $file_path The path to the file. May be local or remote.
@@ -188,38 +198,42 @@ class AADSSO_Settings {
 	 * @return string The contents of the file.
 	 */
 	public static function get_remote_contents( $file_path ) {
-		
+
 		$response = wp_remote_get( $file_path );
 		$file_contents = wp_remote_retrieve_body( $response );
-			
+
 		return $file_contents;
 	}
-	
+
 	/**
-	 * Sets settings inside the current instance.
-	 * 
-	 * @param array $settings Key-Value information to be used as configuration.
-	 * 
-	 * @return AADSSO_Settings $this The current (only) instance with new configuration.
-	 * 
+	 * Sets provided settings inside the current instance.
+	 *
+	 * @param array $settings An associative array of settings to be added to current configuration.
+	 *
+	 * @return \AADSSO_Settings The current (only) instance with new configuration.
 	 */
 	function set_settings( $settings ) {
-		/*
-			This should ideally be stored as role => azure guid
-			Flipping this array at the last possible moment is ideal, because it keeps
-			the UI as flexible as possible.
-		*/
-		if( !empty( $settings['role_map'] ) ) {
-			$settings['aad_group_to_wp_role_map'] = array_flip( $settings['role_map'] );
+		
+		// Expecting $settings to be an associative array. Do nothing if it isn't.
+		if ( ! is_array( $settings ) || empty( $setting ) ) {
+			return $this;
 		}
 		
-		foreach ( ( array ) $settings as $key => $value ) {
-			
+		/*
+		 * This should ideally be stored as role => group object ID.
+		 * Flipping this array at the last possible moment is ideal, because it keeps
+		 * the UI as flexible as possible.
+		 */
+		if( ! empty( $settings['role_map'] ) ) {
+			$settings['aad_group_to_wp_role_map'] = array_flip( $settings['role_map'] );
+		}
+
+		// Overwrite any provided setting values.
+		foreach ( $settings as $key => $value ) {
 			if ( property_exists( $this, $key ) ) {
 				$this->{$key} = $value;
 			}
 		}
 		return $this;
 	}
-	
 }
