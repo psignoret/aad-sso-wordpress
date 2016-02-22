@@ -20,6 +20,7 @@ define( 'AADSSO_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 //define( 'WP_PROXY_PORT', '8888' );
 
 require_once AADSSO_PLUGIN_DIR . '/Settings.php';
+require_once AADSSO_PLUGIN_DIR . '/SettingsPage.php';
 require_once AADSSO_PLUGIN_DIR . '/AuthorizationHelper.php';
 require_once AADSSO_PLUGIN_DIR . '/GraphHelper.php';
 
@@ -111,7 +112,7 @@ class AADSSO {
 
 		$bypass = apply_filters(
 			'aad_auto_forward_login',
-			$this->settings->enable_auto_forward_to_aad
+			$this->settings->enable_auto_forward_to_aad === true
 		);
 
 		/*
@@ -235,7 +236,7 @@ class AADSSO {
 					// At this point, we have an authorization code, an access token and the user
 					// exists in WordPress (either because it already existed, or we created it
 					// on-the-fly. All that's left is to set the roles based on group membership.
-					if ( $this->settings->enable_aad_group_to_wp_role ) {
+					if ( $this->settings->enable_aad_group_to_wp_role === true ) {
 						$user = $this->update_wp_user_roles( $user, $jwt->upn, $jwt->tid );
 					}
 				}
@@ -281,7 +282,7 @@ class AADSSO {
 
 			// Since the user was authenticated with AAD, but not found in WordPress,
 			// need to decide whether to create a new user in WP on-the-fly, or to stop here.
-			if( $this->settings->enable_auto_provisioning ) {
+			if( $this->settings->enable_auto_provisioning === true ) {
 
 				// Setup the minimum required user data
 				// TODO: Is null better than a random password?
@@ -404,93 +405,10 @@ class AADSSO {
 	 * Add filters and actions for admin settings.
 	 */
 	public function setup_admin_settings() {
-		if( is_admin() ) {
-			add_action( 'admin_menu', array( $this, 'add_menus' ) );
-			add_action( 'admin_init', array( $this, 'register_settings' ) );
-		}
+		if ( is_admin() )
+			$azure_active_directory_settings = new AADSSO_Settings_Page();
 	}
 
-	/**
-	 * Add the 'Azure AD' settings menu item.
-	 */
-	public function add_menus() {
-		add_options_page(
-			'Azure Active Directory Single Sign-on Settings', 'Azure AD',
-			'manage_options', 'aadsso_settings', array( $this, 'render_admin_settings' ) );
-	}
-
-	/**
-	 * Render the 'Azure AD' settings page.
-	 */
-	public function render_admin_settings() {
-		require_once( 'view/settings.php' );
-	}
-
-	/**
-	 * Registers the settings with the Settings API.
-	 */
-	public function register_settings() {
-
-		register_setting( 'aadsso_settings', 'aadsso_settings', array( $this, 'validate_settings' ) );
-
-		// We're calling this "advanced" because later we'll have a friendly form for each field,
-		// but the JSON can always be used to override or configure advanced values.
-		add_settings_section(
-			'aadsso_settings-advanced',
-			'Advanced',
-			array( $this, 'render_settings_section_advanced' ),
-			'aadsso_settings'
-		);
-
-		add_settings_field(
-			'aadsso_settings-json',
-			__( 'Settings JSON' ),
-			array( $this, 'render_settings_json' ),
-			'aadsso_settings',
-			'aadsso_settings-advanced'
-		);
-	}
-
-	/**
-	 * Validates the settings that were submitted.
-	 */
-	public function validate_settings( $input ) {
-		$output = array();
-		$previous_settings = get_option('aadsso_settings', null);
-		if ( null == $previous_settings ) {
-			$previous_settings = array( 'aadsso_settings-json' => '' );
-		}
-
-		// Test for valid JSON
-		$test_json_decode = json_decode( $input['aadsso_settings-json'], true );
-		if ( null == $test_json_decode ) {
-			add_settings_error( 'aadsso_settings', 'aadsso_settings-json-invalid', __( 'The settings are not valid JSON.') );
-			$output['aadsso_settings-json'] = $previous_settings['aadsso_settings-json'];
-		} else {
-			$output['aadsso_settings-json'] = $input['aadsso_settings-json'];
-		}
-
-		return $output;
-	}
-
-	/**
-	 * Renders the text area that holds the JSON settings.
-	 */
-	public function render_settings_json() {
-
-		// Empty or null settings should be rendered as empty string
-		$settings_json = '';
-		$options = get_option( 'aadsso_settings', null );
-		if ( null != $options && '' != $options['aadsso_settings-json'] ) {
-			$settings_json = json_encode_pretty( json_decode( $options['aadsso_settings-json'] ) );
-		}
-
-		echo '<textarea name="aadsso_settings[aadsso_settings-json]" id="aadsso_settings-json" '
-					. 'cols="80" rows="17" style="font-family: monospace, fixed-width;">'
-					. $settings_json . '</textarea>';
-	}
-
-	public function render_settings_section_advanced() { }
 
 	/*** View ***/
 
@@ -511,9 +429,10 @@ class AADSSO {
 		if ( isset( $_SESSION['aadsso_debug'] ) ) {
 			echo '<pre>'. print_r( $_SESSION['aadsso_var'], TRUE ) . '</pre>';
 		}
-		echo '<p>DEBUG</p><pre>' . print_r( $_SESSION, TRUE ) . '</pre>';
-		echo '<pre>' . print_r( $_GET, TRUE ) . '</pre>';
-		echo '<pre>' . print_r( $this->settings, true ) . '</pre>';
+		echo '<p>session</p><pre>' . var_export( $_SESSION, TRUE ) . '</pre>';
+		echo '<p>GET</pre><pre>' . var_export( $_GET, TRUE ) . '</pre>';
+		echo '<p>DB SETTINGS</p><pre>' .var_export(get_option('aadsso_settings'), true ) . '</pre>';
+		echo '<p>used settings</p><pre>' . var_export( $this->settings, true ) . '</pre>';
 	}
 
 	/**
@@ -543,9 +462,8 @@ EOF;
 }
 
 // Load settings JSON contents from DB and initialize the plugin
-$aadsso_settings = get_option('aadsso_settings');
-$settings = AADSSO_Settings::load_settings_from_json( $aadsso_settings['aadsso_settings-json'] );
-$aadsso = AADSSO::get_instance($settings);
+$settings_instance = AADSSO_Settings::init();
+$aadsso = AADSSO::get_instance($settings_instance);
 
 
 /*** Utility functions ***/
@@ -568,47 +486,5 @@ if ( ! function_exists( 'com_create_guid' ) ) {
 			.substr( $charid, 20, 12 )
 			.chr( 125 ); // "}"
 		return $uuid;
-	}
-}
-
-/***
- * Returns a pretty-printed JSON representation of the input object.
- *
- * If PHP >= 5.4.0, this uses the JSON_PRETTY_PRINT option of PHP's json_encode method.
- *
- * @param mixed $object The object to encode into JSON.
- *
- * return string The pretty-printed JSON representation.
- */
-function json_encode_pretty( $object ) {
-	if ( version_compare( PHP_VERSION, '5.4.0', '<' ) ) {
-
-		// Credits: http://www.daveperrett.com/articles/2008/03/11/format-json-with-php/
-		$json = json_encode( $object );
-		$result = ''; $pos = 0; $strLen = strlen( $json );
-		$indentStr = '  '; $newLine = "\n";
-		$prevChar = ''; $outOfQuotes = true;
-		for ( $i = 0; $i <= $strLen; $i++ ) {
-			$char = substr( $json, $i, 1 );
-			if ( '"' == $char && '\\' != $prevChar ) {
-				$outOfQuotes = !$outOfQuotes;
-			} else if ( ( '}' == $char || ']' == $char) && $outOfQuotes ) {
-				$result .= $newLine;
-				$pos --;
-				for ( $j = 0; $j < $pos; $j++ ) { $result .= $indentStr; }
-			}
-			$result .= $char;
-			if ( ( ',' == $char || '{' == $char || '[' == $char ) && $outOfQuotes ) {
-				$result .= $newLine;
-				if ( '{' == $char || '[' == $char ) { $pos ++; }
-				for ( $j = 0; $j < $pos; $j++) { $result .= $indentStr; }
-			} elseif ( ':' == $char && $outOfQuotes) {
-				$result .= ' ';
-			}
-			$prevChar = $char;
-		}
-		return $result;
-	} else {
-		return json_encode( $object, JSON_PRETTY_PRINT );
 	}
 }

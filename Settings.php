@@ -124,6 +124,22 @@ class AADSSO_Settings {
 	 * @var string The version of the AAD Graph API to use.
 	 */
 	public $graph_version = '2013-11-08';
+	
+	/**
+	 * Returns a sensible set of defaults for the plugin.
+	 * 
+	 * @return array Sensible default settings for the plugin.
+	 */
+	public static function get_defaults() {
+		return array(
+			'org_display_name' => get_bloginfo('name'),
+			'field_to_match_to_upn' => 'email',
+			'default_wp_role' => 'subscriber',
+			'enable_auto_provisioning' => false,
+			'enable_auto_forward_to_aad' => false,
+			'enable_aad_group_to_wp_role' => false
+		);
+	}
 
 	/**
 	 * Gets the (only) instance of the plugin.
@@ -136,42 +152,32 @@ class AADSSO_Settings {
 		}
 		return self::$instance;
 	}
-
+	
 	/**
-	* Loads the initial settings from a JSON string and loads additional settings from OpenID Connect configuration
-	* endpoint. The contents of the JSON and the OpenID Connect configuration (in that order) overwrite defaults.
-	*
-	* If the provided JSON is null or an empty string, the class in instantitated with the default values.
-	*
-	* @param string $settings_json Valid JSON with settings values.
-	*
-	* @return self The (only) instance of the class.
-	*/
-	public static function load_settings_from_json( $settings_json ) {
-		$settings = self::get_instance();
-
-		if ( '' != $settings_json ) {
+	 * Instantiates the AADSSO_Settings instance using DB and cached Azure configuration.
+	 * 
+	 * @return AADSSO_Settings the (only) configured instance of this AADSSSO_Settings object.
+	 */
+	public static function init() {
+		$instance = self::get_instance();
+		
+		$instance->set_settings( get_option('aadsso_settings') );
 			
-			// Import initial settings from JSON
-			$settings->set_settings_from_json( $settings_json );
-
-			// Import additional settings from OpenID Connect configuration endpoint
-			$settings->set_settings_from_json( self::load_file_contents( $settings->openid_configuration_endpoint ) );
+		/*
+			Storing to transient prevents this from using an HTTP request on every WP page load.
+			Default transient expiration is one hour (3600 seconds).
+			DO NOT REMOVE THE CAST TO ARRAY
+		*/
+		$azure_settings = (array) get_transient('aadsso_openid_configuration_endpoint');
+		if($azure_settings === false) {
+			$azure_settings = json_decode( self::get_remote_contents($instance->openid_configuration_endpoint), true );
+			set_transient('aadsso_openid_configuration_endpoint', $azure_settings, 3600);
 		}
+		
+		$instance->set_settings( $azure_settings );
 
-		return $settings;
-	}
-
-	/**
-	* loads the initial settings from a JSON file and loads additional settings from OpenID Connect configuration
-	* endpoint. The contents of the JSON file and the OpenID Connect configuration (in that order) overwrite defaults.
-	*
-	* @param string $json_file_path The path to the JSON file.
-	*
-	* @return self The (only) instance of the class.
-	*/
-	public static function load_settings_from_json_file( $json_file_path ) {
-		return self::load_settings_from_json( self::load_file_contents( $json_file_path ) );
+		return $instance;
+		
 	}
 
 	/***
@@ -181,33 +187,40 @@ class AADSSO_Settings {
 	 *
 	 * @return string The contents of the file.
 	 */
-	static function load_file_contents( $file_path ) {
-		if( file_exists( $file_path ) ) {
-			$f = fopen( $file_path, 'r' ) or die( 'Unable to open settings file.' );
-			$file_contents = fread( $f, filesize( $file_path ) );
-			fclose( $f );
-		} else {
-			$response = wp_remote_get( $file_path );
-			$file_contents = wp_remote_retrieve_body( $response );
-		}
+	public static function get_remote_contents( $file_path ) {
+		
+		$response = wp_remote_get( $file_path );
+		$file_contents = wp_remote_retrieve_body( $response );
+			
 		return $file_contents;
 	}
-
-	/***
-	 * Imports the settings from a JSON string, overwriting any setting value
-	 * defined in the JSON.
-	 *
-	 * @param string $settings_json The valid JSON containing setting values.
-	 *
-	 * @return self Returns the (only) instance of the class.
+	
+	/**
+	 * Sets settings inside the current instance.
+	 * 
+	 * @param array $settings Key-Value information to be used as configuration.
+	 * 
+	 * @return AADSSO_Settings $this The current (only) instance with new configuration.
+	 * 
 	 */
-	function set_settings_from_json( $settings_json ) {
-		$tmpSettings = json_decode( $settings_json, true );
-		foreach ($tmpSettings as $key => $value) {
+	function set_settings( $settings ) {
+		/*
+			This should ideally be stored as role => azure guid
+			Flipping this array at the last possible moment is ideal, because it keeps
+			the UI as flexible as possible.
+		*/
+		if( !empty($settings['role_map']) ) {
+			$settings['aad_group_to_wp_role_map'] = array_flip($settings['role_map']);
+		}
+		
+		foreach ( (array) $settings as 
+		$key => $value) {
+			
 			if (property_exists($this, $key)) {
 				$this->{$key} = $value;
 			}
 		}
 		return $this;
 	}
+	
 }
