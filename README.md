@@ -43,27 +43,13 @@ For these steps, you must have an Azure subscription with access to the Azure Ac
 
 ### 3. Configure the plugin
 
-Once the plugin is activated, update you settings from the WordPress admin console under **Settings** > **Azure AD**.
+Once the plugin is activated, update your settings from the WordPress admin console under **Settings** > **Azure AD**.
 
 The settings for AADSSO are currently represented as a JSON blob. The minimal fields required are:
 
-- `org_display_name` The display name of the organization, used only in the link in the login page.
-- `client_id` The application's client ID (from the application configuration page)
-- `client_secret` The client secret key (from the application configuration page)
-- `field_to_match_to_upn` The WordPress field which will be used to match a UserPrincipalName (from AAD) to a WordPress user. Valid options are 'login', 'email' or 'slug'.
-
-To see the full list of options, please refer to [Settings.php](Settings.php).
-
-Here is a minimal sample configuration, which you can update with your application's values:
-
-    {
-      "org_display_name": "Contoso",
-      
-      "client_id":     "9054eff5-bfef-4cc5-82fd-8c35534e48f9",
-      "client_secret": "NTY5MmE5YjMwMGY2MWQ0NjU5MzYxNjdjNzE1OGNiZmY=",
-      
-      "field_to_match_to_upn": "email"
-    }
+- `Display Name` The display name of the organization, used only in the link in the login page.
+- `Azure Client ID` The application's client ID (from the application configuration page)
+- `Azure Client Secret` The client secret key (from the application configuration page) 
 
 ### 4. (Optional) Set WordPress roles based on Azure AD group membership
 
