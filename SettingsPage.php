@@ -152,7 +152,7 @@ class AADSSO_Settings_Page {
 		add_settings_field(
 			'enable_auto_provisioning', // id
 			'Enable Auto Provisioning?', // title
-			array( $this, 'aadsso_enable_auto_provisioning_callback' ), // callback
+			array( $this, 'enable_auto_provisioning_callback' ), // callback
 			'aadsso_admin_page', // page
 			'aadsso_settings_section' // section
 		);
