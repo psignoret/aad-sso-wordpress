@@ -132,7 +132,7 @@ class AADSSO_Settings {
 	 */
 	public static function get_defaults() {
 		return array(
-			'org_display_name' => get_bloginfo('name'),
+			'org_display_name' => get_bloginfo( 'name' ),
 			'field_to_match_to_upn' => 'email',
 			'default_wp_role' => 'subscriber',
 			'enable_auto_provisioning' => false,
@@ -168,13 +168,13 @@ class AADSSO_Settings {
 			Default transient expiration is one hour (3600 seconds).
 			DO NOT REMOVE THE CAST TO ARRAY
 		*/
-		$azure_settings = (array) get_transient('aadsso_openid_configuration_endpoint');
-		if($azure_settings === false) {
-			$azure_settings = json_decode( self::get_remote_contents($instance->openid_configuration_endpoint), true );
-			set_transient('aadsso_openid_configuration_endpoint', $azure_settings, 3600);
+		$openid_configuration = (array) get_transient('aadsso_openid_configuration_endpoint');
+		if(false === $openid_configuration) {
+			$openid_configuration = json_decode( self::get_remote_contents( $instance->openid_configuration_endpoint ), true );
+			set_transient('aadsso_openid_configuration_endpoint', $openid_configuration, 3600);
 		}
 		
-		$instance->set_settings( $azure_settings );
+		$instance->set_settings( $openid_configuration );
 
 		return $instance;
 		

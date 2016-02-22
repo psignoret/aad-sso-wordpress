@@ -112,7 +112,7 @@ class AADSSO {
 
 		$bypass = apply_filters(
 			'aad_auto_forward_login',
-			$this->settings->enable_auto_forward_to_aad === true
+			$this->settings->enable_auto_forward_to_aad
 		);
 
 		/*
@@ -462,8 +462,8 @@ EOF;
 }
 
 // Load settings JSON contents from DB and initialize the plugin
-$settings_instance = AADSSO_Settings::init();
-$aadsso = AADSSO::get_instance($settings_instance);
+$aadsso_settings_instance = AADSSO_Settings::init();
+$aadsso = AADSSO::get_instance($aadsso_settings_instance);
 
 
 /*** Utility functions ***/

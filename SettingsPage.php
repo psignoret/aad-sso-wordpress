@@ -9,9 +9,9 @@ class AADSSO_Settings_Page {
 	private $aadsso_settings;
 
 	public function __construct() {
-		add_action( 'admin_menu', array( $this, 'aadsso_add_options_page' ) );
-		add_action( 'admin_init', array( $this, 'aadsso_register_settings' ) );
-		add_action( 'admin_init', array( $this, 'aadsso_reset_settings' ) );
+		add_action( 'admin_menu', array( $this, 'add_options_page' ) );
+		add_action( 'admin_init', array( $this, 'register_settings' ) );
+		add_action( 'admin_init', array( $this, 'reset_settings' ) );
 		
 		if( isset($_GET['aadsso_reset']) && $_GET['aadsso_reset'] == 'success' )
     		add_action( 'all_admin_notices', array( $this, 'aadsso_reset_successful' ) );
@@ -27,7 +27,7 @@ class AADSSO_Settings_Page {
 	/**
 	 * Runs on `admin_init`.  Will clear settings if $_GET['aadsso_nonce'] is set and if the nonce is valid.
 	 */
-	public function aadsso_reset_settings()
+	public function reset_settings()
 	{
 		if ( isset($_GET['aadsso_nonce']) && wp_verify_nonce($_GET['aadsso_nonce'], 'aadsso_reset_settings') ) {
     		delete_option('aadsso_settings');
@@ -36,15 +36,14 @@ class AADSSO_Settings_Page {
 	}
 	
 	
-	public function aadsso_reset_successful()
+	public function reset_successful()
 	{
 		echo '<div id="message" class="notice notice-warning"><p>'
-			. __( 'Azure Active Directory Single Sign-on for WordPress Settings have been reset to default.'
-			. 'Visit Settings > Azure AD to reconfigure.', 'aad-sso-wordpress' )
+			. __( 'Azure Active Directory Single Sign-on for WordPress Settings have been reset to default.', 'aad-sso-wordpress' )
 			.'</p></div>';
 	}
 
-	public function aadsso_add_options_page() {
+	public function add_options_page() {
 		
     	
 		add_options_page(
@@ -52,11 +51,11 @@ class AADSSO_Settings_Page {
 			'Azure AD', // menu_title
 			'manage_options', // capability
 			'aadsso_settings', // menu_slug
-			array( $this, 'aadsso_render_admin_page' ) // function
+			array( $this, 'render_admin_page' ) // function
 		);
 	}
 
-	public function aadsso_render_admin_page() {
+	public function render_admin_page() {
 	
 	?>
 
@@ -67,7 +66,7 @@ class AADSSO_Settings_Page {
 
 			<form method="post" action="options.php">
 				<?php
-					settings_fields( 'aadsso_settings_group' );
+					settings_fields( 'settings_group' );
 					do_settings_sections( 'aadsso_admin_page' );
 					submit_button();
 				?>
@@ -88,24 +87,24 @@ class AADSSO_Settings_Page {
 		</div>
 	<?php }
 
-	public function aadsso_register_settings() {
+	public function register_settings() {
 		register_setting(
 			'aadsso_settings_group', // option_group
 			'aadsso_settings', // option_name
-			array( $this, 'aadsso_sanitize_settings' ) // sanitize_callback
+			array( $this, 'sanitize_settings' ) // sanitize_callback
 		);
 
 		add_settings_section(
 			'aadsso_settings_section', // id
 			'Settings', // title
-			array( $this, 'aadsso_settings_section_info' ), // callback
+			array( $this, 'settings_section_info' ), // callback
 			'aadsso_admin_page' // page
 		);
 
 		add_settings_field(
 			'org_display_name', // id
 			'Display Name', // title
-			array( $this, 'aadsso_display_name_callback' ), // callback
+			array( $this, 'display_name_callback' ), // callback
 			'aadsso_admin_page', // page
 			'aadsso_settings_section' // section
 		);
@@ -113,7 +112,7 @@ class AADSSO_Settings_Page {
 		add_settings_field(
 			'org_domain_hint', // id
 			'Organization Domain Hint', // title
-			array( $this, 'aadsso_org_domain_hint_callback' ), // callback
+			array( $this, 'org_domain_hint_callback' ), // callback
 			'aadsso_admin_page', // page
 			'aadsso_settings_section' // section
 		);
@@ -121,7 +120,7 @@ class AADSSO_Settings_Page {
 		add_settings_field(
 			'client_id', // id
 			'Azure Client ID', // title
-			array( $this, 'aadsso_azure_client_id_callback' ), // callback
+			array( $this, 'azure_client_id_callback' ), // callback
 			'aadsso_admin_page', // page
 			'aadsso_settings_section' // section
 		);
@@ -129,7 +128,7 @@ class AADSSO_Settings_Page {
 		add_settings_field(
 			'client_secret', // id
 			'Azure Client Secret', // title
-			array( $this, 'aadsso_client_secret_callback' ), // callback
+			array( $this, 'client_secret_callback' ), // callback
 			'aadsso_admin_page', // page
 			'aadsso_settings_section' // section
 		);
@@ -137,7 +136,7 @@ class AADSSO_Settings_Page {
 		add_settings_field(
 			'field_to_match_to_upn', // id
 			'Field to match to UPN', // title
-			array( $this, 'aadsso_upn_field_callback' ), // callback
+			array( $this, 'upn_field_callback' ), // callback
 			'aadsso_admin_page', // page
 			'aadsso_settings_section' // section
 		);
@@ -145,7 +144,7 @@ class AADSSO_Settings_Page {
 		add_settings_field(
 			'default_wp_role', // id
 			'Default WordPress Role', // title
-			array( $this, 'aadsso_default_role_callback' ), // callback
+			array( $this, 'default_role_callback' ), // callback
 			'aadsso_admin_page', // page
 			'aadsso_settings_section' // section
 		);
@@ -161,7 +160,7 @@ class AADSSO_Settings_Page {
 		add_settings_field(
 			'enable_auto_forward_to_aad', // id
 			'Enable Auto-Forward to Azure Active Directory?', // title
-			array( $this, 'aadsso_enable_auto_forward_to_aad_callback' ), // callback
+			array( $this, 'enable_auto_forward_to_aad_callback' ), // callback
 			'aadsso_admin_page', // page
 			'aadsso_settings_section' // section
 		);
@@ -170,7 +169,7 @@ class AADSSO_Settings_Page {
 		add_settings_field(
 			'enable_aad_group_to_wp_role', // id
 			'Enable AAD Group to WP Role?', // title
-			array( $this, 'aadsso_enable_aad_group_to_wp_role_callback' ), // callback
+			array( $this, 'enable_aad_group_to_wp_role_callback' ), // callback
 			'aadsso_admin_page', // page
 			'aadsso_settings_section' // section
 		);
@@ -178,7 +177,7 @@ class AADSSO_Settings_Page {
 		add_settings_field(
 			'role_map', // id
 			'WordPress Role Map', // title
-			array( $this, 'aadsso_role_map_callback' ), // callback
+			array( $this, 'role_map_callback' ), // callback
 			'aadsso_admin_page', // page
 			'aadsso_settings_section' // section
 		);
@@ -191,7 +190,7 @@ class AADSSO_Settings_Page {
 		global $wp_roles;
 
 		$all_roles = $wp_roles->roles;
-		$editable_roles = apply_filters('editable_roles', $all_roles);
+		$editable_roles = apply_filters( 'editable_roles', $all_roles );
 
 		return $editable_roles;
 	}
@@ -202,7 +201,7 @@ class AADSSO_Settings_Page {
 	 * 
 	 * @param array $input key-value information to be cleaned before saving.
 	 */
-	public function aadsso_sanitize_settings($input) {
+	public function sanitize_settings($input) {
 		$sanitary_values = array();
 		
 		/* set strings */
@@ -228,7 +227,7 @@ class AADSSO_Settings_Page {
 			Default upn field is 'email'
 		*/
 		$sanitary_values['field_to_match_to_upn'] = "email";
-		if ( isset( $input['field_to_match_to_upn'] )  && in_array($input['field_to_match_to_upn'], array('email', 'login') )) {
+		if ( isset( $input['field_to_match_to_upn'] )  && in_array( $input['field_to_match_to_upn'], array('email', 'login') ) ) {
 			$sanitary_values['field_to_match_to_upn'] = $input['field_to_match_to_upn'];
 		}
 
@@ -248,7 +247,7 @@ class AADSSO_Settings_Page {
 		foreach( array('enable_auto_provisioning', 'enable_auto_forward_to_aad', 'enable_aad_group_to_wp_role') as $boolean_setting)
 		{
 			if( isset( $input[$boolean_setting] ) ) {
-				$sanitary_values[$boolean_setting] = ($boolean_setting == $input[$boolean_setting])? true : false;
+				$sanitary_values[$boolean_setting] = ( $boolean_setting == $input[$boolean_setting] ) ? true : false;
 			} else {
 				$sanitary_values[$boolean_setting] = false;
 			}
@@ -258,7 +257,7 @@ class AADSSO_Settings_Page {
 			Many of the roles in WordPress will not have AD Groups associated with them.  Unset the role mapping if it is blank.
 		*/
 		if ( isset( $input['role_map'] ) ) {
-			foreach($input['role_map'] as $role_slug => $azure_guid)
+			foreach( $input['role_map'] as $role_slug => $azure_guid )
 			{
 				if( trim($azure_guid) === "")
 					unset( $input['role_map'][$role_slug] );
@@ -266,34 +265,32 @@ class AADSSO_Settings_Page {
 			$sanitary_values['role_map'] = $input['role_map'];
 		}
 		
-		print_r($sanitary_values);
-		
 		return $sanitary_values;
 	}
 
 	/**
 	 * Requred callback for settings group
-	 * If utilized, would probably output helptext above the settings section.
+	 * If utilized, would output helptext above the settings section.
 	 * */
-	public function aadsso_settings_section_info() {
+	public function settings_section_info() {
 		
 	}
 
 	/**
 	 * Renders the `role_map` picker control.
 	 **/
-	function aadsso_role_map_callback() {
+	function role_map_callback() {
 		printf('<p>%s</p>',
 			'Map WordPress roles to Active Directory groups.'
 		);
 		echo '<table>';
 		printf(
 			'<thead><tr><th>%s</th><th>%s</th></tr></thead>',
-			"WordPress Role",
-			"Azure Group ID"
+			'WordPress Role',
+			'Azure Group ID'
 		);
 		echo '<tbody>';
-		foreach($this->get_editable_roles() as $role_slug => $role)
+		foreach( $this->get_editable_roles() as $role_slug => $role )
 		{
 			echo '<tr>';
 				echo '<td>';
@@ -315,10 +312,10 @@ class AADSSO_Settings_Page {
 	/**
 	 * Renders the `org_display_name` form control.
 	 **/
-	public function aadsso_display_name_callback() {
+	public function display_name_callback() {
 		printf(
 			'<input class="regular-text" type="text" name="aadsso_settings[org_display_name]" id="org_display_name" value="%s" />',
-			isset( $this->aadsso_settings['org_display_name'] ) ? esc_attr( $this->aadsso_settings['org_display_name']) : ''
+			isset( $this->aadsso_settings['org_display_name'] ) ? esc_attr( $this->aadsso_settings['org_display_name'] ) : ''
 		);
 		printf(
 			'<p class="description">%s</p>',
@@ -329,10 +326,10 @@ class AADSSO_Settings_Page {
 	/**
 	 * Renders the `org_domain_hint` form control.
 	 **/
-	public function aadsso_org_domain_hint_callback() {
+	public function org_domain_hint_callback() {
 		printf(
 			'<input class="regular-text" type="text" name="aadsso_settings[org_domain_hint]" id="org_domain_hint" value="%s" />',
-			isset( $this->aadsso_settings['org_domain_hint'] ) ? esc_attr( $this->aadsso_settings['org_domain_hint']) : ''
+			isset( $this->aadsso_settings['org_domain_hint'] ) ? esc_attr( $this->aadsso_settings['org_domain_hint'] ) : ''
 		);
 		printf(
 			'<p class="description">%s</p>',
@@ -343,10 +340,10 @@ class AADSSO_Settings_Page {
 	/**
 	 * Renders the `client_id` form control
 	 **/
-	public function aadsso_azure_client_id_callback() {
+	public function azure_client_id_callback() {
 		printf(
 			'<input class="regular-text" type="text" name="aadsso_settings[client_id]" id="client_id" value="%s" />',
-			isset( $this->aadsso_settings['client_id'] ) ? esc_attr( $this->aadsso_settings['client_id']) : ''
+			isset( $this->aadsso_settings['client_id'] ) ? esc_attr( $this->aadsso_settings['client_id'] ) : ''
 		);
 		printf(
 			'<p class="description">%s</p>',
@@ -357,10 +354,10 @@ class AADSSO_Settings_Page {
 	/**
 	 * Renders the `client_secret` form control
 	 **/
-	public function aadsso_client_secret_callback() {
+	public function client_secret_callback() {
 		printf(
 			'<input class="regular-text" type="text" name="aadsso_settings[client_secret]" id="client_secret" value="%s" />',
-			isset( $this->aadsso_settings['client_secret'] ) ? esc_attr( $this->aadsso_settings['client_secret']) : ''
+			isset( $this->aadsso_settings['client_secret'] ) ? esc_attr( $this->aadsso_settings['client_secret'] ) : ''
 		);
 		printf(
 			'<p class="description">%s</p>',
@@ -371,11 +368,11 @@ class AADSSO_Settings_Page {
 	/**
 	 * Renders the `field_to_match_to_upn` form control.
 	 **/
-	public function aadsso_upn_field_callback() {
+	public function upn_field_callback() {
 		?> <select name="aadsso_settings[field_to_match_to_upn]" id="field_to_match_to_upn">
-			<?php $selected = (isset( $this->aadsso_settings['field_to_match_to_upn'] ) && $this->aadsso_settings['field_to_match_to_upn'] === 'email') ? 'selected' : '' ; ?>
+			<?php $selected = ( isset( $this->aadsso_settings['field_to_match_to_upn'] ) && $this->aadsso_settings['field_to_match_to_upn'] === 'email' ) ? 'selected' : '' ; ?>
 			<option value="email" <?php echo $selected; ?>>Email Address</option>
-			<?php $selected = (isset( $this->aadsso_settings['field_to_match_to_upn'] ) && $this->aadsso_settings['field_to_match_to_upn'] === 'login') ? 'selected' : '' ; ?>
+			<?php $selected = ( isset( $this->aadsso_settings['field_to_match_to_upn'] ) && $this->aadsso_settings['field_to_match_to_upn'] === 'login' ) ? 'selected' : '' ; ?>
 			<option value="login" <?php echo $selected; ?>>Login Name</option>
 		</select> <?php
 		printf(
@@ -387,7 +384,7 @@ class AADSSO_Settings_Page {
 	/**
 	 * Renders the `default_wp_role` control.
 	 **/
-	public function aadsso_default_role_callback() {
+	public function default_role_callback() {
 		// Default configuration should be most-benign
 		if( !isset( $this->aadsso_settings['default_wp_role'] ) )
 			$this->aadsso_settings['default_wp_role'] = "subscriber"
@@ -397,7 +394,7 @@ class AADSSO_Settings_Page {
 			<?php $selected = (
 				isset( $this->aadsso_settings['default_wp_role'] ) 
 				&& $this->aadsso_settings['default_wp_role'] === $role_slug) ? 'selected' : '' ; ?>
-			<option value="<?php echo esc_attr($role_slug); ?>" <?php echo $selected; ?>><?php echo htmlentities($role['name']); ?></option>
+			<option value="<?php echo esc_attr( $role_slug ); ?>" <?php echo $selected; ?>><?php echo htmlentities( $role['name'] ); ?></option>
 			<?php endforeach; ?>
 		</select> <?php
 		printf(
@@ -409,7 +406,7 @@ class AADSSO_Settings_Page {
 	/**
 	 * Renders the `enable_auto_provisioning` checkbox control.
 	 **/
-	public function aadsso_enable_auto_provisioning_callback() {
+	public function enable_auto_provisioning_callback() {
 		printf(
 			'<input type="checkbox" name="aadsso_settings[enable_auto_provisioning]" id="enable_auto_provisioning" value="enable_auto_provisioning" %s> <label for="enable_auto_provisioning">%s</label>',
 			( isset( $this->aadsso_settings['enable_auto_provisioning'] ) && $this->aadsso_settings['enable_auto_provisioning'] ) ? 'checked' : '',
@@ -421,7 +418,7 @@ class AADSSO_Settings_Page {
 	/**
 	 * Renders the `enable_auto_forward_to_aad` checkbox control.
 	 **/
-	public function aadsso_enable_auto_forward_to_aad_callback() {
+	public function enable_auto_forward_to_aad_callback() {
 		printf(
 			'<input type="checkbox" name="aadsso_settings[enable_auto_forward_to_aad]" id="enable_auto_forward_to_aad" value="enable_auto_forward_to_aad" %s> <label for="enable_auto_forward_to_aad">%s</label>',
 			( isset( $this->aadsso_settings['enable_auto_forward_to_aad'] ) && $this->aadsso_settings['enable_auto_forward_to_aad'] ) ? 'checked' : '',
@@ -432,7 +429,7 @@ class AADSSO_Settings_Page {
 	/**
 	 * Renders the `enable_aad_group_to_wp_role` checkbox control.
 	 **/
-	public function aadsso_enable_aad_group_to_wp_role_callback() {
+	public function enable_aad_group_to_wp_role_callback() {
 		printf(
 			'<input type="checkbox" name="aadsso_settings[enable_aad_group_to_wp_role]" id="enable_aad_group_to_wp_role" value="enable_aad_group_to_wp_role" %s> <label for="enable_aad_group_to_wp_role">%s</label>',
 			( isset( $this->aadsso_settings['enable_aad_group_to_wp_role'] ) && $this->aadsso_settings['enable_aad_group_to_wp_role'] ) ? 'checked' : '',
