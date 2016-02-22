@@ -9,7 +9,7 @@ Version: 0.6a
 Author URI: http://psignoret.com/
 */
 
-defined('ABSPATH') or die("No script kiddies please!");
+defined( 'ABSPATH' ) or die( "No script kiddies please!" );
 
 define( 'AADSSO_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'AADSSO_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
@@ -24,7 +24,7 @@ require_once AADSSO_PLUGIN_DIR . '/SettingsPage.php';
 require_once AADSSO_PLUGIN_DIR . '/AuthorizationHelper.php';
 require_once AADSSO_PLUGIN_DIR . '/GraphHelper.php';
 
-// TODO: Auto-load the (the exceptions at least)
+// TODO: Auto-load the ( the exceptions at least )
 require_once AADSSO_PLUGIN_DIR . '/lib/php-jwt/Authentication/JWT.php';
 require_once AADSSO_PLUGIN_DIR . '/lib/php-jwt/Exceptions/BeforeValidException.php';
 require_once AADSSO_PLUGIN_DIR . '/lib/php-jwt/Exceptions/ExpiredException.php';
@@ -92,9 +92,9 @@ class AADSSO {
 	}
 
 	/**
-	 * Gets the (only) instance of the plugin. Initializes an instance if it hasn't yet.
+	 * Gets the ( only ) instance of the plugin. Initializes an instance if it hasn't yet.
 	 *
-	 * @return \AADSSO The (only) instance of the class.
+	 * @return \AADSSO The ( only ) instance of the class.
 	 */
 	public static function get_instance( $settings ) {
 		if ( ! self::$instance ) {
@@ -122,7 +122,7 @@ class AADSSO {
 		 */
 		if( $this->wants_to_login() ) {
 
-			// Save the redirect_to query param (if present) to session
+			// Save the redirect_to query param ( if present ) to session
 			if ( isset( $_GET['redirect_to'] ) ) {
 				$_SESSION['redirect_to'] = $_GET['redirect_to'];
 			}
@@ -179,7 +179,7 @@ class AADSSO {
 	 * Authenticates the user with Azure AD and WordPress.
 	 *
 	 * This method, invoked as an 'authenticate' filter, implements the OpenID Connect Authorization Code Flow granting
-	 * to sign the user in to Azure AD (if they aren't already), obtain an ID Token to identify the current user, and
+	 * to sign the user in to Azure AD ( if they aren't already ), obtain an ID Token to identify the current user, and
 	 * obtain an Access Token to access the Azure AD Graph API.
 	 *
 	 * @param WP_User|WP_Error $user A WP_User, if the user has already authenticated.
@@ -234,7 +234,7 @@ class AADSSO {
 				if ( is_a( $user, 'WP_User' ) ) {
 
 					// At this point, we have an authorization code, an access token and the user
-					// exists in WordPress (either because it already existed, or we created it
+					// exists in WordPress ( either because it already existed, or we created it
 					// on-the-fly. All that's left is to set the roles based on group membership.
 					if ( $this->settings->enable_aad_group_to_wp_role === true ) {
 						$user = $this->update_wp_user_roles( $user, $jwt->upn, $jwt->tid );
@@ -243,7 +243,7 @@ class AADSSO {
 
 			} elseif ( isset( $token->error ) ) {
 
-				// Unable to get an access token (although we did get an authorization code)
+				// Unable to get an access token ( although we did get an authorization code )
 				return new WP_Error(
 					$token->error,
 					sprintf(
@@ -272,10 +272,10 @@ class AADSSO {
 		return $user;
 	}
 
-	function get_wp_user_from_aad_user($jwt) {
+	function get_wp_user_from_aad_user( $jwt ) {
 
 		// Try to find an existing user in WP where the UPN of the current AAD user is
-		// (depending on config) the 'login' or 'email' field
+		// ( depending on config ) the 'login' or 'email' field
 		$user = get_user_by( $this->settings->field_to_match_to_upn, $jwt->upn );
 
 		if ( !is_a( $user, 'WP_User' ) ) {
@@ -336,8 +336,8 @@ class AADSSO {
 		// Determine which WordPress role the AAD group corresponds to.
 		// TODO: Check for error in the group membership response
 		$role_to_set = $this->settings->default_wp_role;
-		if ( ! empty($group_memberships->value ) ) {
-			foreach ( $this->settings->aad_group_to_wp_role_map as $aad_group => $wp_role) {
+		if ( ! empty( $group_memberships->value ) ) {
+			foreach ( $this->settings->aad_group_to_wp_role_map as $aad_group => $wp_role ) {
 				if ( in_array( $aad_group, $group_memberships->value ) ) {
 					$role_to_set = $wp_role;
 					break;
@@ -347,7 +347,7 @@ class AADSSO {
 
 		if ( null != $role_to_set || "" != $role_to_set ) {
 			// Set the role on the WordPress user
-			$user->set_role($role_to_set);
+			$user->set_role( $role_to_set );
 		} else {
 			return new WP_Error(
 				'user_not_member_of_required_group',
@@ -373,7 +373,7 @@ class AADSSO {
 	}
 
 	/**
-	 * Generates the URL for logging out of Azure AD. (Does not log out of WordPress.)
+	 * Generates the URL for logging out of Azure AD. ( Does not log out of WordPress. )
 	 */
 	function get_logout_url() {
 		return $this->settings->end_session_endpoint
@@ -393,7 +393,7 @@ class AADSSO {
 	}
 
 	/**
-	 * Clears the current the session (e.g. as part of logout).
+	 * Clears the current the session ( e.g. as part of logout ).
 	 */
 	function clear_session() {
 		session_destroy();
@@ -431,7 +431,7 @@ class AADSSO {
 		}
 		echo '<p>session</p><pre>' . var_export( $_SESSION, TRUE ) . '</pre>';
 		echo '<p>GET</pre><pre>' . var_export( $_GET, TRUE ) . '</pre>';
-		echo '<p>DB SETTINGS</p><pre>' .var_export(get_option('aadsso_settings'), true ) . '</pre>';
+		echo '<p>DB SETTINGS</p><pre>' .var_export( get_option( 'aadsso_settings' ), true ) . '</pre>';
 		echo '<p>used settings</p><pre>' . var_export( $this->settings, true ) . '</pre>';
 	}
 
@@ -463,19 +463,19 @@ EOF;
 
 // Load settings JSON contents from DB and initialize the plugin
 $aadsso_settings_instance = AADSSO_Settings::init();
-$aadsso = AADSSO::get_instance($aadsso_settings_instance);
+$aadsso = AADSSO::get_instance( $aadsso_settings_instance );
 
 
 /*** Utility functions ***/
 
 if ( ! function_exists( 'com_create_guid' ) ) {
 	/**
-	 * Generates a globally unique identifier (Guid).
+	 * Generates a globally unique identifier ( Guid ).
 	 *
 	 * @return string A new random globally unique identifier.
 	 */
 	function com_create_guid() {
-		mt_srand( (double)microtime() * 10000 );
+		mt_srand( ( double )microtime() * 10000 );
 		$charid = strtoupper( md5( uniqid( rand(), true ) ) );
 		$hyphen = chr( 45 ); // "-"
 		$uuid = chr( 123 ) // "{"
