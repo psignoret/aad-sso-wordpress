@@ -213,6 +213,12 @@ class AADSSO_Settings {
 	 * @return \AADSSO_Settings The current (only) instance with new configuration.
 	 */
 	function set_settings( $settings ) {
+		
+		// Expecting $settings to be an associative array. Do nothing if it isn't.
+		if ( ! is_array( $settings ) || empty( $setting ) ) {
+			return $this;
+		}
+		
 		/*
 		 * This should ideally be stored as role => group object ID.
 		 * Flipping this array at the last possible moment is ideal, because it keeps
