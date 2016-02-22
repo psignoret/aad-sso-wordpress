@@ -14,7 +14,7 @@ class AADSSO_Settings_Page {
 		add_action( 'admin_init', array( $this, 'reset_settings' ) );
 		
 		if( isset( $_GET['aadsso_reset'] ) && $_GET['aadsso_reset'] == 'success' )
-    		add_action( 'all_admin_notices', array( $this, 'aadsso_reset_successful' ) );
+    		add_action( 'all_admin_notices', array( $this, 'reset_successful' ) );
 
 		/*
 			loads the configuration, and assigns defaults for the form.
@@ -36,7 +36,7 @@ class AADSSO_Settings_Page {
 	}
 	
 	
-	public function aadsso_reset_successful( )
+	public function reset_successful( )
 	{
 		echo '<div id="message" class="notice notice-warning"><p>'
 			. __( 'Azure Active Directory Single Sign-on for WordPress Settings have been reset to default.', 'aad-sso-wordpress' )
@@ -56,11 +56,11 @@ class AADSSO_Settings_Page {
 	}
 
 	public function render_admin_page( ) {
-	
+
 	?>
 
 		<div class="wrap">
-		
+
 			<h2>Azure Active Directory Single Sign-on Settings</h2>
 			<p>Settings for Azure Active Directory can be configured here.</p>
 
@@ -71,7 +71,7 @@ class AADSSO_Settings_Page {
 					submit_button( );
 				?>
 			</form>
-			
+
 			<h3>Reset Plugin</h3>
 			<p>
 				<?php printf(
