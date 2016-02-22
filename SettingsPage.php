@@ -222,8 +222,8 @@ class AADSSO_Settings_Page {
 			$sanitary_values['field_to_match_to_upn'] = $input['field_to_match_to_upn'];
 		}
 
-		// Default subscriber role is 'subscriber'
-		$sanitary_values['default_wp_role'] = 'subscriber';
+		// Default role for user that is not member of any Azure AD group is null, which denies access.
+		$sanitary_values['default_wp_role'] = null;
 		if ( isset( $input['default_wp_role'] ) ) {
 			$sanitary_values['default_wp_role'] = sanitize_text_field( $input['default_wp_role'] );
 		}
@@ -237,7 +237,7 @@ class AADSSO_Settings_Page {
 		foreach ( $boolean_settings as $boolean_setting )
 		{
 			if( isset( $input[ $boolean_setting ] ) ) {
-				$sanitary_values[ $boolean_setting ] = ( $boolean_setting == $input[$boolean_setting] );
+				$sanitary_values[ $boolean_setting ] = ( $boolean_setting == $input[ $boolean_setting ] );
 			} else {
 				$sanitary_values[ $boolean_setting ] = false;
 			}
