@@ -1,8 +1,8 @@
 <div class="wrap">
 
-	<h2>Single Sign-on with Azure Active Directory</h2>
-	<p>Settings for configuring single sign-on with Azure Active Directory can be configured
-		here.</p>
+	<h2><?php echo __('Single Sign-on with Azure Active Directory' , 'aad-sso-wordpress'); ?></h2>
+	<p><?php echo __('Settings for configuring single sign-on with Azure Active Directory can be configured
+		here.','aad-sso-wordpress'); ?></p>
 
 	<form method="post" action="options.php">
 		<?php
@@ -12,7 +12,7 @@
 		?>
 	</form>
 
-	<h3>Reset Plugin</h3>
+	<h3><?php echo __('Reset Plugin', 'aad-sso-wordpress'); ?></h3>
 	<p>
 		<?php
 		printf(
@@ -22,8 +22,8 @@
 				'aadsso_reset_settings',
 				'aadsso_nonce'
 			),
-			'Reset Settings',
-			'Reset the plugin to default settings. Careful, there is no undo for this.'
+			__('Reset Settings', 'aad-sso-wordpress'),
+			__('Reset the plugin to default settings. Careful, there is no undo for this.', 'aad-sso-wordpress')
 		)
 		?>
 	</p>

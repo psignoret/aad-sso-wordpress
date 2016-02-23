@@ -59,7 +59,7 @@ class AADSSO_Settings_Page {
 	 */
 	public function add_options_page() {
 		add_options_page(
-			'Azure Active Directory Settings', // page_title
+			__('Azure Active Directory Settings', 'aad-sso-wordpress'), // page_title
 			'Azure AD', // menu_title
 			'manage_options', // capability
 			'aadsso_settings', // menu_slug
@@ -87,14 +87,14 @@ class AADSSO_Settings_Page {
 
 		add_settings_section(
 			'aadsso_settings_general', // id
-			'General', // title
+			__('General' , 'aad-sso-wordpress'), // title
 			array( $this, 'settings_general_info' ), // callback
 			'aadsso_settings_page' // page
 		);
 
 		add_settings_field(
 			'org_display_name', // id
-			'Display name', // title
+			__('Display name' , 'aad-sso-wordpress'), // title
 			array( $this, 'org_display_name_callback' ), // callback
 			'aadsso_settings_page', // page
 			'aadsso_settings_general' // section
@@ -102,7 +102,7 @@ class AADSSO_Settings_Page {
 
 		add_settings_field(
 			'org_domain_hint', // id
-			'Domain hint', // title
+			__('Domain hint' , 'aad-sso-wordpress'), // title
 			array( $this, 'org_domain_hint_callback' ), // callback
 			'aadsso_settings_page', // page
 			'aadsso_settings_general' // section
@@ -110,7 +110,7 @@ class AADSSO_Settings_Page {
 
 		add_settings_field(
 			'client_id', // id
-			'Client ID', // title
+			__('Client ID' , 'aad-sso-wordpress'), // title
 			array( $this, 'client_id_callback' ), // callback
 			'aadsso_settings_page', // page
 			'aadsso_settings_general' // section
@@ -118,7 +118,7 @@ class AADSSO_Settings_Page {
 
 		add_settings_field(
 			'client_secret', // id
-			'Client secret', // title
+			__('Client secret' , 'aad-sso-wordpress'), // title
 			array( $this, 'client_secret_callback' ), // callback
 			'aadsso_settings_page', // page
 			'aadsso_settings_general' // section
@@ -126,7 +126,7 @@ class AADSSO_Settings_Page {
 
 		add_settings_field(
 			'field_to_match_to_upn', // id
-			'Field to match to UPN', // title
+			__('Field to match to UPN' , 'aad-sso-wordpress'), // title
 			array( $this, 'field_to_match_to_upn_callback' ), // callback
 			'aadsso_settings_page', // page
 			'aadsso_settings_general' // section
@@ -134,7 +134,7 @@ class AADSSO_Settings_Page {
 
 		add_settings_field(
 			'enable_auto_provisioning', // id
-			'Enable auto-provisioning', // title
+			__('Enable auto-provisioning' , 'aad-sso-wordpress'), // title
 			array( $this, 'enable_auto_provisioning_callback' ), // callback
 			'aadsso_settings_page', // page
 			'aadsso_settings_general' // section
@@ -142,7 +142,7 @@ class AADSSO_Settings_Page {
 
 		add_settings_field(
 			'enable_auto_forward_to_aad', // id
-			'Enable auto-forward to Azure AD', // title
+			__('Enable auto-forward to Azure AD' , 'aad-sso-wordpress'), // title
 			array( $this, 'enable_auto_forward_to_aad_callback' ), // callback
 			'aadsso_settings_page', // page
 			'aadsso_settings_general' // section
@@ -150,7 +150,7 @@ class AADSSO_Settings_Page {
 		
 		add_settings_field(
 			'enable_aad_group_to_wp_role', // id
-			'Enable Azure AD group to WP role association', // title
+			__('Enable Azure AD group to WP role association' , 'aad-sso-wordpress'), // title
 			array( $this, 'enable_aad_group_to_wp_role_callback' ), // callback
 			'aadsso_settings_page', // page
 			'aadsso_settings_general' // section
@@ -158,7 +158,7 @@ class AADSSO_Settings_Page {
 		
 		add_settings_field(
 			'default_wp_role', // id
-			'Default WordPress role if not in Azure AD group', // title
+			__('Default WordPress role if not in Azure AD group' , 'aad-sso-wordpress'), // title
 			array( $this, 'default_wp_role_callback' ), // callback
 			'aadsso_settings_page', // page
 			'aadsso_settings_general' // section
@@ -166,7 +166,7 @@ class AADSSO_Settings_Page {
 		
 		add_settings_field(
 			'role_map', // id
-			'WordPress role to Azure AD group map', // title
+			__('WordPress role to Azure AD group map' , 'aad-sso-wordpress'), // title
 			array( $this, 'role_map_callback' ), // callback
 			'aadsso_settings_page', // page
 			'aadsso_settings_general' // section
@@ -269,13 +269,13 @@ class AADSSO_Settings_Page {
 	 */
 	function role_map_callback() {
 		printf( '<p>%s</p>',
-			'Map WordPress roles to Azure Active Directory groups.'
+			__('Map WordPress roles to Azure Active Directory groups.', 'aad-sso-wordpress')
 		);
 		echo '<table>';
 		printf(
 			'<thead><tr><th>%s</th><th>%s</th></tr></thead>',
-			'WordPress Role',
-			'Azure AD Group Object ID'
+			__('WordPress Role' , 'aad-sso-wordpress'),
+			__('Azure AD Group Object ID', 'aad-sso-wordpress')
 		);
 		echo '<tbody>';
 		foreach( $this->get_editable_roles( ) as $role_slug => $role ) {
@@ -304,7 +304,7 @@ class AADSSO_Settings_Page {
 		$this->render_text_field( 'org_display_name' );
 		printf(
 			'<p class="description">%s</p>',
-			'Display Name will be shown on the WordPress login screen.'
+			__('Display Name will be shown on the WordPress login screen.' , 'aad-sso-wordpress')
 		);
 	}
 
@@ -315,8 +315,8 @@ class AADSSO_Settings_Page {
 		$this->render_text_field( 'org_domain_hint' );
 		printf(
 			'<p class="description">%s</p>',
-			'Provides a hint to Azure AD about the domain or tenant they will be logging in to. If the '
-			 . 'domain is federated, the user will be automatically redirected to federation endpoint.'
+			__('Provides a hint to Azure AD about the domain or tenant they will be logging in to. If the '
+			 . 'domain is federated, the user will be automatically redirected to federation endpoint.' , 'aad-sso-wordpress')
 		);
 	}
 
@@ -327,7 +327,7 @@ class AADSSO_Settings_Page {
 		$this->render_text_field( 'client_id' );
 		printf(
 			'<p class="description">%s</p>',
-			'The client ID of the Azure AD application representing this blog.'
+			__('The client ID of the Azure AD application representing this blog.' , 'aad-sso-wordpress')
 		);
 	}
 
@@ -338,7 +338,7 @@ class AADSSO_Settings_Page {
 		$this->render_text_field( 'client_secret' );
 		printf(
 			'<p class="description">%s</p>',
-			'A secret key for the Azure AD application representing this blog.'
+			__('A secret key for the Azure AD application representing this blog.' , 'aad-sso-wordpress')
 		);
 	}
 
@@ -353,17 +353,17 @@ class AADSSO_Settings_Page {
 		?>
 		<select name="aadsso_settings[field_to_match_to_upn]" id="field_to_match_to_upn">
 			<option value="email"<?php echo $selected == 'email' ? ' selected="selected"' : ''; ?>>
-				Email Address
+				<?php echo __('Email Address' , 'aad-sso-wordpress'); ?>
 			</option>
 			<option value="login"<?php echo $selected == 'login' ? ' selected="selected"' : ''; ?>>
-				Login Name
+				<?php echo __('Login Name', 'aad-sso-wordpress'); ?>
 			</option>
 		</select>
 		<?php
 		printf(
 			'<p class="description">%s</p>',
-			'This specifies the WordPress user field which will be used to match to the Azure AD user\'s '
-			 . 'UserPrincipalName. Email Address is fine for most instances.'
+			__('This specifies the WordPress user field which will be used to match to the Azure AD user\'s '
+			 . 'UserPrincipalName. Email Address is fine for most instances.' , 'aad-sso-wordpress')
 		);
 	}
 
@@ -392,8 +392,8 @@ class AADSSO_Settings_Page {
 		echo '</select>';
 		printf(
 			'<p class="description">%s</p>',
-			'This is the default role that users will be assigned to if matching Azure AD group to '
-			 . 'WordPress roles is enabled.'
+			__('This is the default role that users will be assigned to if matching Azure AD group to '
+			 . 'WordPress roles is enabled.', 'aad-sso-wordpress')
 		);
 	}
 
@@ -403,7 +403,7 @@ class AADSSO_Settings_Page {
 	public function enable_auto_provisioning_callback() {
 		$this->render_checkbox_field(
 			'enable_auto_provisioning',
-			'Automatically create WordPress users, if needed, for authenticated Azure AD users.'
+			__('Automatically create WordPress users, if needed, for authenticated Azure AD users.' , 'aad-sso-wordpress')
 		);
 	}
 
@@ -413,7 +413,7 @@ class AADSSO_Settings_Page {
 	public function enable_auto_forward_to_aad_callback() {
 		$this->render_checkbox_field(
 			'enable_auto_forward_to_aad',
-			'Automatically forward users to the Azure AD to sign in, skipping the WordPress login screen.'
+			__('Automatically forward users to the Azure AD to sign in, skipping the WordPress login screen.' , 'aad-sso-wordpress')
 		);
 	}
 
@@ -423,7 +423,7 @@ class AADSSO_Settings_Page {
 	public function enable_aad_group_to_wp_role_callback() {
 		$this->render_checkbox_field(
 			'enable_aad_group_to_wp_role',
-			'Automatically assign WordPress user roles based on Azure AD group membership.'
+			__('Automatically assign WordPress user roles based on Azure AD group membership.' , 'aad-sso-wordpress')
 		);
 	}
 	
