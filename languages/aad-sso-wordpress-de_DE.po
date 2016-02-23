@@ -1,0 +1,277 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Azure Active Directory Single Sign-on for WordPress v0.6a\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: \n"
+"PO-Revision-Date: 2016-02-22 23:52:36+0000\n"
+"Last-Translator: pgpress_admin <webmaster@pg-salmtal.de>\n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: CSL v1.x\n"
+"X-Poedit-Language: German\n"
+"X-Poedit-Country: GERMANY\n"
+"X-Poedit-SourceCharset: utf-8\n"
+"X-Poedit-KeywordsList: __;_e;__ngettext:1,2;_n:1,2;__ngettext_noop:1,2;_n_noop:1,2;_c,_nc:4c,1,2;_x:1,2c;_ex:1,2c;_nx:4c,1,2;_nx_noop:4c,1,2;\n"
+"X-Poedit-Basepath: \n"
+"X-Poedit-Bookmarks: \n"
+"X-Poedit-SearchPath-0: .\n"
+"X-Textdomain-Support: yes"
+
+#: view/settings.php:25
+#@ aad-sso-wordpress
+msgid "Reset Settings"
+msgstr "Einstellungen zurücksetzen"
+
+#: SettingsPage.php:129
+#@ aad-sso-wordpress
+msgid "Field to match to UPN"
+msgstr "Feld für UPN-Zuordnung"
+
+#: SettingsPage.php:277
+#@ aad-sso-wordpress
+msgid "WordPress Role"
+msgstr "WordPress-Rolle"
+
+#: SettingsPage.php:307
+#@ aad-sso-wordpress
+msgid "Display Name will be shown on the WordPress login screen."
+msgstr "Anzeigename, welcher auf dem WordPress Anmeldebildschirm angezeigt wird."
+
+#: aad-sso-wordpress.php:435
+#@ aad-sso-wordpress
+msgid "Azure Active Directory Single Sign-on for WordPress required settings are not defined. Update them under Settings > Azure AD."
+msgstr "Erforderliche Einstellungen für Azure Active Directory Single Sign-On für WordPress wurden nicht definiert. Aktualisieren Sie diese unter Einstellungen > Azure AD."
+
+#. translators: plugin header field 'Name'
+#: aad-sso-wordpress.php:0
+#@ aad-sso-wordpress
+msgid "Azure Active Directory Single Sign-on for WordPress"
+msgstr "Azure Active Directory Single Sign-On für WordPress"
+
+#. translators: plugin header field 'PluginURI'
+#: aad-sso-wordpress.php:0
+#@ aad-sso-wordpress
+msgid "http://github.com/psignoret/aad-sso-wordpress"
+msgstr ""
+
+#. translators: plugin header field 'Description'
+#: aad-sso-wordpress.php:0
+#@ aad-sso-wordpress
+msgid "Allows you to use your organization's Azure Active Directory user accounts to log in to WordPress. If your organization is using Office 365, your user accounts are already in Azure Active Directory. This plugin uses OAuth 2.0 to authenticate users, and the Azure Active Directory Graph to get group membership and other details."
+msgstr "Erlaubt es den Benutzerkonten aus Ihrem Azure Active Directory, sich in WordPress anzumelden. Falls Ihre Organisation Office 365 verwendet, sind Ihre Benutzerkonten bereits in Azure Active Directory hinterlegt. Dieses Plugin verwendet OAuth 2.0 um Benutzer zu authentifizieren, sowie den Azure Active Directory Graph um Gruppenzugehörigkeiten und andere Details abzurufen."
+
+#. translators: plugin header field 'Author'
+#: aad-sso-wordpress.php:0
+#@ aad-sso-wordpress
+msgid "Philippe Signoret"
+msgstr ""
+
+#. translators: plugin header field 'AuthorURI'
+#: aad-sso-wordpress.php:0
+#@ aad-sso-wordpress
+msgid "http://psignoret.com/"
+msgstr ""
+
+#. translators: plugin header field 'Version'
+#: aad-sso-wordpress.php:0
+#@ aad-sso-wordpress
+msgid "0.6a"
+msgstr ""
+
+#: aad-sso-wordpress.php:462
+#, php-format
+#@ aad-sso-wordpress
+msgid "Sign in with your %s account"
+msgstr "Melden Sie sich mit Ihrem %s Konto an"
+
+#: aad-sso-wordpress.php:463
+#@ aad-sso-wordpress
+msgid "Sign out"
+msgstr "Abmelden"
+
+#: view/settings.php:15
+#@ aad-sso-wordpress
+msgid "Reset Plugin"
+msgstr "Plugin zurücksetzen"
+
+#: SettingsPage.php:51
+#@ aad-sso-wordpress
+msgid "Single Sign-on with Azure Active Directory settings have been reset to default."
+msgstr "Die Azure Active Directory Single Sign-On Einstellungen wurden auf die Standardwerte zurückgesetzt."
+
+#: SettingsPage.php:62
+#@ aad-sso-wordpress
+msgid "Azure Active Directory Settings"
+msgstr "Azure Active Directory Einstellungen"
+
+#: SettingsPage.php:90
+#@ aad-sso-wordpress
+msgid "General"
+msgstr "Allgemein"
+
+#: SettingsPage.php:97
+#@ aad-sso-wordpress
+msgid "Display name"
+msgstr "Anzeigename"
+
+#: SettingsPage.php:105
+#@ aad-sso-wordpress
+msgid "Domain hint"
+msgstr "Domänen-Hinweis"
+
+#: SettingsPage.php:113
+#@ aad-sso-wordpress
+msgid "Client ID"
+msgstr "Client ID"
+
+#: SettingsPage.php:121
+#@ aad-sso-wordpress
+msgid "Client secret"
+msgstr "Client Passwort (Secret)"
+
+#: SettingsPage.php:137
+#@ aad-sso-wordpress
+msgid "Enable auto-provisioning"
+msgstr "Automatische Provisionierung aktivieren"
+
+#: SettingsPage.php:145
+#@ aad-sso-wordpress
+msgid "Enable auto-forward to Azure AD"
+msgstr "Automatische Weiterleitung zum Azure Active Directory aktivieren"
+
+#: SettingsPage.php:153
+#@ aad-sso-wordpress
+msgid "Enable Azure AD group to WP role association"
+msgstr "Azure AD Gruppen zu WordPress Rollen Zuordnung aktivieren"
+
+#: SettingsPage.php:161
+#@ aad-sso-wordpress
+msgid "Default WordPress role if not in Azure AD group"
+msgstr "Standard WordPress-Rolle falls nicht in Azure AD Gruppe"
+
+#: SettingsPage.php:169
+#@ aad-sso-wordpress
+msgid "WordPress role to Azure AD group map"
+msgstr "WordPress Rollen-Zuordnung zu Azure AD Gruppen"
+
+#: SettingsPage.php:272
+#@ aad-sso-wordpress
+msgid "Map WordPress roles to Azure Active Directory groups."
+msgstr "WordPress Rollen zu Azure Active Directory Gruppen zuordnen."
+
+#: SettingsPage.php:278
+#@ aad-sso-wordpress
+msgid "Azure AD Group Object ID"
+msgstr "Azure Gruppen-Objekt ID"
+
+#: SettingsPage.php:319
+#@ aad-sso-wordpress
+msgid "Provides a hint to Azure AD about the domain or tenant they will be logging in to. If the domain is federated, the user will be automatically redirected to federation endpoint."
+msgstr "Gibt Benutzern einen Hinweis über die Domäne oder die Organisation, an der sie angemeldet werden. Falls es sich um eine föderierte Domäne handelt, wird der Benutzer zum Föderations-Endpunkt weitergeleitet."
+
+#: SettingsPage.php:330
+#@ aad-sso-wordpress
+msgid "The client ID of the Azure AD application representing this blog."
+msgstr "Die Client ID der Azure AD Anwendung, die diesen Blog repräsentiert."
+
+#: SettingsPage.php:341
+#@ aad-sso-wordpress
+msgid "A secret key for the Azure AD application representing this blog."
+msgstr "Der geheime Schlüssel für die Azure AD Anwendung, die diesen Blog repräsentiert."
+
+#: SettingsPage.php:356
+#@ aad-sso-wordpress
+msgid "Email Address"
+msgstr "E-Mail Adresse"
+
+#: SettingsPage.php:359
+#@ aad-sso-wordpress
+msgid "Login Name"
+msgstr "Login-Name"
+
+#: SettingsPage.php:366
+#@ aad-sso-wordpress
+msgid "This specifies the WordPress user field which will be used to match to the Azure AD user's UserPrincipalName. Email Address is fine for most instances."
+msgstr "Hier geben Sie das Feld eines WordPress Benutzers an, welches zum Abgleich mit dem UserPrincipalName des Azure AD Benutzers verwendet wird. Die E-Mail-Adresse genügt in den meisten Fällen."
+
+#: SettingsPage.php:396
+#@ aad-sso-wordpress
+msgid "This is the default role that users will be assigned to if matching Azure AD group to WordPress roles is enabled."
+msgstr "Dies ist die Standard-Rolle, die Benutzern zugeordnet wird wenn die Zuordnung von Azure AD Gruppen zu WordPress-Rollen aktiviert ist."
+
+#: SettingsPage.php:406
+#@ aad-sso-wordpress
+msgid "Automatically create WordPress users, if needed, for authenticated Azure AD users."
+msgstr "Automatisch Wordpress-Benutzerkonten für authentifizierte Azure AD Benutzer anlegen, falls nötig."
+
+#: SettingsPage.php:416
+#@ aad-sso-wordpress
+msgid "Automatically forward users to the Azure AD to sign in, skipping the WordPress login screen."
+msgstr "Benutzer werden automatisch zum Azure AD Login umgeleitet, der WordPress-Anmeldebildschirm wird übersprungen."
+
+#: SettingsPage.php:426
+#@ aad-sso-wordpress
+msgid "Automatically assign WordPress user roles based on Azure AD group membership."
+msgstr "Automatisch WordPress Benutzerrollen anhand der Zugehörigkeit zu Azure AD Gruppen zuweisen."
+
+#: aad-sso-wordpress.php:221
+#, php-format
+#@ aad-sso-wordpress
+msgid "ANTIFORGERY_ID mismatch. Expecting %s"
+msgstr "ANTIFORGERY_ID stimmt nicht überein. Erwarte %s"
+
+#: aad-sso-wordpress.php:240
+#, php-format
+#@ aad-sso-wordpress
+msgid "ERROR: Invalid id_token. %s"
+msgstr "FEHLER: Ungültiges id_token. %s"
+
+#: aad-sso-wordpress.php:263
+#, php-format
+#@ aad-sso-wordpress
+msgid "ERROR: Could not get an access token to Azure Active Directory. %s"
+msgstr "Fehler: Konnte kein Access Token für Azure Active Directory erlangen. %s"
+
+#: aad-sso-wordpress.php:270
+#@ aad-sso-wordpress
+msgid "ERROR: An unknown error occured."
+msgstr "FEHLER: Es trat ein unbekannter Fehler auf."
+
+#: aad-sso-wordpress.php:279
+#, php-format
+#@ aad-sso-wordpress
+msgid "ERROR: Access denied to Azure Active Directory. %s"
+msgstr "FEHLER: Zugriff zu Azure Active Directory verweigert. %s"
+
+#: aad-sso-wordpress.php:320
+#, php-format
+#@ aad-sso-wordpress
+msgid "ERROR: The authenticated user %s is not a registered user in this blog."
+msgstr "FEHLER: Der angemeldete Benutzer %s ist kein registrierter Benutzer dieses Blogs."
+
+#: aad-sso-wordpress.php:368
+#, php-format
+#@ aad-sso-wordpress
+msgid "ERROR: AAD user %s is not a member of any group granting a role."
+msgstr "FEHLER: AAD Benutzer %s ist kein Mitglied einer Gruppe mit Rollenzuweisung."
+
+#: view/settings.php:3
+#@ aad-sso-wordpress
+msgid "Single Sign-on with Azure Active Directory"
+msgstr "Single Sign-On mit Azure Active Directory"
+
+#: view/settings.php:4
+#@ aad-sso-wordpress
+msgid ""
+"Settings for configuring single sign-on with Azure Active Directory can be configured\n"
+"\t\there."
+msgstr "Einstellungen zur Konfiguration des Single-Sign-On mit Azure Active Directory können hier konfiguriert werden."
+
+#: view/settings.php:26
+#@ aad-sso-wordpress
+msgid "Reset the plugin to default settings. Careful, there is no undo for this."
+msgstr "Plugin auf Standard-Einstellungen zurücksetzen. Achtung, diese Aktion kann nicht rückgängig gemacht werden."
+
