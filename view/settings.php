@@ -39,11 +39,11 @@
 			'<a href="%s" class="button">%s</a> <span class="description">%s</span>',
 			wp_nonce_url(
 				admin_url('options-general.php?page=aadsso_settings' ),
-				'aadsso_migrate_settings',
+				'aadsso_migrate_from_json',
 				'aadsso_nonce'
 			),
 			'Migrate Settings',
-			'Migrate settings from old plugin versions to new configuration. Careful, there is no undo for this.'
+			'Migrate settings from old plugin versions to new configuration. This will overwrite existing settings! Careful, there is no undo for this.'
 		)
 		?></p>
 		

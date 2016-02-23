@@ -28,7 +28,7 @@ class AADSSO_Settings_Page {
 		add_action( 'all_admin_notices', array( $this, 'notify_if_reset_successful' ) );
 		
 		// If settings were migrated, show confirmation
-		add_action( 'all_admin_notices', array( $this, 'notify_if_migrate_successful' ) );
+		add_action( 'all_admin_notices', array( $this, 'notify_json_migrate_status' ) );
 
 		// Load stored configuration values (or defaults).
 		$this->settings = get_option( 'aadsso_settings', AADSSO_Settings::get_defaults() );
@@ -59,7 +59,7 @@ class AADSSO_Settings_Page {
 		 * - There is a file at that legacy settings path
 		 */
 		$should_migrate_settings = isset( $_GET['aadsso_nonce'] )
-			&& wp_verify_nonce( $_GET['aadsso_nonce'], 'aadsso_migrate_settings' )
+			&& wp_verify_nonce( $_GET['aadsso_nonce'], 'aadsso_migrate_from_json' )
 			&& defined( 'AADSSO_SETTINGS_PATH' )
 			&& file_exists( AADSSO_SETTINGS_PATH );
 			
@@ -68,7 +68,7 @@ class AADSSO_Settings_Page {
 			$legacy_settings = json_decode( file_get_contents( AADSSO_SETTINGS_PATH ), true );
 			
 			if( null === $legacy_settings ) {
-				wp_redirect( admin_url( 'options-general.php?page=aadsso_settings&aadsso_migrate=invalid') );
+				wp_redirect( admin_url( 'options-general.php?page=aadsso_settings&aadsso_migrate_from_json_status=invalid_json') );
 			}
 			
 			if( isset( $legacy_settings['aad_group_to_wp_role_map'] ) ) {
@@ -80,9 +80,9 @@ class AADSSO_Settings_Page {
 			update_option( 'aadsso_settings', $sanitized_settings );
 			
 			if( is_writable( AADSSO_SETTINGS_PATH ) && unlink( AADSSO_SETTINGS_PATH ) ) {
-				wp_redirect( admin_url( 'options-general.php?page=aadsso_settings&aadsso_migrate=success' ) );
+				wp_redirect( admin_url( 'options-general.php?page=aadsso_settings&aadsso_migrate_from_json_status=success' ) );
 			} else {
-				wp_redirect( admin_url( 'options-general.php?page=aadsso_settings&aadsso_migrate=manual' ) );
+				wp_redirect( admin_url( 'options-general.php?page=aadsso_settings&aadsso_migrate_from_json_status=manual' ) );
 			}
 		}
 	}
@@ -90,25 +90,26 @@ class AADSSO_Settings_Page {
 	/**
 	 * Shows messages about the state of the migration operation
 	 */
-	public function notify_if_migrate_successful() {
-		if( isset( $_GET['aadsso_migrate'] ) && 'success' === $_GET['aadsso_migrate'] ) {
-			echo '<div id="message" class="notice notice-success"><p>'
-				. __( 'Single Sign-on with Azure Active Directory settings have been migrated and the old configuration file has been deleted.',
-				      'aad-sso-wordpress' )
-				.'</p></div>';
-		}
-		
-		if( isset( $_GET['aadsso_migrate'] ) && 'manual' === $_GET['aadsso_migrate'] ) {
-			echo '<div id="message" class="notice notice-warning"><p>'
-				. esc_html__( 'Single Sign-on with Azure Active Directory settings have been migrated successfully. ', 'aad-sso-wordpress' )
-				. sprintf( __('Please delete the file at the path <code>%s</code>. ', 'aad-sso-wordpress'), AADSSO_SETTINGS_PATH )
-				.'</p></div>';
-		}
-		
-		if( isset( $_GET['aadsso_migrate'] ) && 'invalid' === $_GET['aadsso_migrate'] ) {
-			echo '<div id="message" class="notice notice-error"><p>'
-				. sprintf( __('Single Sign-on with Azure Active Directory could not migrate settings from <code>%s</code>. File could not be parsed as JSON.', 'aad-sso-wordpress'), AADSSO_SETTINGS_PATH )
-				.'</p></div>';
+	public function notify_json_migrate_status() {
+		if( isset( $_GET['aadsso_migrate_from_json_status'] ) ) {
+			if( 'success' === $_GET['aadsso_migrate_from_json_status'] ) {
+				echo '<div id="message" class="notice notice-success"><p>'
+					. __( 'Legacy settings have been migrated and the old configuration file has been deleted.', 'aad-sso-wordpress' )
+					. __('To finish migration, unset <code>AADSSO_SETTINGS_PATH</code> from <code>wp-config.php</code>. ', 'aad-sso-wordpress')
+					.'</p></div>';
+			} elseif ( 'manual' === $_GET['aadsso_migrate_from_json_status'] ) {
+				echo '<div id="message" class="notice notice-warning"><p>'
+					. esc_html__( 'Legacy settings have been migrated successfully. ', 'aad-sso-wordpress' )
+					. sprintf( __('To finish migration, delete the file at the path <code>%s</code>. ', 'aad-sso-wordpress'), AADSSO_SETTINGS_PATH )
+					. sprintf( __('Then, unset <code>AADSSO_SETTINGS_PATH</code> from <code>wp-config.php</code>. ', 'aad-sso-wordpress') )
+					.'</p></div>';
+			} elseif( 'invalid_json' === $_GET['aadsso_migrate_from_json_status'] ) {
+				echo '<div id="message" class="notice notice-error"><p>'
+					. sprintf( __('Legacy settings could not be migrated from <code>%s</code>. ', 'aad-sso-wordpress'), AADSSO_SETTINGS_PATH )
+					. esc_html( 'File could not be parsed as JSON. ', 'aad-sso-wordpress' )
+					. esc_html( 'Delete the file, or check its syntax.', 'aad-sso-wordpress' )
+					.'</p></div>';
+			}
 		}
 	}
 
