@@ -58,7 +58,7 @@ class AADSSO_GraphHelper
 		$query_params = http_build_query( self::maybe_add_api_version( $query_params ) );
 		$url = $url . '?' . $query_params;
 
-		$_SESSION['last_request'] = array(
+		$_SESSION['aadsso_last_request'] = array(
 			'method' => 'GET',
 			'url' => $url,
 		);
@@ -71,7 +71,7 @@ class AADSSO_GraphHelper
 		// Parse the response
 		$decoded_output = json_decode( wp_remote_retrieve_body( $response ) );
 
-		$_SESSION['last_request']['response'] = $decoded_output;
+		$_SESSION['aadsso_last_request']['response'] = $decoded_output;
 		return $decoded_output;
 	}
 
@@ -87,7 +87,7 @@ class AADSSO_GraphHelper
 		$url = $url . '?' . $query_params;
 		$payload = json_encode( $data );
 
-		$_SESSION['last_request'] = array(
+		$_SESSION['aadsso_last_request'] = array(
 			'method' => 'POST',
 			'url' => $url,
 			'body' => $payload,
@@ -102,7 +102,7 @@ class AADSSO_GraphHelper
 		// Parse the response
 		$decoded_output = json_decode( wp_remote_retrieve_body( $response ) );
 
-		$_SESSION['last_request']['response'] = $decoded_output;
+		$_SESSION['aadsso_last_request']['response'] = $decoded_output;
 		return $decoded_output;
 	}
 
@@ -129,7 +129,7 @@ class AADSSO_GraphHelper
 	{
 		// Generate the authentication header
 		return array(
-			'Authorization' => $_SESSION['token_type'] . ' ' . $_SESSION['access_token'],
+			'Authorization' => $_SESSION['aadsso_token_type'] . ' ' . $_SESSION['aadsso_access_token'],
 			'Accept'        => 'application/json;odata=minimalmetadata',
 			'Content-Type'  => 'application/json;odata=minimalmetadata',
 			'Prefer'        => 'return-content',

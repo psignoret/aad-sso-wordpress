@@ -86,8 +86,8 @@ class AADSSO_AuthorizationHelper
 
 			// Add the token information to the session so that we can use it later
 			// TODO: these probably shouldn't be in SESSION...
-			$_SESSION['token_type'] = $result->token_type;
-			$_SESSION['access_token'] = $result->access_token;
+			$_SESSION['aadsso_token_type'] = $result->token_type;
+			$_SESSION['aadsso_access_token'] = $result->access_token;
 		}
 
 		return $result;
