@@ -53,6 +53,12 @@ class AADSSO {
 		//add_action( 'admin_notices', array( $this, 'print_debug' ) );
 		//add_action( 'login_footer', array( $this, 'print_debug' ) );
 
+		// Add a link to the Settings page in the list of plugins
+		add_filter(
+			'plugin_action_links_' . plugin_basename( __FILE__ ),
+			array( $this, 'add_settings_link' )
+		);
+
 		// If plugin is not configured, we shouldn't proceed.
 		if ( ! $this->plugin_is_configured() ) {
 			add_action( 'all_admin_notices', array( $this, 'print_plugin_not_configured' ) );
@@ -83,17 +89,17 @@ class AADSSO {
 		// Register the textdomain for localization after all plugins are loaded
 		add_action( 'plugins_loaded', array( $this, 'load_textdomain' ) );
 	}
-	
+
 	/**
 	 * Run on activation, checks for stored settings, and if none are found, sets defaults.
 	 */
 	public static function activate() {
 		$stored_settings = get_option( 'aadsso_settings', null );
-		if ( null === $stored_settings ) {			
+		if ( null === $stored_settings ) {
 			update_option( 'aadsso_settings', AADSSO_Settings::get_defaults() );
-		}		
+		}
 	}
-	
+
 	/**
 	 * Run on deactivation, currently does nothing.
 	 */
@@ -392,12 +398,26 @@ class AADSSO {
 	}
 
 	/**
+	 * Adds a link to the settings page.
+	 *
+	 * @param array $links The existing list of links
+	 *
+	 * @return array The new list of links to display
+	 */
+	function add_settings_link( $links ) {
+		$link_to_settings =
+			'<a href="' . admin_url( 'options-general.php?page=aadsso_settings' ) . '">Settings</a>';
+		array_push( $links, $link_to_settings );
+		return $links;
+	}
+
+	/**
 	 * Generates the URL used to initiate a sign-in with Azure AD.
 	 *
 	 * @return string The authorization URL used to initiate a sign-in to Azure AD.
 	 */
 	function get_login_url() {
-		$antiforgery_id = com_create_guid ();
+		$antiforgery_id = com_create_guid();
 		$_SESSION['aadsso_antiforgery-id'] = $antiforgery_id;
 		return AADSSO_AuthorizationHelper::get_authorization_url( $this->settings, $antiforgery_id );
 	}
@@ -478,7 +498,7 @@ class AADSSO {
 		$html .= '<a href="%s">';
 		$html .= sprintf( __( 'Sign in with your %s account', AADSSO ),
 		                  htmlentities( $this->settings->org_display_name ) );
-		$html .= '</a><br /><a class="dim" href="%s">' 
+		$html .= '</a><br /><a class="dim" href="%s">'
 		         . __( 'Sign out', AADSSO ) . '</a></p>';
 		printf(
 			$html,
