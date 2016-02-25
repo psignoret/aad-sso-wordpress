@@ -13,6 +13,7 @@ Domain Path: /languages/
 
 defined( 'ABSPATH' ) or die( 'No script kiddies please!' );
 
+define( 'AADSSO', 'aad-sso-wordpress' );
 define( 'AADSSO_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'AADSSO_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 
@@ -89,7 +90,11 @@ class AADSSO {
 	 */
 	public function load_textdomain()
 	{
-		load_plugin_textdomain('aad-sso-wordpress', false, dirname(plugin_basename(__FILE__)) . '/languages/');
+		load_plugin_textdomain(
+			AADSSO,
+			false, // deprecated
+			dirname( plugin_basename( __FILE__ ) ) . '/languages/'
+		);
 	}
 	/**
 	 * Determine if required plugin settings are stored.
@@ -218,7 +223,7 @@ class AADSSO {
 			if ( $state_is_missing || $state_doesnt_match ) {
 				return new WP_Error(
 					'antiforgery_id_mismatch',
-					sprintf( __('ANTIFORGERY_ID mismatch. Expecting %s' , 'aad-sso-wordpress'), $antiforgery_id )
+					sprintf( __( 'ANTIFORGERY_ID mismatch. Expecting %s' , AADSSO ), $antiforgery_id )
 				);
 			}
 
@@ -237,7 +242,7 @@ class AADSSO {
 				} catch ( Exception $e ) {
 					return new WP_Error(
 						'invalid_id_token',
-						sprintf( __('ERROR: Invalid id_token. %s', 'aad-sso-wordpress'), $e->getMessage() )
+						sprintf( __( 'ERROR: Invalid id_token. %s', AADSSO ), $e->getMessage() )
 					);
 				}
 
@@ -260,14 +265,14 @@ class AADSSO {
 				return new WP_Error(
 					$token->error,
 					sprintf(
-						__('ERROR: Could not get an access token to Azure Active Directory. %s' , 'aad-sso-wordpress'),
+						__( 'ERROR: Could not get an access token to Azure Active Directory. %s' , AADSSO ),
 						$token->error_description
 					)
 				);
 			} else {
 
 				// None of the above, I have no idea what happened.
-				return new WP_Error( 'unknown', __('ERROR: An unknown error occured.' , 'aad-sso-wordpress') );
+				return new WP_Error( 'unknown', __( 'ERROR: An unknown error occured.' , AADSSO ) );
 			}
 
 		} elseif ( isset( $_GET['error'] ) ) {
@@ -276,7 +281,7 @@ class AADSSO {
 			return new WP_Error(
 				$_GET['error'],
 				sprintf(
-					__('ERROR: Access denied to Azure Active Directory. %s' , 'aad-sso-wordpress'),
+					__( 'ERROR: Access denied to Azure Active Directory. %s' , AADSSO ),
 					$_GET['error_description']
 				)
 			);
@@ -317,7 +322,7 @@ class AADSSO {
 				return new WP_Error(
 					'user_not_registered',
 					sprintf(
-						__('ERROR: The authenticated user %s is not a registered user in this blog.' , 'aad-sso-wordpress'),
+						__( 'ERROR: The authenticated user %s is not a registered user in this blog.' , AADSSO ),
 						$jwt->upn
 					)
 				);
@@ -365,7 +370,7 @@ class AADSSO {
 			return new WP_Error(
 				'user_not_member_of_required_group',
 				sprintf(
-					__('ERROR: AAD user %s is not a member of any group granting a role.' , 'aad-sso-wordpress'),
+					__( 'ERROR: AAD user %s is not a member of any group granting a role.' , AADSSO ),
 					$aad_user_id
 				)
 			);
@@ -431,9 +436,9 @@ class AADSSO {
 	 */
 	function print_plugin_not_configured() {
 		echo '<div id="message" class="error"><p>'
-			. __( 'Azure Active Directory Single Sign-on for WordPress required settings are not defined. Update them under '
-			. 'Settings > Azure AD.', 'aad-sso-wordpress' )
-			.'</p></div>';
+		      . __( 'Azure Active Directory Single Sign-on for WordPress required settings are not defined. '
+		      . 'Update them under Settings > Azure AD.', AADSSO )
+		      .'</p></div>';
 	}
 
 	/**
@@ -450,7 +455,7 @@ class AADSSO {
 	 * Renders the CSS used by the HTML injected into the login page.
 	 */
 	function print_login_css() {
-		wp_enqueue_style( 'aad-sso-wordpress', AADSSO_PLUGIN_URL . '/login.css' );
+		wp_enqueue_style( AADSSO, AADSSO_PLUGIN_URL . '/login.css' );
 	}
 
 	/**
@@ -459,8 +464,10 @@ class AADSSO {
 	function print_login_link() {
 		$html = '<p class="aadsso-login-form-text">';
 		$html .= '<a href="%s">';
-		$html .= sprintf(__('Sign in with your %s account', 'aad-sso-wordpress'),htmlentities($this->settings->org_display_name));
-		$html .= '</a><br /><a class="dim" href="%s">' . __('Sign out', 'aad-sso-wordpress') . '</a></p>';
+		$html .= sprintf( __( 'Sign in with your %s account', AADSSO ),
+		                  htmlentities( $this->settings->org_display_name ) );
+		$html .= '</a><br /><a class="dim" href="%s">' 
+		         . __( 'Sign out', AADSSO ) . '</a></p>';
 		printf(
 			$html,
 			$this->get_login_url(),

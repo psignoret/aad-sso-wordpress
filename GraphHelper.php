@@ -85,7 +85,7 @@ class AADSSO_GraphHelper
 		// Build the full query URL and encode the payload
 		$query_params = http_build_query( self::maybe_add_api_version( $query_params ) );
 		$url = $url . '?' . $query_params;
-		$payload = json_encode($data);
+		$payload = json_encode( $data );
 
 		$_SESSION['last_request'] = array(
 			'method' => 'POST',

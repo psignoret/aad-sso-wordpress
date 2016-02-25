@@ -8,7 +8,7 @@ class AADSSO_AuthorizationHelper
 	/**
 	 * @var string List of allowed algorithms. Currently, only RS256 is allowed and expected from AAD.
 	 */
-	private static $allowed_algorithms = array('RS256');
+	private static $allowed_algorithms = array( 'RS256' );
 
 	/**
 	 * Gets the authorization URL used to makes the authorization request.
@@ -116,7 +116,7 @@ class AADSSO_AuthorizationHelper
 		foreach ( $discovery->keys as $key ) {
 			try {
 				if ( null == $key->x5c ) {
-					throw new DomainException('key does not contain the x5c attribute');
+					throw new DomainException( 'key does not contain the x5c attribute' );
 				}
 
 				$key_der = $key->x5c[0];
@@ -142,7 +142,7 @@ class AADSSO_AuthorizationHelper
 			throw $last_exception;
 		}
 
-		if ($jwt->nonce != $antiforgery_id) {
+		if ( $jwt->nonce != $antiforgery_id ) {
 			throw new DomainException( sprintf( 'Nonce mismatch. Expecting %s', $antiforgery_id ) );
 		}
 
