@@ -59,6 +59,10 @@ class AADSSO {
 			array( $this, 'add_settings_link' )
 		);
 
+		// Register activation and deactivation hooks
+		register_activation_hook( __FILE__, array( 'AADSSO', 'activate' ) );
+		register_deactivation_hook( __FILE__, array( 'AADSSO', 'deactivate' ) );
+
 		// If plugin is not configured, we shouldn't proceed.
 		if ( ! $this->plugin_is_configured() ) {
 			add_action( 'all_admin_notices', array( $this, 'print_plugin_not_configured' ) );
@@ -103,7 +107,7 @@ class AADSSO {
 	/**
 	 * Run on deactivation, currently does nothing.
 	 */
-	public static function deactivate() {	}
+	public static function deactivate() { }
 
 	/**
 	 * Load the textdomain for localization.
@@ -507,10 +511,6 @@ class AADSSO {
 		);
 	}
 }
-
-// Register activation and deactivation hooks
-register_activation_hook( __FILE__, array( 'AADSSO', 'activate' ) );
-register_deactivation_hook( __FILE__, array( 'AADSSO', 'deactivate' ) );
 
 // Load settings JSON contents from DB and initialize the plugin
 $aadsso_settings_instance = AADSSO_Settings::init();
