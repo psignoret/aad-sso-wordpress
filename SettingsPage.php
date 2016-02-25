@@ -317,8 +317,7 @@ class AADSSO_Settings_Page {
 			'<p class="description">%s</p>',
 			__( 'Provides a hint to Azure AD about the domain or tenant they will be logging in to. If '
 			     . 'the domain is federated, the user will be automatically redirected to federation '
-			     . 'endpoint.',
-			    AADSSO);
+			     . 'endpoint.', AADSSO )
 		);
 	}
 
@@ -380,10 +379,7 @@ class AADSSO_Settings_Page {
 		}
 		
 		echo '<select name="aadsso_settings[default_wp_role]" id="default_wp_role">';
-		printf(
-			'<option value="%s"%s>%s</option>',
-			'', $selected, '(None, deny access)'
-		); 
+		printf( '<option value="%s">%s</option>', '', '(None, deny access)' ); 
 		foreach( $this->get_editable_roles() as $role_slug => $role ) {
 			$selected = $this->settings['default_wp_role'] === $role_slug ? ' selected="selected"' : '';
 			printf(

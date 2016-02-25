@@ -38,7 +38,6 @@ class AADSSO {
 	static $instance = FALSE;
 
 	private $settings = null;
-	const ANTIFORGERY_ID_KEY = 'antiforgery-id';
 
 	public function __construct( $settings ) {
 		$this->settings = $settings;
@@ -82,8 +81,23 @@ class AADSSO {
 		add_filter( 'login_redirect', array( $this, 'redirect_after_login' ), 20, 3 );
 
 		// Register the textdomain for localization after all plugins are loaded
-		add_action('plugins_loaded', array( $this, 'load_textdomain' ) );
+		add_action( 'plugins_loaded', array( $this, 'load_textdomain' ) );
 	}
+	
+	/**
+	 * Run on activation, checks for stored settings, and if none are found, sets defaults.
+	 */
+	public static function activate() {
+		$stored_settings = get_option( 'aadsso_settings', null );
+		if ( null === $stored_settings ) {			
+			update_option( 'aadsso_settings', AADSSO_Settings::get_defaults() );
+		}		
+	}
+	
+	/**
+	 * Run on deactivation, currently does nothing.
+	 */
+	public static function deactivate() {	}
 
 	/**
 	 * Load the textdomain for localization.
@@ -125,8 +139,6 @@ class AADSSO {
 	 */
 	public function save_redirect_and_maybe_bypass_login() {
 
-		$_SESSION['settings'] = $this->settings;
-
 		$bypass = apply_filters(
 			'aad_auto_forward_login',
 			$this->settings->enable_auto_forward_to_aad
@@ -141,7 +153,7 @@ class AADSSO {
 
 			// Save the redirect_to query param ( if present ) to session
 			if ( isset( $_GET['redirect_to'] ) ) {
-				$_SESSION['redirect_to'] = $_GET['redirect_to'];
+				$_SESSION['aadsso_redirect_to'] = $_GET['redirect_to'];
 			}
 
 			if ( $bypass && ! isset( $_GET['code'] ) ) {
@@ -162,8 +174,8 @@ class AADSSO {
 	 * @return string
 	 */
 	public function redirect_after_login( $redirect_to, $requested_redirect_to, $user ) {
-		if ( is_a( $user, 'WP_User' ) && isset( $_SESSION['redirect_to'] ) ) {
-			$redirect_to = $_SESSION['redirect_to'];
+		if ( is_a( $user, 'WP_User' ) && isset( $_SESSION['aadsso_redirect_to'] ) ) {
+			$redirect_to = $_SESSION['aadsso_redirect_to'];
 		}
 
 		return $redirect_to;
@@ -216,7 +228,7 @@ class AADSSO {
 		 */
 		if ( isset( $_GET['code'] ) ) {
 
-			$antiforgery_id = $_SESSION[ self::ANTIFORGERY_ID_KEY ];
+			$antiforgery_id = $_SESSION['aadsso_antiforgery-id'];
 			$state_is_missing = ! isset( $_GET['state'] );
 			$state_doesnt_match = $_GET['state'] != $antiforgery_id;
 
@@ -386,7 +398,7 @@ class AADSSO {
 	 */
 	function get_login_url() {
 		$antiforgery_id = com_create_guid ();
-		$_SESSION[ self::ANTIFORGERY_ID_KEY ] = $antiforgery_id;
+		$_SESSION['aadsso_antiforgery-id'] = $antiforgery_id;
 		return AADSSO_AuthorizationHelper::get_authorization_url( $this->settings, $antiforgery_id );
 	}
 
@@ -475,6 +487,10 @@ class AADSSO {
 		);
 	}
 }
+
+// Register activation and deactivation hooks
+register_activation_hook( __FILE__, array( 'AADSSO', 'activate' ) );
+register_deactivation_hook( __FILE__, array( 'AADSSO', 'deactivate' ) );
 
 // Load settings JSON contents from DB and initialize the plugin
 $aadsso_settings_instance = AADSSO_Settings::init();
