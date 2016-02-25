@@ -81,8 +81,23 @@ class AADSSO {
 		add_filter( 'login_redirect', array( $this, 'redirect_after_login' ), 20, 3 );
 
 		// Register the textdomain for localization after all plugins are loaded
-		add_action('plugins_loaded', array( $this, 'load_textdomain' ) );
+		add_action( 'plugins_loaded', array( $this, 'load_textdomain' ) );
 	}
+	
+	/**
+	 * Run on activation, checks for stored settings, and if none are found, sets defaults.
+	 */
+	public static function activate() {
+		$stored_settings = get_option( 'aadsso_settings', null );
+		if ( null === $stored_settings ) {			
+			update_option( 'aadsso_settings', AADSSO_Settings::get_defaults() );
+		}		
+	}
+	
+	/**
+	 * Run on deactivation, currently does nothing.
+	 */
+	public static function deactivate() {	}
 
 	/**
 	 * Load the textdomain for localization.
@@ -472,6 +487,10 @@ class AADSSO {
 		);
 	}
 }
+
+// Register activation and deactivation hooks
+register_activation_hook( __FILE__, array( 'AADSSO', 'activate' ) );
+register_deactivation_hook( __FILE__, array( 'AADSSO', 'deactivate' ) );
 
 // Load settings JSON contents from DB and initialize the plugin
 $aadsso_settings_instance = AADSSO_Settings::init();
