@@ -1,8 +1,11 @@
 # Contributing to Sign Sign-on with Azure Active Directory (for WordPress)
-This WordPress plugin is actively maintained by contributors like you.  Contributing is easy.easy
+This WordPress plugin is actively maintained by contributors like you.  Contributing is easy.
 
 ## Getting Started
 If you would like to contribute, but you don't have any ideas where to begin, check the [Issue Tracker](https://github.com/psignoret/aad-sso-wordpress/issues).
+
+## Reporting Bugs
+Make sure to include verbatim descriptions of any errors you receive.  Please redact any information that might identify your Azure AD instances.
 
 ## Setting up to contribute.
 You'll need
@@ -24,5 +27,7 @@ You'll need
 4. `git push` to push the local repository to your GitHub fork.
 
 ### 3. Make a pull request
-1. Navigate to your GitHub fork (https://github.com/<your github username>/aad-sso-wordpress)
+1. Navigate to your GitHub fork (https://github.com/[your github username]/aad-sso-wordpress)
 2. Click the "New Pull Request" button
+3. Confirm your pull request and click "Create pull request"
+4. Pay attention to your email and notifications.  Your commit will be reviewed before it is merged with the master branch. **This is a collaborative process**
