@@ -18,24 +18,24 @@
 		printf(
 			'<a href="%s" class="button">%s</a> <span class="description">%s</span>',
 			wp_nonce_url(
-				admin_url('options-general.php?page=aadsso_settings' ),
+				admin_url( 'options-general.php?page=aadsso_settings' ),
 				'aadsso_reset_settings',
 				'aadsso_nonce'
 			),
-			esc_html__('Reset Settings', AADSSO),
-			esc_html__('Reset the plugin to default settings. Careful, there is no undo for this.', AADSSO)
+			esc_html__( 'Reset Settings' , AADSSO ),
+			esc_html__( 'Reset the plugin to default settings. Careful, there is no undo for this.' , AADSSO )
 		)
 		?>
 	</p>
 	<?php if( defined( 'AADSSO_SETTINGS_PATH' ) && file_exists( AADSSO_SETTINGS_PATH ) ): ?>
-		<h3><?php echo esc_html__( 'Migrate Plugin', AADSSO ); ?></h3>
+		<h3><?php echo esc_html__( 'Migrate Legacy Settings', AADSSO ); ?></h3>
 		<p><?php printf(
-			__('Old configuration data was found at %s.', AADSSO),
+			__( 'Old configuration data was found at %s.' , AADSSO ),
 			sprintf( __( '<code>%s</code>' , AADSSO ), esc_html( AADSSO_SETTINGS_PATH ) )
 		); ?>  
-			<?php echo esc_html__('This configuration data can be migrated automatically.', AADSSO); ?></p>
+			<?php echo esc_html__( 'This configuration data can be migrated automatically.' , AADSSO ); ?></p>
 		<p><?php printf(
-				__('Delete the file at %s or unset the %s constant to hide this migration utility.'),
+				__( 'Delete the file at %s or unset the %s constant to hide this migration utility.' , AADSSO ),
 				sprintf( __( '<code>%s</code>', AADSSO ) , esc_html( AADSSO_SETTINGS_PATH ) ),
 				sprintf( __( '<code>%s</code>', AADSSO ) , esc_html( 'AADSSO_SETTINGS_PATH' ) )
 			); ?></p>
