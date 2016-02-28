@@ -1,16 +1,19 @@
 <?php
 
 /*
-Plugin Name: Azure Active Directory Single Sign-on for WordPress
+Plugin Name: Single Sign-on with Azure Active Directory
 Plugin URI: http://github.com/psignoret/aad-sso-wordpress
 Description: Allows you to use your organization's Azure Active Directory user accounts to log in to WordPress. If your organization is using Office 365, your user accounts are already in Azure Active Directory. This plugin uses OAuth 2.0 to authenticate users, and the Azure Active Directory Graph to get group membership and other details.
 Author: Philippe Signoret
 Version: 0.6a
 Author URI: http://psignoret.com/
+Text Domain: aad-sso-wordpress
+Domain Path: /languages/
 */
 
 defined( 'ABSPATH' ) or die( 'No script kiddies please!' );
 
+define( 'AADSSO', 'aad-sso-wordpress' );
 define( 'AADSSO_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'AADSSO_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 
@@ -35,7 +38,6 @@ class AADSSO {
 	static $instance = FALSE;
 
 	private $settings = null;
-	const ANTIFORGERY_ID_KEY = 'antiforgery-id';
 
 	public function __construct( $settings ) {
 		$this->settings = $settings;
@@ -43,13 +45,19 @@ class AADSSO {
 		// Setup the admin settings page
 		$this->setup_admin_settings();
 
-		// Set the redirect urls
-		$this->settings->redirect_uri = wp_login_url();
-		$this->settings->logout_redirect_uri = wp_login_url();
-
 		// Some debugging locations
 		//add_action( 'admin_notices', array( $this, 'print_debug' ) );
 		//add_action( 'login_footer', array( $this, 'print_debug' ) );
+
+		// Add a link to the Settings page in the list of plugins
+		add_filter(
+			'plugin_action_links_' . plugin_basename( __FILE__ ),
+			array( $this, 'add_settings_link' )
+		);
+
+		// Register activation and deactivation hooks
+		register_activation_hook( __FILE__, array( 'AADSSO', 'activate' ) );
+		register_deactivation_hook( __FILE__, array( 'AADSSO', 'deactivate' ) );
 
 		// If plugin is not configured, we shouldn't proceed.
 		if ( ! $this->plugin_is_configured() ) {
@@ -77,6 +85,36 @@ class AADSSO {
 
 		// Redirect user back to original location
 		add_filter( 'login_redirect', array( $this, 'redirect_after_login' ), 20, 3 );
+
+		// Register the textdomain for localization after all plugins are loaded
+		add_action( 'plugins_loaded', array( $this, 'load_textdomain' ) );
+	}
+
+	/**
+	 * Run on activation, checks for stored settings, and if none are found, sets defaults.
+	 */
+	public static function activate() {
+		$stored_settings = get_option( 'aadsso_settings', null );
+		if ( null === $stored_settings ) {
+			update_option( 'aadsso_settings', AADSSO_Settings::get_defaults() );
+		}
+	}
+
+	/**
+	 * Run on deactivation, currently does nothing.
+	 */
+	public static function deactivate() { }
+
+	/**
+	 * Load the textdomain for localization.
+	 */
+	public function load_textdomain()
+	{
+		load_plugin_textdomain(
+			AADSSO,
+			false, // deprecated
+			dirname( plugin_basename( __FILE__ ) ) . '/languages/'
+		);
 	}
 
 	/**
@@ -86,9 +124,10 @@ class AADSSO {
 	 */
 	public function plugin_is_configured() {
 		return
-			isset( $this->settings->client_id, $this->settings->client_secret )
-			 && $this->settings->client_id
-			 && $this->settings->client_secret;
+			   ! empty( $this->settings->client_id )
+			&& ! empty( $this->settings->client_secret )
+			&& ! empty( $this->settings->redirect_uri )
+		;
 	}
 
 	/**
@@ -108,8 +147,6 @@ class AADSSO {
 	 */
 	public function save_redirect_and_maybe_bypass_login() {
 
-		$_SESSION['settings'] = $this->settings;
-
 		$bypass = apply_filters(
 			'aad_auto_forward_login',
 			$this->settings->enable_auto_forward_to_aad
@@ -124,7 +161,7 @@ class AADSSO {
 
 			// Save the redirect_to query param ( if present ) to session
 			if ( isset( $_GET['redirect_to'] ) ) {
-				$_SESSION['redirect_to'] = $_GET['redirect_to'];
+				$_SESSION['aadsso_redirect_to'] = $_GET['redirect_to'];
 			}
 
 			if ( $bypass && ! isset( $_GET['code'] ) ) {
@@ -145,8 +182,8 @@ class AADSSO {
 	 * @return string
 	 */
 	public function redirect_after_login( $redirect_to, $requested_redirect_to, $user ) {
-		if ( is_a( $user, 'WP_User' ) && isset( $_SESSION['redirect_to'] ) ) {
-			$redirect_to = $_SESSION['redirect_to'];
+		if ( is_a( $user, 'WP_User' ) && isset( $_SESSION['aadsso_redirect_to'] ) ) {
+			$redirect_to = $_SESSION['aadsso_redirect_to'];
 		}
 
 		return $redirect_to;
@@ -199,14 +236,14 @@ class AADSSO {
 		 */
 		if ( isset( $_GET['code'] ) ) {
 
-			$antiforgery_id = $_SESSION[ self::ANTIFORGERY_ID_KEY ];
+			$antiforgery_id = $_SESSION['aadsso_antiforgery-id'];
 			$state_is_missing = ! isset( $_GET['state'] );
 			$state_doesnt_match = $_GET['state'] != $antiforgery_id;
 
 			if ( $state_is_missing || $state_doesnt_match ) {
 				return new WP_Error(
 					'antiforgery_id_mismatch',
-					sprintf( 'ANTIFORGERY_ID mismatch. Expecting %s', $antiforgery_id )
+					sprintf( __( 'ANTIFORGERY_ID mismatch. Expecting %s', AADSSO ), $antiforgery_id )
 				);
 			}
 
@@ -225,7 +262,7 @@ class AADSSO {
 				} catch ( Exception $e ) {
 					return new WP_Error(
 						'invalid_id_token',
-						sprintf( 'ERROR: Invalid id_token. %s', $e->getMessage() )
+						sprintf( __( 'ERROR: Invalid id_token. %s', AADSSO ), $e->getMessage() )
 					);
 				}
 
@@ -248,14 +285,14 @@ class AADSSO {
 				return new WP_Error(
 					$token->error,
 					sprintf(
-						'ERROR: Could not get an access token to Azure Active Directory. %s',
+						__( 'ERROR: Could not get an access token to Azure Active Directory. %s', AADSSO ),
 						$token->error_description
 					)
 				);
 			} else {
 
 				// None of the above, I have no idea what happened.
-				return new WP_Error( 'unknown', 'ERROR: An unknown error occured.' );
+				return new WP_Error( 'unknown', __( 'ERROR: An unknown error occured.', AADSSO ) );
 			}
 
 		} elseif ( isset( $_GET['error'] ) ) {
@@ -264,7 +301,7 @@ class AADSSO {
 			return new WP_Error(
 				$_GET['error'],
 				sprintf(
-					'ERROR: Access denied to Azure Active Directory. %s',
+					__( 'ERROR: Access denied to Azure Active Directory. %s', AADSSO ),
 					$_GET['error_description']
 				)
 			);
@@ -305,7 +342,7 @@ class AADSSO {
 				return new WP_Error(
 					'user_not_registered',
 					sprintf(
-						'ERROR: The authenticated user %s is not a registered user in this blog.',
+						__( 'ERROR: The authenticated user %s is not a registered user in this blog.', AADSSO ),
 						$jwt->upn
 					)
 				);
@@ -353,7 +390,7 @@ class AADSSO {
 			return new WP_Error(
 				'user_not_member_of_required_group',
 				sprintf(
-					'ERROR: AAD user %s is not a member of any group granting a role.',
+					__( 'ERROR: AAD user %s is not a member of any group granting a role.', AADSSO ),
 					$aad_user_id
 				)
 			);
@@ -363,13 +400,27 @@ class AADSSO {
 	}
 
 	/**
+	 * Adds a link to the settings page.
+	 *
+	 * @param array $links The existing list of links
+	 *
+	 * @return array The new list of links to display
+	 */
+	function add_settings_link( $links ) {
+		$link_to_settings =
+			'<a href="' . admin_url( 'options-general.php?page=aadsso_settings' ) . '">Settings</a>';
+		array_push( $links, $link_to_settings );
+		return $links;
+	}
+
+	/**
 	 * Generates the URL used to initiate a sign-in with Azure AD.
 	 *
 	 * @return string The authorization URL used to initiate a sign-in to Azure AD.
 	 */
 	function get_login_url() {
-		$antiforgery_id = com_create_guid ();
-		$_SESSION[ self::ANTIFORGERY_ID_KEY ] = $antiforgery_id;
+		$antiforgery_id = com_create_guid();
+		$_SESSION['aadsso_antiforgery-id'] = $antiforgery_id;
 		return AADSSO_AuthorizationHelper::get_authorization_url( $this->settings, $antiforgery_id );
 	}
 
@@ -377,10 +428,17 @@ class AADSSO {
 	 * Generates the URL for logging out of Azure AD. (Does not log out of WordPress.)
 	 */
 	function get_logout_url() {
+
+		// logout_redirect_uri is not a required setting, use default value if none is set
+		$logout_redirect_uri = $this->settings->logout_redirect_uri;
+		if ( empty( $logout_redirect_uri ) ) {
+			$logout_redirect_uri = AADSSO_Settings::get_defaults('logout_redirect_uri');
+		}
+
 		return $this->settings->end_session_endpoint
 			. '?'
 			. http_build_query(
-				array( 'post_logout_redirect_uri' => $this->settings->logout_redirect_uri )
+				array( 'post_logout_redirect_uri' => $logout_redirect_uri )
 			);
 	}
 
@@ -419,9 +477,9 @@ class AADSSO {
 	 */
 	function print_plugin_not_configured() {
 		echo '<div id="message" class="error"><p>'
-			. __( 'Azure Active Directory Single Sign-on for WordPress required settings are not defined. Update them under '
-			. 'Settings > Azure AD.', 'aad-sso-wordpress' )
-			.'</p></div>';
+		. __( 'Single Sign-on with Azure Active Directory required settings are not defined. '
+		      . 'Update them under Settings > Azure AD.', AADSSO )
+		      .'</p></div>';
 	}
 
 	/**
@@ -438,23 +496,22 @@ class AADSSO {
 	 * Renders the CSS used by the HTML injected into the login page.
 	 */
 	function print_login_css() {
-		wp_enqueue_style( 'aad-sso-wordpress', AADSSO_PLUGIN_URL . '/login.css' );
+		wp_enqueue_style( AADSSO, AADSSO_PLUGIN_URL . '/login.css' );
 	}
 
 	/**
 	 * Renders the link used to initiate the login to Azure AD.
 	 */
 	function print_login_link() {
-		$html = <<<EOF
-			<p class="aadsso-login-form-text">
-				<a href="%s">Sign in with your %s account</a><br />
-				<a class="dim" href="%s">Sign out</a>
-			</p>
-EOF;
+		$html = '<p class="aadsso-login-form-text">';
+		$html .= '<a href="%s">';
+		$html .= sprintf( __( 'Sign in with your %s account', AADSSO ),
+		                  htmlentities( $this->settings->org_display_name ) );
+		$html .= '</a><br /><a class="dim" href="%s">'
+		         . __( 'Sign out', AADSSO ) . '</a></p>';
 		printf(
 			$html,
 			$this->get_login_url(),
-			htmlentities( $this->settings->org_display_name ),
 			$this->get_logout_url()
 		);
 	}
