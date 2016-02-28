@@ -28,9 +28,15 @@ class AADSSO_Settings_Page {
 
 		// Reset settings if requested to.
 		add_action( 'admin_init', array( $this, 'maybe_reset_settings' ) );
+		
+		// Migrate settings if requested to.
+		add_action( 'admin_init', array( $this, 'maybe_migrate_settings' ) );
 
 		// If settings were reset, show confirmation.
 		add_action( 'all_admin_notices', array( $this, 'notify_if_reset_successful' ) );
+		
+		// If settings were migrated, show confirmation
+		add_action( 'all_admin_notices', array( $this, 'notify_json_migrate_status' ) );
 
 		// If settings were migrated, show confirmation
 		add_action( 'all_admin_notices', array( $this, 'notify_json_migrate_status' ) );
