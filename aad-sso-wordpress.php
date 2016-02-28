@@ -433,7 +433,6 @@ class AADSSO {
 		$logout_redirect_uri = $this->settings->logout_redirect_uri;
 		if ( empty( $logout_redirect_uri ) ) {
 			$logout_redirect_uri = AADSSO_Settings::get_defaults('logout_redirect_uri');
-			error_log( 'AADSSO::get_logout_url Using default: [' . $logout_redirect_uri . ']' );
 		}
 
 		return $this->settings->end_session_endpoint

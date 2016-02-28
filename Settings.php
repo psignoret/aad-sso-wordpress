@@ -142,7 +142,6 @@ class AADSSO_Settings {
 	 */
 	public static function get_defaults( $key = null ) {
 
-		error_log( 'AADSSO_Settings::get_defaults ('. $key . ')' );
 		$defaults = array(
 			'org_display_name' => get_bloginfo( 'name' ),
 			'field_to_match_to_upn' => 'email',
@@ -155,11 +154,9 @@ class AADSSO_Settings {
 		);
 
 		if ( null === $key ) {
-			error_log( 'AADSSO_Settings::get_defaults key was null, returning all defaults' );
 			return $defaults;
 		} else {
 			if ( isset( $defaults[ $key ] ) ) {
-				error_log( 'AADSSO_Settings::get_defaults returning just [' . $key . ']' );
 				return $defaults[ $key ];
 			} else {
 				return null;
