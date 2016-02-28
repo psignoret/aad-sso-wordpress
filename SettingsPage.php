@@ -9,8 +9,16 @@
 class AADSSO_Settings_Page {
 
 	private $settings;
+	
+	/**
+	 * The option page's hook_suffix returned from add_options_page
+	 */ 
+	private $options_page_id;
 
 	public function __construct() {
+
+		// Ensure jQuery is loaded.
+		add_action( 'admin_enqueue_scripts', array( $this, 'maybe_include_jquery' ) );
 
 		// Add the 'Azure AD' options page.
 		add_action( 'admin_menu', array( $this, 'add_options_page' ) );
@@ -58,7 +66,7 @@ class AADSSO_Settings_Page {
 	 * Adds the 'Azure AD' options page.
 	 */
 	public function add_options_page() {
-		add_options_page(
+		$this->options_page_id = add_options_page(
 			__( 'Azure Active Directory Settings', AADSSO ), // page_title
 			'Azure AD', // menu_title
 			'manage_options', // capability
@@ -456,5 +464,22 @@ class AADSSO_Settings_Page {
 			isset( $this->settings[ $name ] ) && $this->settings[ $name ] ? 'checked' : '',
 			$label
 		);
+	}
+
+	/**
+	 * Indicates if user is currently on this settings page.
+	 */
+	public function is_on_options_page() {
+		$screen = get_current_screen();
+		return $screen->id === $this->options_page_id;
+	} 
+
+	/**
+	 * Ensures jQuery is loaded
+	 */
+	public function maybe_include_jquery() {
+		if ( $this->is_on_options_page() ) {
+			wp_enqueue_script( 'jquery' );
+		}
 	}
 }
