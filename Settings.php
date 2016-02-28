@@ -167,15 +167,15 @@ class AADSSO_Settings {
 	public static function init() {
 
 		$instance = self::get_instance();
-		
+
 		// First, set the settings stored in the WordPress database.
 		$instance->set_settings( get_option( 'aadsso_settings' ) );
 
 		/*
 		 * Then, add the settings stored in the OpenID Connect configuration endpoint.
 		 * We're using transient as a cache, to prevent from making a request on every WP page load.
-		 * Default transient expiration is one hour (3600 seconds), but in case a forced load is 
-		 * required, adding aadsso_reload_openid_configuration=1 in the URL will do the trick.  
+		 * Default transient expiration is one hour (3600 seconds), but in case a forced load is
+		 * required, adding aadsso_reload_openid_configuration=1 in the URL will do the trick.
 		 */
 		$openid_configuration = get_transient( 'aadsso_openid_configuration' );
 		if( false === $openid_configuration || isset( $_GET['aadsso_reload_openid_config'] ) ) {
@@ -213,12 +213,12 @@ class AADSSO_Settings {
 	 * @return \AADSSO_Settings The current (only) instance with new configuration.
 	 */
 	function set_settings( $settings ) {
-		
+
 		// Expecting $settings to be an associative array. Do nothing if it isn't.
 		if ( ! is_array( $settings ) || empty( $settings ) ) {
 			return $this;
 		}
-		
+
 		/*
 		 * This should ideally be stored as role => group object ID.
 		 * Flipping this array at the last possible moment is ideal, because it keeps

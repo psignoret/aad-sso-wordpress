@@ -120,6 +120,7 @@ class AADSSO {
 			dirname( plugin_basename( __FILE__ ) ) . '/languages/'
 		);
 	}
+
 	/**
 	 * Determine if required plugin settings are stored.
 	 *
@@ -245,7 +246,7 @@ class AADSSO {
 			if ( $state_is_missing || $state_doesnt_match ) {
 				return new WP_Error(
 					'antiforgery_id_mismatch',
-					sprintf( __( 'ANTIFORGERY_ID mismatch. Expecting %s' , AADSSO ), $antiforgery_id )
+					sprintf( __( 'ANTIFORGERY_ID mismatch. Expecting %s', AADSSO ), $antiforgery_id )
 				);
 			}
 
@@ -287,14 +288,14 @@ class AADSSO {
 				return new WP_Error(
 					$token->error,
 					sprintf(
-						__( 'ERROR: Could not get an access token to Azure Active Directory. %s' , AADSSO ),
+						__( 'ERROR: Could not get an access token to Azure Active Directory. %s', AADSSO ),
 						$token->error_description
 					)
 				);
 			} else {
 
 				// None of the above, I have no idea what happened.
-				return new WP_Error( 'unknown', __( 'ERROR: An unknown error occured.' , AADSSO ) );
+				return new WP_Error( 'unknown', __( 'ERROR: An unknown error occured.', AADSSO ) );
 			}
 
 		} elseif ( isset( $_GET['error'] ) ) {
@@ -303,7 +304,7 @@ class AADSSO {
 			return new WP_Error(
 				$_GET['error'],
 				sprintf(
-					__( 'ERROR: Access denied to Azure Active Directory. %s' , AADSSO ),
+					__( 'ERROR: Access denied to Azure Active Directory. %s', AADSSO ),
 					$_GET['error_description']
 				)
 			);
@@ -344,7 +345,7 @@ class AADSSO {
 				return new WP_Error(
 					'user_not_registered',
 					sprintf(
-						__( 'ERROR: The authenticated user %s is not a registered user in this blog.' , AADSSO ),
+						__( 'ERROR: The authenticated user %s is not a registered user in this blog.', AADSSO ),
 						$jwt->upn
 					)
 				);
@@ -392,7 +393,7 @@ class AADSSO {
 			return new WP_Error(
 				'user_not_member_of_required_group',
 				sprintf(
-					__( 'ERROR: AAD user %s is not a member of any group granting a role.' , AADSSO ),
+					__( 'ERROR: AAD user %s is not a member of any group granting a role.', AADSSO ),
 					$aad_user_id
 				)
 			);
