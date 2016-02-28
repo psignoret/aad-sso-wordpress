@@ -35,10 +35,23 @@
 		); ?>  
 			<?php echo esc_html__( 'This configuration data can be migrated automatically.' , AADSSO ); ?></p>
 		<p><?php printf(
-				esc_html__( 'Delete the file at %s or unset the %s constant to hide this migration utility.' , AADSSO ),
-				sprintf( __( '<code>%s</code>', AADSSO ) , esc_html( AADSSO_SETTINGS_PATH ) ),
-				sprintf( __( '<code>%s</code>', AADSSO ) , esc_html( 'AADSSO_SETTINGS_PATH' ) )
+				esc_html__( 'Delete the file at %s to hide this migration utility.' , AADSSO ),
+				sprintf( __( '<code>%s</code>', AADSSO ) , esc_html( AADSSO_SETTINGS_PATH ) )
 			); ?></p>
+		
+		<?php // The web server must have write permission on the parent directory for this to succeed. ?>
+		<?php if( is_writable( AADSSO_SETTINGS_PATH ) && is_writable( dirname( AADSSO_SETTINGS_PATH ) ) ): ?>
+		<p><?php printf(
+			esc_html__( 'If migration is successful, migration will delete this configuration file, %s.' , AADSSO ),
+				sprintf( __( '<code>%s</code>', AADSSO ) , esc_html( AADSSO_SETTINGS_PATH ) )
+			); ?></p>
+		<?php else: ?>
+			<p><?php printf(
+					esc_html__( 'If migration is successful, migration will be unable to delete the configuration file at %s.  It is recommended to delete the file after migration.' , AADSSO ),
+					sprintf( __( '<code>%s</code>', AADSSO ) , esc_html( AADSSO_SETTINGS_PATH ) )
+				); ?></p>
+		<?php endif; ?>
+		
 		<p><?php
 		printf(
 			'<a href="%s" class="button">%s</a> <span class="description">%s</span>',

@@ -37,9 +37,10 @@ class AADSSO_Settings_Page {
 		
 		// If settings were migrated, show confirmation
 		add_action( 'all_admin_notices', array( $this, 'notify_json_migrate_status' ) );
-
-		// If settings were migrated, show confirmation
-		add_action( 'all_admin_notices', array( $this, 'notify_json_migrate_status' ) );
+		
+		// Remove query arguments from the REQUEST_URI (leaves $_GET untouched).  Resolves issue #58
+		$_SERVER['REQUEST_URI'] = remove_query_arg( 'aadsso_reset', $_SERVER['REQUEST_URI'] );
+		$_SERVER['REQUEST_URI'] = remove_query_arg( 'aadsso_migrate_from_json_status', $_SERVER['REQUEST_URI'] );
 
 		// Load stored configuration values (or defaults).
 		$this->settings = get_option( 'aadsso_settings', AADSSO_Settings::get_defaults() );
@@ -90,7 +91,7 @@ class AADSSO_Settings_Page {
 			
 			update_option( 'aadsso_settings', $sanitized_settings );
 			
-			if( is_writable( AADSSO_SETTINGS_PATH ) && unlink( AADSSO_SETTINGS_PATH ) ) {
+			if( is_writable( AADSSO_SETTINGS_PATH ) && is_writable( dirname( AADSSO_SETTINGS_PATH ) ) && unlink( AADSSO_SETTINGS_PATH ) ) {
 				wp_redirect( admin_url( 'options-general.php?page=aadsso_settings&aadsso_migrate_from_json_status=success' ) );
 			} else {
 				wp_redirect( admin_url( 'options-general.php?page=aadsso_settings&aadsso_migrate_from_json_status=manual' ) );
