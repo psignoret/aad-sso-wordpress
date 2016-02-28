@@ -2,10 +2,13 @@
 This WordPress plugin is actively maintained by contributors like you.  Contributing is easy.
 
 ## Getting Started
-If you would like to contribute, but you don't have any ideas where to begin, check the [Issue Tracker](https://github.com/psignoret/aad-sso-wordpress/issues).
+If you would like to contribute, but you don't have any ideas where to begin, check the **main** [Issue Tracker](https://github.com/psignoret/aad-sso-wordpress/issues).  Issues submitted on your fork's Issue tracker may not be seen.
 
 ## Reporting Bugs
-Make sure to include verbatim descriptions of any errors you receive.  Please redact any information that might identify your Azure AD instances.
+- Make sure the bug doesn't already exist (search the [Issue Tracker](https://github.com/psignoret/aad-sso-wordpress/issues)).  If the bug has already been submitted, use the discussion thread on the issue to add any helpful supporting details.
+- Include any errors you receive.  Please redact any information that might identify your Azure AD instances.
+- Include any steps to reproduce the bug.
+- Include the expected output or behavior.  It should be clear _why_ you think you found a bug.
 
 ## Setting up to contribute.
 You'll need
