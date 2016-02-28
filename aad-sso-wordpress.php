@@ -45,10 +45,6 @@ class AADSSO {
 		// Setup the admin settings page
 		$this->setup_admin_settings();
 
-		// Set the redirect urls
-		$this->settings->redirect_uri = wp_login_url();
-		$this->settings->logout_redirect_uri = wp_login_url();
-
 		// Some debugging locations
 		//add_action( 'admin_notices', array( $this, 'print_debug' ) );
 		//add_action( 'login_footer', array( $this, 'print_debug' ) );
@@ -128,9 +124,10 @@ class AADSSO {
 	 */
 	public function plugin_is_configured() {
 		return
-			isset( $this->settings->client_id, $this->settings->client_secret )
-			 && $this->settings->client_id
-			 && $this->settings->client_secret;
+			   ! empty( $this->settings->client_id )
+			&& ! empty( $this->settings->client_secret )
+			&& ! empty( $this->settings->redirect_uri )
+		;
 	}
 
 	/**
@@ -431,10 +428,18 @@ class AADSSO {
 	 * Generates the URL for logging out of Azure AD. (Does not log out of WordPress.)
 	 */
 	function get_logout_url() {
+
+		// logout_redirect_uri is not a required setting, use default value if none is set
+		$logout_redirect_uri = $this->settings->logout_redirect_uri;
+		if ( empty( $logout_redirect_uri ) ) {
+			$logout_redirect_uri = AADSSO_Settings::get_defaults('logout_redirect_uri');
+			error_log( 'AADSSO::get_logout_url Using default: [' . $logout_redirect_uri . ']' );
+		}
+
 		return $this->settings->end_session_endpoint
 			. '?'
 			. http_build_query(
-				array( 'post_logout_redirect_uri' => $this->settings->logout_redirect_uri )
+				array( 'post_logout_redirect_uri' => $logout_redirect_uri )
 			);
 	}
 

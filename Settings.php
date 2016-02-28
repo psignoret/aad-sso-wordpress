@@ -134,17 +134,37 @@ class AADSSO_Settings {
 	/**
 	 * Returns a sensible set of defaults for the plugin.
 	 *
-	 * @return array Sensible default settings for the plugin.
+	 * If key is provided, only that default is returned.
+	 *
+	 * @param string Optional settings key to return, if only one is desired.
+	 *
+	 * @return mixed Sensible default settings for the plugin.
 	 */
-	public static function get_defaults() {
-		return array(
+	public static function get_defaults( $key = null ) {
+
+		error_log( 'AADSSO_Settings::get_defaults ('. $key . ')' );
+		$defaults = array(
 			'org_display_name' => get_bloginfo( 'name' ),
 			'field_to_match_to_upn' => 'email',
 			'default_wp_role' => null,
 			'enable_auto_provisioning' => false,
 			'enable_auto_forward_to_aad' => false,
 			'enable_aad_group_to_wp_role' => false,
+			'redirect_uri' => wp_login_url(),
+			'logout_redirect_uri' => wp_login_url(),
 		);
+
+		if ( null === $key ) {
+			error_log( 'AADSSO_Settings::get_defaults key was null, returning all defaults' );
+			return $defaults;
+		} else {
+			if ( isset( $defaults[ $key ] ) ) {
+				error_log( 'AADSSO_Settings::get_defaults returning just [' . $key . ']' );
+				return $defaults[ $key ];
+			} else {
+				return null;
+			}
+		}
 	}
 
 	/**

@@ -133,6 +133,22 @@ class AADSSO_Settings_Page {
 		);
 
 		add_settings_field(
+			'redirect_uri', // id
+			__( 'Redirect URL', AADSSO ), // title
+			array( $this, 'redirect_uri_callback' ), // callback
+			'aadsso_settings_page', // page
+			'aadsso_settings_general' // section
+		);
+
+		add_settings_field(
+			'logout_redirect_uri', // id
+			__( 'Logout redirect URL', AADSSO ), // title
+			array( $this, 'logout_redirect_uri_callback' ), // callback
+			'aadsso_settings_page', // page
+			'aadsso_settings_general' // section
+		);
+
+		add_settings_field(
 			'field_to_match_to_upn', // id
 			__( 'Field to match to UPN', AADSSO ), // title
 			array( $this, 'field_to_match_to_upn_callback' ), // callback
@@ -203,23 +219,22 @@ class AADSSO_Settings_Page {
 	 * @return array The sanitized and valid data to be stored.
 	 */
 	public function sanitize_settings( $input ) {
-		
+
 		$sanitary_values = array();
 
-		if ( isset( $input['org_display_name'] ) ) {
-			$sanitary_values['org_display_name'] = sanitize_text_field( $input['org_display_name'] );
-		}
+		$text_fields = array(
+			'org_display_name',
+			'org_domain_hint',
+			'client_id',
+			'client_secret',
+			'redirect_uri',
+			'logout_redirect_uri',
+		);
 
-		if ( isset( $input['org_domain_hint'] ) ) {
-			$sanitary_values['org_domain_hint'] = sanitize_text_field( $input['org_domain_hint'] );
-		}
-
-		if ( isset( $input['client_id'] ) ) {
-			$sanitary_values['client_id'] = sanitize_text_field( $input['client_id'] );
-		}
-
-		if ( isset( $input['client_secret'] ) ) {
-			$sanitary_values['client_secret'] = sanitize_text_field( $input['client_secret'] );
+		foreach ($text_fields as $text_field) {
+			if ( isset( $input[ $text_field ] ) ) {
+				$sanitary_values[ $text_field ] = sanitize_text_field( $input[ $text_field ] );
+			}
 		}
 
 		// Default field_to_match_to_upn is 'email'
@@ -348,6 +363,39 @@ class AADSSO_Settings_Page {
 		printf(
 			'<p class="description">%s</p>',
 			__( 'A secret key for the Azure AD application representing this blog.', AADSSO )
+		);
+	}
+
+	/**
+	 * Renders the `redirect_uri` form control
+	 **/
+	public function redirect_uri_callback() {
+		$this->render_text_field( 'redirect_uri' );
+		printf(
+			' <a href="#" onclick="jQuery(\'#redirect_uri\').val(\'%s\'); return false;">%s</a>' 
+			. '<p class="description">%s</p>',
+			wp_login_url(),
+			__( 'Set default' ),
+			__( 'The URL where the user is redirected to after authenticating with Azure AD. '
+			  . 'This URL must be registered in Azure AD as a valid redirect URL, and it must be a '
+			  . 'page that invokes the "authenticate" filter. If you don\'t know what to set, leave '
+			  . 'the default value (which is this blog\'s login page).', AADSSO )
+		);
+	}
+
+	/**
+	 * Renders the `logout_redirect_uri` form control
+	 **/
+	public function logout_redirect_uri_callback() {
+		$this->render_text_field( 'logout_redirect_uri' );
+		printf(
+			' <a href="#" onclick="jQuery(\'#logout_redirect_uri\').val(\'%s\'); return false;">%s</a>'  
+			. '<p class="description">%s</p>',
+			wp_login_url(),
+			__( 'Set default' ),
+			__( 'The URL where the user is redirected to after signing out of Azure AD. '
+			  . 'This URL must be registered in Azure AD as a valid redirect URL. (This does not affect '
+			  . ' logging out of the blog, it is only used when logging out of Azure AD.)', AADSSO )
 		);
 	}
 
