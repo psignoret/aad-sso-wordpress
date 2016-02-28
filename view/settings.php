@@ -1,6 +1,6 @@
 <div class="wrap">
 
-	<h2><?php echo __( 'Single Sign-on with Azure Active Directory' , AADSSO ); ?></h2>
+	<h2><?php echo __( 'Single Sign-on with Azure Active Directory', AADSSO ); ?></h2>
 	<p><?php echo __( 'Settings for configuring single sign-on with Azure Active Directory can be configured here.', AADSSO ); ?></p>
 
 	<form method="post" action="options.php">

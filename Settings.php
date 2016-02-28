@@ -134,17 +134,37 @@ class AADSSO_Settings {
 	/**
 	 * Returns a sensible set of defaults for the plugin.
 	 *
-	 * @return array Sensible default settings for the plugin.
+	 * If key is provided, only that default is returned.
+	 *
+	 * @param string Optional settings key to return, if only one is desired.
+	 *
+	 * @return mixed Sensible default settings for the plugin.
 	 */
-	public static function get_defaults() {
-		return array(
+	public static function get_defaults( $key = null ) {
+
+		error_log( 'AADSSO_Settings::get_defaults ('. $key . ')' );
+		$defaults = array(
 			'org_display_name' => get_bloginfo( 'name' ),
 			'field_to_match_to_upn' => 'email',
 			'default_wp_role' => null,
 			'enable_auto_provisioning' => false,
 			'enable_auto_forward_to_aad' => false,
 			'enable_aad_group_to_wp_role' => false,
+			'redirect_uri' => wp_login_url(),
+			'logout_redirect_uri' => wp_login_url(),
 		);
+
+		if ( null === $key ) {
+			error_log( 'AADSSO_Settings::get_defaults key was null, returning all defaults' );
+			return $defaults;
+		} else {
+			if ( isset( $defaults[ $key ] ) ) {
+				error_log( 'AADSSO_Settings::get_defaults returning just [' . $key . ']' );
+				return $defaults[ $key ];
+			} else {
+				return null;
+			}
+		}
 	}
 
 	/**
@@ -167,15 +187,15 @@ class AADSSO_Settings {
 	public static function init() {
 
 		$instance = self::get_instance();
-		
+
 		// First, set the settings stored in the WordPress database.
 		$instance->set_settings( get_option( 'aadsso_settings' ) );
 
 		/*
 		 * Then, add the settings stored in the OpenID Connect configuration endpoint.
 		 * We're using transient as a cache, to prevent from making a request on every WP page load.
-		 * Default transient expiration is one hour (3600 seconds), but in case a forced load is 
-		 * required, adding aadsso_reload_openid_configuration=1 in the URL will do the trick.  
+		 * Default transient expiration is one hour (3600 seconds), but in case a forced load is
+		 * required, adding aadsso_reload_openid_configuration=1 in the URL will do the trick.
 		 */
 		$openid_configuration = get_transient( 'aadsso_openid_configuration' );
 		if( false === $openid_configuration || isset( $_GET['aadsso_reload_openid_config'] ) ) {
@@ -213,12 +233,12 @@ class AADSSO_Settings {
 	 * @return \AADSSO_Settings The current (only) instance with new configuration.
 	 */
 	function set_settings( $settings ) {
-		
+
 		// Expecting $settings to be an associative array. Do nothing if it isn't.
 		if ( ! is_array( $settings ) || empty( $settings ) ) {
 			return $this;
 		}
-		
+
 		/*
 		 * This should ideally be stored as role => group object ID.
 		 * Flipping this array at the last possible moment is ideal, because it keeps
