@@ -31,3 +31,8 @@ You'll need
 2. Click the "New Pull Request" button
 3. Confirm your pull request and click "Create pull request"
 4. Pay attention to your email and notifications.  Your commit will be reviewed before it is merged with the master branch. **This is a collaborative process**
+
+### 4. Things to keep in mind
+1. All strings that are presented to the user should be be `i18n` ready.  The text domain is set in the `AADSSO` constant.  Please use the constant for all references to the text domain.  Please read [i18n For WordPress Developers](https://codex.wordpress.org/I18n_for_WordPress_Developers) and [How To Internationalize Your Plugin](https://developer.wordpress.org/plugins/internationalization/how-to-internationalize-your-plugin/)
+2. All class members and functions should not include `aadsso` prefixes.  However, any data that will exist outside the scope should be namespaced `aadsso_` to prevent conflicts.
+3. WordPress Coding Style should be adhered to.  Before your pull request, check for common Paren Spacing and Yoda Style errors.
