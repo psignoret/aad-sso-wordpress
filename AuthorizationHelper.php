@@ -107,7 +107,8 @@ class AADSSO_AuthorizationHelper
 		$last_exception = null;
 
 		// TODO: cache the keys
-		$discovery = json_decode( file_get_contents( $settings->jwks_uri ) );
+		$jwks = wp_remote_retrieve_body( wp_remote_get( $settings->jwks_uri ) );
+		$discovery = json_decode( $jwks );
 
 		if ( null == $discovery->keys ) {
 			throw new DomainException( 'jwks_uri does not contain the keys attribute' );
