@@ -237,12 +237,22 @@ class AADSSO_Settings {
 		}
 
 		/*
-		 * This should ideally be stored as role => group object ID.
-		 * Flipping this array at the last possible moment is ideal, because it keeps
-		 * the UI as flexible as possible.
+		 * Invert the <role> => <CSV list of groups> map (which is what is stored in the database) to a flat
+		 * <group> => <role> map is used during the authorization check. If a group appears twice, the first
+		 * occurence (the first role) will take precedence.
 		 */
 		if( ! empty( $settings['role_map'] ) ) {
-			$settings['aad_group_to_wp_role_map'] = array_flip( $settings['role_map'] );
+			$settings['aad_group_to_wp_role_map'] = array();
+			foreach ( $settings['role_map'] as $role_slug => $group_ids_list ) {
+				$group_ids = explode( ',', $group_ids_list );
+				if ( ! empty( $group_ids ) ) {
+					foreach ( $group_ids as $group_id ) {
+						if ( ! isset( $settings['aad_group_to_wp_role_map'][ $group_id ] ) ) {
+							$settings['aad_group_to_wp_role_map'][ $group_id ] = $role_slug;
+						}
+					}
+				}
+			}
 		}
 
 		// Overwrite any provided setting values.

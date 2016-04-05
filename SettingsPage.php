@@ -9,10 +9,10 @@
 class AADSSO_Settings_Page {
 
 	private $settings;
-	
+
 	/**
 	 * The option page's hook_suffix returned from add_options_page
-	 */ 
+	 */
 	private $options_page_id;
 
 	public function __construct() {
@@ -28,16 +28,16 @@ class AADSSO_Settings_Page {
 
 		// Reset settings if requested to.
 		add_action( 'admin_init', array( $this, 'maybe_reset_settings' ) );
-		
+
 		// Migrate settings if requested to.
 		add_action( 'admin_init', array( $this, 'maybe_migrate_settings' ) );
 
 		// If settings were reset, show confirmation.
 		add_action( 'all_admin_notices', array( $this, 'notify_if_reset_successful' ) );
-		
+
 		// If settings were migrated, show confirmation
 		add_action( 'all_admin_notices', array( $this, 'notify_json_migrate_status' ) );
-		
+
 		// Remove query arguments from the REQUEST_URI (leaves $_GET untouched).  Resolves issue #58
 		$_SERVER['REQUEST_URI'] = remove_query_arg( 'aadsso_reset', $_SERVER['REQUEST_URI'] );
 		$_SERVER['REQUEST_URI'] = remove_query_arg( 'aadsso_migrate_from_json_status', $_SERVER['REQUEST_URI'] );
@@ -58,7 +58,7 @@ class AADSSO_Settings_Page {
 			wp_redirect( admin_url( 'options-general.php?page=aadsso_settings&aadsso_reset=success' ) );
 		}
 	}
-	
+
 	/**
 	 * Migrates old settings (Settings.json) to the database and attempts to delete the old settings file.
 	 */
@@ -74,31 +74,40 @@ class AADSSO_Settings_Page {
 			&& wp_verify_nonce( $_GET['aadsso_nonce'], 'aadsso_migrate_from_json' )
 			&& defined( 'AADSSO_SETTINGS_PATH' )
 			&& file_exists( AADSSO_SETTINGS_PATH );
-			
+
 		if ( $should_migrate_settings ) {
-			
+
 			$legacy_settings = json_decode( file_get_contents( AADSSO_SETTINGS_PATH ), true );
-			
-			if( null === $legacy_settings ) {
+
+			if ( null === $legacy_settings ) {
 				wp_redirect( admin_url( 'options-general.php?page=aadsso_settings&aadsso_migrate_from_json_status=invalid_json') );
 			}
-			
-			if( isset( $legacy_settings['aad_group_to_wp_role_map'] ) ) {
-				$legacy_settings['role_map'] = array_flip( $legacy_settings['aad_group_to_wp_role_map'] );
+
+			// If aad_group_to_wp_role_map is set in the legacy settings, build the inverted role_map array,
+			// which is what is ultimately saved in the database.
+			if ( isset( $legacy_settings['aad_group_to_wp_role_map'] ) ) {
+				$legacy_settings['role_map'] = array();
+				foreach ($aad_group_to_wp_role_map as $group_id => $role_slug ) {
+					if ( ! isset( $legacy_settings['role_map'][$role_slug] ) ) {
+						$legacy_settings['role_map'][$role_slug] = $group_id;
+					} else {
+						$legacy_settings['role_map'][$role_slug] .= ',' . $group_id;
+					}
+				}
 			}
-			
+
 			$sanitized_settings = $this->sanitize_settings( $legacy_settings );
-			
+
 			update_option( 'aadsso_settings', $sanitized_settings );
-			
-			if( is_writable( AADSSO_SETTINGS_PATH ) && is_writable( dirname( AADSSO_SETTINGS_PATH ) ) && unlink( AADSSO_SETTINGS_PATH ) ) {
+
+			if ( is_writable( AADSSO_SETTINGS_PATH ) && is_writable( dirname( AADSSO_SETTINGS_PATH ) ) && unlink( AADSSO_SETTINGS_PATH ) ) {
 				wp_redirect( admin_url( 'options-general.php?page=aadsso_settings&aadsso_migrate_from_json_status=success' ) );
 			} else {
 				wp_redirect( admin_url( 'options-general.php?page=aadsso_settings&aadsso_migrate_from_json_status=manual' ) );
 			}
 		}
 	}
-	
+
 	/**
 	 * Shows messages about the state of the migration operation
 	 */
@@ -448,7 +457,7 @@ class AADSSO_Settings_Page {
 	public function redirect_uri_callback() {
 		$this->render_text_field( 'redirect_uri' );
 		printf(
-			' <a href="#" onclick="jQuery(\'#redirect_uri\').val(\'%s\'); return false;">%s</a>' 
+			' <a href="#" onclick="jQuery(\'#redirect_uri\').val(\'%s\'); return false;">%s</a>'
 			. '<p class="description">%s</p>',
 			wp_login_url(),
 			__( 'Set default', 'aad-sso-wordpress' ),
@@ -465,7 +474,7 @@ class AADSSO_Settings_Page {
 	public function logout_redirect_uri_callback() {
 		$this->render_text_field( 'logout_redirect_uri' );
 		printf(
-			' <a href="#" onclick="jQuery(\'#logout_redirect_uri\').val(\'%s\'); return false;">%s</a>'  
+			' <a href="#" onclick="jQuery(\'#logout_redirect_uri\').val(\'%s\'); return false;">%s</a>'
 			. '<p class="description">%s</p>',
 			wp_login_url(),
 			__( 'Set default', 'aad-sso-wordpress'),
@@ -596,7 +605,7 @@ class AADSSO_Settings_Page {
 	public function is_on_options_page() {
 		$screen = get_current_screen();
 		return $screen->id === $this->options_page_id;
-	} 
+	}
 
 	/**
 	 * Ensures jQuery is loaded
