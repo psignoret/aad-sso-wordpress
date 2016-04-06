@@ -3,8 +3,8 @@ msgstr ""
 "Project-Id-Version: Single Sign-on with Azure Active Directory (for "
 "WordPress) v0.6a\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2016-04-03 22:44+0200\n"
-"PO-Revision-Date: 2016-04-03 22:44+0200\n"
+"POT-Creation-Date: 2016-04-06 13:37+0200\n"
+"PO-Revision-Date: 2016-04-06 13:46+0200\n"
 "Last-Translator: christianhennen <christian.hennen@googlemail.com>\n"
 "Language-Team: \n"
 "Language: de_DE\n"
@@ -15,12 +15,13 @@ msgstr ""
 "X-Generator: Poedit 1.8.7\n"
 "X-Poedit-SourceCharset: UTF-8\n"
 "X-Poedit-KeywordsList: __;_e;__ngettext:1,2;_n:1,2;__ngettext_noop:1,2;"
-"_n_noop:1,2;_c,_nc:4c,1,2;_x:1,2c;_ex:1,2c;_nx:4c,1,2;_nx_noop:4c,1,2\n"
+"_n_noop:1,2;_c,_nc:4c,1,2;_x:1,2c;_ex:1,2c;_nx:4c,1,2;_nx_noop:4c,1,2;"
+"esc_html__\n"
 "X-Textdomain-Support: yes\n"
 "X-Poedit-Basepath: ..\n"
 "X-Poedit-SearchPath-0: .\n"
 
-#: SettingsPage.php:109
+#: SettingsPage.php:118
 msgid ""
 "Legacy settings have been migrated and the old configuration file has been "
 "deleted."
@@ -28,7 +29,7 @@ msgstr ""
 "Alte Einstellungen wurden migriert und die alte Einstellungs-Datei wurde "
 "gelöscht."
 
-#: SettingsPage.php:110
+#: SettingsPage.php:119
 msgid ""
 "To finish migration, unset <code>AADSSO_SETTINGS_PATH</code> from <code>wp-"
 "config.php</code>. "
@@ -36,14 +37,18 @@ msgstr ""
 "Um die Migration abzuschließen, entfernen Sie <code>AADSSO_SETTINGS_PATH</"
 "code> aus <code>wp-config.php</code>. "
 
-#: SettingsPage.php:115
+#: SettingsPage.php:123
+msgid "Legacy settings have been migrated successfully. "
+msgstr "Alte Einstellungen wurden erfolgreich migriert. "
+
+#: SettingsPage.php:124
 #, php-format
 msgid "To finish migration, delete the file at the path <code>%s</code>. "
 msgstr ""
 "Um die Migration abzuschließen, entfernen Sie bitte die folgende Datei: "
 "<code>%s</code>. "
 
-#: SettingsPage.php:116
+#: SettingsPage.php:125
 msgid ""
 "Then, unset <code>AADSSO_SETTINGS_PATH</code> from <code>wp-config.php</"
 "code>. "
@@ -51,13 +56,13 @@ msgstr ""
 "Entfernen Sie anschließend <code>AADSSO_SETTINGS_PATH</code> aus <code>wp-"
 "config.php</code>. "
 
-#: SettingsPage.php:120
+#: SettingsPage.php:129
 #, php-format
 msgid "Legacy settings could not be migrated from <code>%s</code>. "
 msgstr "Alte Einstellungen aus <code>%s</code> konnten nicht migriert werden. "
 
 # @ aad-sso-wordpress
-#: SettingsPage.php:135
+#: SettingsPage.php:144
 msgid ""
 "Single Sign-on with Azure Active Directory settings have been reset to "
 "default."
@@ -66,96 +71,96 @@ msgstr ""
 "Standardwerte zurückgesetzt."
 
 # @ aad-sso-wordpress
-#: SettingsPage.php:146
+#: SettingsPage.php:155
 msgid "Azure Active Directory Settings"
 msgstr "Azure Active Directory Einstellungen"
 
 # @ aad-sso-wordpress
-#: SettingsPage.php:174
+#: SettingsPage.php:183
 msgid "General"
 msgstr "Allgemein"
 
 # @ aad-sso-wordpress
-#: SettingsPage.php:181
+#: SettingsPage.php:190
 msgid "Display name"
 msgstr "Anzeigename"
 
 # @ aad-sso-wordpress
-#: SettingsPage.php:189
+#: SettingsPage.php:198
 msgid "Domain hint"
 msgstr "Domänen-Hinweis"
 
 # @ aad-sso-wordpress
-#: SettingsPage.php:197
+#: SettingsPage.php:206
 msgid "Client ID"
 msgstr "Client ID"
 
 # @ aad-sso-wordpress
-#: SettingsPage.php:205
+#: SettingsPage.php:214
 msgid "Client secret"
 msgstr "Client Passwort (Secret)"
 
-#: SettingsPage.php:213
+#: SettingsPage.php:222
 msgid "Redirect URL"
 msgstr "Weiterleitungs-URL"
 
-#: SettingsPage.php:221
+#: SettingsPage.php:230
 msgid "Logout redirect URL"
 msgstr "Weiterleitungs-URL nach Abmeldung"
 
 # @ aad-sso-wordpress
-#: SettingsPage.php:229
+#: SettingsPage.php:238
 msgid "Field to match to UPN"
 msgstr "Feld für UPN-Zuordnung"
 
 # @ aad-sso-wordpress
-#: SettingsPage.php:237
+#: SettingsPage.php:246
 msgid "Enable auto-provisioning"
 msgstr "Automatische Provisionierung aktivieren"
 
 # @ aad-sso-wordpress
-#: SettingsPage.php:245
+#: SettingsPage.php:254
 msgid "Enable auto-forward to Azure AD"
 msgstr "Automatische Weiterleitung zum Azure Active Directory aktivieren"
 
 # @ aad-sso-wordpress
-#: SettingsPage.php:253
+#: SettingsPage.php:262
 msgid "Enable Azure AD group to WP role association"
 msgstr "Azure AD Gruppen zu WordPress Rollen Zuordnung aktivieren"
 
 # @ aad-sso-wordpress
-#: SettingsPage.php:261
+#: SettingsPage.php:270
 msgid "Default WordPress role if not in Azure AD group"
 msgstr "Standard WordPress-Rolle falls nicht in Azure AD Gruppe"
 
 # @ aad-sso-wordpress
-#: SettingsPage.php:269
+#: SettingsPage.php:278
 msgid "WordPress role to Azure AD group map"
 msgstr "WordPress Rollen-Zuordnung zu Azure AD Gruppen"
 
 # @ aad-sso-wordpress
-#: SettingsPage.php:371
+#: SettingsPage.php:380
 msgid "Map WordPress roles to Azure Active Directory groups."
 msgstr "WordPress Rollen zu Azure Active Directory Gruppen zuordnen."
 
 # @ aad-sso-wordpress
-#: SettingsPage.php:376
+#: SettingsPage.php:385
 msgid "WordPress Role"
 msgstr "WordPress-Rolle"
 
 # @ aad-sso-wordpress
-#: SettingsPage.php:377
+#: SettingsPage.php:386
 msgid "Azure AD Group Object ID"
 msgstr "Azure Gruppen-Objekt ID"
 
 # @ aad-sso-wordpress
-#: SettingsPage.php:406
+#: SettingsPage.php:415
 msgid "Display Name will be shown on the WordPress login screen."
 msgstr ""
 "Anzeigename, welcher auf dem WordPress Anmeldebildschirm angezeigt wird."
 
 # @ aad-sso-wordpress
-#: SettingsPage.php:417
+#: SettingsPage.php:426
 msgid ""
 "Provides a hint to Azure AD about the domain or tenant they will be logging "
 "in to. If the domain is federated, the user will be automatically redirected "
@@ -166,22 +171,22 @@ msgstr ""
 "der Benutzer zum Föderations-Endpunkt weitergeleitet."
 
 # @ aad-sso-wordpress
-#: SettingsPage.php:430
+#: SettingsPage.php:439
 msgid "The client ID of the Azure AD application representing this blog."
 msgstr "Die Client ID der Azure AD Anwendung, die diesen Blog repräsentiert."
 
 # @ aad-sso-wordpress
-#: SettingsPage.php:441
+#: SettingsPage.php:450
 msgid "A secret key for the Azure AD application representing this blog."
 msgstr ""
 "Der geheime Schlüssel für die Azure AD Anwendung, die diesen Blog "
 "repräsentiert."
 
-#: SettingsPage.php:454 SettingsPage.php:471
+#: SettingsPage.php:463 SettingsPage.php:480
 msgid "Set default"
 msgstr "Auf Standard zurücksetzen"
 
-#: SettingsPage.php:455
+#: SettingsPage.php:464
 msgid ""
 "The URL where the user is redirected to after authenticating with Azure AD. "
 "This URL must be registered in Azure AD as a valid redirect URL, and it must "
@@ -195,7 +200,7 @@ msgstr ""
 "unsicher sind, belassen Sie es auf dem Standard-Wert (der URL zur Login-"
 "Seite dieses Blog)."
 
-#: SettingsPage.php:472
+#: SettingsPage.php:481
 msgid ""
 "The URL where the user is redirected to after signing out of Azure AD. This "
 "URL must be registered in Azure AD as a valid redirect URL. (This does not "
@@ -208,17 +213,17 @@ msgstr ""
 "nur verwendet beim Logout von Azure AD.)"
 
 # @ aad-sso-wordpress
-#: SettingsPage.php:489
+#: SettingsPage.php:498
 msgid "Email Address"
 msgstr "E-Mail Adresse"
 
 # @ aad-sso-wordpress
-#: SettingsPage.php:492
+#: SettingsPage.php:501
 msgid "Login Name"
 msgstr "Login-Name"
 
 # @ aad-sso-wordpress
-#: SettingsPage.php:498
+#: SettingsPage.php:507
 msgid ""
 "This specifies the WordPress user field which will be used to match to the "
 "Azure AD user's UserPrincipalName. Email Address is fine for most instances."
@@ -228,7 +233,7 @@ msgstr ""
 "Adresse genügt in den meisten Fällen."
 
 # @ aad-sso-wordpress
-#: SettingsPage.php:525
+#: SettingsPage.php:534
 msgid ""
 "This is the default role that users will be assigned to if matching Azure AD "
 "group to WordPress roles is enabled."
@@ -237,7 +242,7 @@ msgstr ""
 "Zuordnung von Azure AD Gruppen zu WordPress-Rollen aktiviert ist."
 
 # @ aad-sso-wordpress
-#: SettingsPage.php:536
+#: SettingsPage.php:545
 msgid ""
 "Automatically create WordPress users, if needed, for authenticated Azure AD "
 "users."
@@ -246,7 +251,7 @@ msgstr ""
 "anlegen, falls nötig."
 
 # @ aad-sso-wordpress
-#: SettingsPage.php:547
+#: SettingsPage.php:556
 msgid ""
 "Automatically forward users to the Azure AD to sign in, skipping the "
 "WordPress login screen."
@@ -255,7 +260,7 @@ msgstr ""
 "Anmeldebildschirm wird übersprungen."
 
 # @ aad-sso-wordpress
-#: SettingsPage.php:558
+#: SettingsPage.php:567
 msgid ""
 "Automatically assign WordPress user roles based on Azure AD group membership."
 msgstr ""
@@ -328,16 +333,93 @@ msgstr "Melden Sie sich mit Ihrem %s Konto an"
 msgid "Sign out"
 msgstr "Abmelden"
 
+# @ aad-sso-wordpress
+#: view/settings.php:3
+msgid "Single Sign-on with Azure Active Directory"
+msgstr "Single Sign-On mit Azure Active Directory"
+
+#: view/settings.php:4
+msgid ""
+"Settings for configuring single sign-on with Azure Active Directory can be "
+"configured here."
+msgstr ""
+"Einstellungen für den Single Sign-On mit Azure Active Directory können hier "
+"vorgenommen werden."
+
+# @ aad-sso-wordpress
+#: view/settings.php:14
+msgid "Reset Plugin"
+msgstr "Plugin zurücksetzen"
+
+#: view/settings.php:15
+msgid "Resetting the plugin will completely remove all settings."
+msgstr "Das Zurücksetzen des Plugins entfernt alle Einstellungen."
+
+# @ aad-sso-wordpress
+#: view/settings.php:25
+msgid "Reset Settings"
+msgstr "Einstellungen zurücksetzen"
+
+# @ aad-sso-wordpress
+#: view/settings.php:26
+msgid ""
+"Reset the plugin to default settings. Careful, there is no undo for this."
+msgstr ""
+"Plugin auf Standard-Einstellungen zurücksetzen. Achtung, diese Aktion kann "
+"nicht rückgängig gemacht werden."
+
+#: view/settings.php:31
+msgid "Migrate Legacy Settings"
+msgstr "Alte Einstellungen migrieren"
+
+#: view/settings.php:33
+#, php-format
+msgid "Old configuration data was found at %s."
+msgstr "Alte Einstellungs-Daten wurden unter %s gefunden."
+
+#: view/settings.php:36
+msgid "This configuration data can be migrated automatically."
+msgstr "Diese können automatisch migriert werden."
+
+#: view/settings.php:38
+#, php-format
+msgid "Delete the file at %s to hide this migration utility."
+msgstr "Löschen Sie die Datei %s um diesen Hinweis auszublenden."
+
+#: view/settings.php:45
+#, php-format
+msgid ""
+"If migration is successful, migration will delete this configuration file, "
+"%s."
+msgstr ""
+"Falls die Migration erfolgreich abgeschlossen wird, wird die "
+"Konfigurationsdatei %s gelöscht."
+
+#: view/settings.php:50
+#, php-format
+msgid ""
+"If migration is successful, migration will be unable to delete the "
+"configuration file at %s.  It is recommended to delete the file after "
+"migration."
+msgstr ""
+"Falls die Migration erfolgreich abgeschlossen wird, muss die "
+"Konfigurationsdatei %s manuell gelöscht werden. Dies ist empfohlen."
+
+#: view/settings.php:63
+msgid "Migrate Settings"
+msgstr "Einstellungen migrieren"
+
+#: view/settings.php:64
+msgid ""
+"Migrate settings from old plugin versions to new configuration. This will "
+"overwrite existing settings! Careful, there is no undo for this."
+msgstr ""
+"Migriert die Einstellungen älterer Plugin-Versionen auf die neue "
+"Konfiguration. Hierbei werden existierende Einstellungen überschrieben! "
+"Bitte beachten Sie, dass dies nicht rückgängig gemacht werden kann."
+
 #~ msgid "<code>%s</code>"
 #~ msgstr "<code>%s</code>"
-
-# @ aad-sso-wordpress
-#~ msgid "Reset Settings"
-#~ msgstr "Einstellungen zurücksetzen"
-
-# @ aad-sso-wordpress
-#~ msgid "Single Sign-on with Azure Active Directory"
-#~ msgstr "Single Sign-On mit Azure Active Directory"
 
 # @ aad-sso-wordpress
 #~ msgid ""
@@ -355,10 +437,6 @@ msgstr "Abmelden"
 #~ "abzurufen."
 
 # @ aad-sso-wordpress
-#~ msgid "Reset Plugin"
-#~ msgstr "Plugin zurücksetzen"
-
-# @ aad-sso-wordpress
 #~ msgid ""
 #~ "Settings for configuring single sign-on with Azure Active Directory can "
 #~ "be configured\n"
@@ -366,10 +444,3 @@ msgstr "Abmelden"
 #~ msgstr ""
 #~ "Einstellungen zur Konfiguration des Single-Sign-On mit Azure Active "
 #~ "Directory können hier konfiguriert werden."
-
-# @ aad-sso-wordpress
-#~ msgid ""
-#~ "Reset the plugin to default settings. Careful, there is no undo for this."
-#~ msgstr ""
-#~ "Plugin auf Standard-Einstellungen zurücksetzen. Achtung, diese Aktion "
-#~ "kann nicht rückgängig gemacht werden."
