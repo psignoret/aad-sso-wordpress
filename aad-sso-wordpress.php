@@ -259,6 +259,9 @@ class AADSSO {
 						$this->settings,
 						$antiforgery_id
 					);
+
+					AADSSO::debug_log( json_encode( $jwt ) );
+
 				} catch ( Exception $e ) {
 					return new WP_Error(
 						'invalid_id_token',
@@ -334,8 +337,10 @@ class AADSSO {
 				);
 
 				$new_user_id = wp_insert_user( $userdata );
+				AADSSO::debug_log( 'Created new user: \'' . $unique_name . '\', user id ' . $new_user_id . '.' );
 
 				$user = new WP_User( $new_user_id );
+
 			} else {
 
 				// The user was authenticated, but not found in WP and auto-provisioning is disabled
@@ -514,6 +519,12 @@ class AADSSO {
 			$this->get_login_url(),
 			$this->get_logout_url()
 		);
+	}
+
+	public static function debug_log( $message ) {
+		if ( defined('AADSSO_DEBUG') && true === AADSSO_DEBUG ) {
+			error_log( 'AADSSO: ' . $message );
+		}
 	}
 }
 
