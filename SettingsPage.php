@@ -8,6 +8,9 @@
  */
 class AADSSO_Settings_Page {
 
+	/**
+	 * The stored settings (with defaults, if the setting isn't stored).
+	 */
 	private $settings;
 
 	/**
@@ -42,8 +45,14 @@ class AADSSO_Settings_Page {
 		$_SERVER['REQUEST_URI'] = remove_query_arg( 'aadsso_reset', $_SERVER['REQUEST_URI'] );
 		$_SERVER['REQUEST_URI'] = remove_query_arg( 'aadsso_migrate_from_json_status', $_SERVER['REQUEST_URI'] );
 
-		// Load stored configuration values (or defaults).
-		$this->settings = get_option( 'aadsso_settings', AADSSO_Settings::get_defaults() );
+		// Load stored configuration values, with defaults if there's nothing set.
+		$default_settings = AADSSO_Settings::get_defaults();
+		$this->settings = get_option( 'aadsso_settings', $default_settings );
+		foreach ( $default_settings as $key => $default_value ) {
+			if ( ! isset( $this->settings[ $key ] ) ) {
+				$this->settings[ $key ] = $default_value;
+			}
+		}
 	}
 
 	/**
@@ -185,6 +194,13 @@ class AADSSO_Settings_Page {
 			'aadsso_settings_page' // page
 		);
 
+		add_settings_section(
+			'aadsso_settings_advanced', // id
+			__( 'Advanced', 'aad-sso-wordpress' ), // title
+			array( $this, 'settings_advanced_info' ), // callback
+			'aadsso_settings_page' // page
+		);
+
 		add_settings_field(
 			'org_display_name', // id
 			__( 'Display name', 'aad-sso-wordpress' ), // title
@@ -280,6 +296,14 @@ class AADSSO_Settings_Page {
 			'aadsso_settings_page', // page
 			'aadsso_settings_general' // section
 		);
+
+		add_settings_field(
+			'openid_configuration_endpoint', // id
+			__( 'OpenID Connect configuration endpoint', 'aad-sso-wordpress' ), // title
+			array( $this, 'openid_configuration_endpoint_callback' ), // callback
+			'aadsso_settings_page', // page
+			'aadsso_settings_advanced' // section
+		);
 	}
 
 	/**
@@ -294,7 +318,6 @@ class AADSSO_Settings_Page {
 
 		return $editable_roles;
 	}
-
 
 	/**
 	 * Cleans and validates form information before saving.
@@ -314,6 +337,7 @@ class AADSSO_Settings_Page {
 			'client_secret',
 			'redirect_uri',
 			'logout_redirect_uri',
+			'openid_configuration_endpoint',
 		);
 
 		foreach ($text_fields as $text_field) {
@@ -364,6 +388,14 @@ class AADSSO_Settings_Page {
 			$sanitary_values['role_map'] = $input['role_map'];
 		}
 
+		// If the OpenID Connect configuration endpoint is changed, clear the cached values.
+		$stored_oidc_config_endpoint = isset( $this->settings['openid_configuration_endpoint'] )
+			? $this->settings['openid_configuration_endpoint'] : null;
+		if ( $stored_oidc_config_endpoint !== $sanitary_values['openid_configuration_endpoint'] ) {
+			delete_transient( 'aadsso_openid_configuration' );
+			AADSSO::debug_log('Setting \'openid_configuration_endpoint\' changed, cleared cached OpenID Connect values.');
+		}
+
 		return $sanitary_values;
 	}
 
@@ -371,6 +403,11 @@ class AADSSO_Settings_Page {
 	 * Renders details for the General settings section.
 	 */
 	public function settings_general_info() { }
+
+	/**
+	 * Renders details for the Advanced settings section.
+	 */
+	public function settings_advanced_info() { }
 
 	/**
 	 * Renders the `role_map` picker control.
@@ -490,7 +527,7 @@ class AADSSO_Settings_Page {
 	public function field_to_match_to_upn_callback() {
 		$selected =
 		 isset( $this->settings['field_to_match_to_upn'] )
-		  ? $this->settings['field_to_match_to_upn']
+			? $this->settings['field_to_match_to_upn']
 			: '';
 		?>
 		<select name="aadsso_settings[field_to_match_to_upn]" id="field_to_match_to_upn">
@@ -565,6 +602,24 @@ class AADSSO_Settings_Page {
 		$this->render_checkbox_field(
 			'enable_aad_group_to_wp_role',
 			__( 'Automatically assign WordPress user roles based on Azure AD group membership.',
+				'aad-sso-wordpress' )
+		);
+	}
+
+	/**
+	 * Renders the `openid_configuration_endpoint` form control
+	 **/
+	public function openid_configuration_endpoint_callback() {
+		$this->render_text_field( 'openid_configuration_endpoint' );
+		printf(
+			' <a href="#" onclick="jQuery(\'#openid_configuration_endpoint\').val(\'%s\'); return false;">%s</a>'
+			. '<p class="description">%s</p>',
+			AADSSO_Settings::get_defaults( 'openid_configuration_endpoint' ),
+			__( 'Set default', 'aad-sso-wordpress'),
+			__( 'The OpenID Connect configuration endpoint to use. To support Microsoft Accounts and external '
+			  . 'users (users invited in from other Azure AD directories, known sometimes as "B2B users") you '
+			  . 'must use: <code>https://login.microsoftonline.com/{tenant-id}/.well-known/openid-configuration</code>, '
+			  . 'where <code>{tenant-id}</code> is the tenant ID or a verified domain name of your directory.',
 				'aad-sso-wordpress' )
 		);
 	}

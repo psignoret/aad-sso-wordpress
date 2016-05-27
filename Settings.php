@@ -151,6 +151,7 @@ class AADSSO_Settings {
 			'enable_aad_group_to_wp_role' => false,
 			'redirect_uri' => wp_login_url(),
 			'logout_redirect_uri' => wp_login_url(),
+			'openid_configuration_endpoint' => 'https://login.microsoftonline.com/common/.well-known/openid-configuration',
 		);
 
 		if ( null === $key ) {
@@ -192,7 +193,7 @@ class AADSSO_Settings {
 		 * Then, add the settings stored in the OpenID Connect configuration endpoint.
 		 * We're using transient as a cache, to prevent from making a request on every WP page load.
 		 * Default transient expiration is one hour (3600 seconds), but in case a forced load is
-		 * required, adding aadsso_reload_openid_configuration=1 in the URL will do the trick.
+		 * required, adding aadsso_reload_openid_config=1 in the URL will do the trick.
 		 */
 		$openid_configuration = get_transient( 'aadsso_openid_configuration' );
 		if( false === $openid_configuration || isset( $_GET['aadsso_reload_openid_config'] ) ) {
