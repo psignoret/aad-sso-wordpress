@@ -315,9 +315,18 @@ class AADSSO {
 
 	function get_wp_user_from_aad_user( $jwt ) {
 
-		// Try to find an existing user in WP where the UPN of the current AAD user is
-		// (depending on config) the 'login' or 'email' field
-		$user = get_user_by( $this->settings->field_to_match_to_upn, $jwt->upn );
+		// Try to find an existing user in WP where the upn or unique_name of the current AAD user is
+		// (depending on config) the 'login' or 'email' field in WordPress
+		$unique_name = isset( $jwt->upn ) ? $jwt->upn : ( isset( $jwt->unique_name ) ? $jwt->unique_name : null );
+		if ( null === $unique_name ) {
+			return new WP_Error(
+					'unique_name_not_found',
+					__( 'ERROR: Neither \'upn\' nor \'unique_name\' claims not found in ID Token.',
+						'aad-sso-wordpress' )
+				);
+		}
+
+		$user = get_user_by( $this->settings->field_to_match_to_upn, $unique_name );
 
 		if ( ! is_a( $user, 'WP_User' ) ) {
 
@@ -329,8 +338,8 @@ class AADSSO {
 				// TODO: Is null better than a random password?
 				// TODO: Look for otherMail, or proxyAddresses before UPN for email
 				$userdata = array(
-					'user_email' => $jwt->upn,
-					'user_login' => $jwt->upn,
+					'user_email' => $unique_name,
+					'user_login' => $unique_name,
 					'first_name' => $jwt->given_name,
 					'last_name'	=> $jwt->family_name,
 					'user_pass'	=> null
