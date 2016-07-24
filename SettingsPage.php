@@ -569,7 +569,8 @@ class AADSSO_Settings_Page {
 		printf(
 			'<p class="description">%s</p>',
 			__('This is the default role that users will be assigned to if matching Azure AD group to '
-			 . 'WordPress roles is enabled.', 'aad-sso-wordpress')
+			 . 'WordPress roles is enabled, but the signed in user isn\'t a member of any of the '
+			 . 'configured Azure AD groups.', 'aad-sso-wordpress')
 		);
 	}
 
