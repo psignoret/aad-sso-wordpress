@@ -532,8 +532,26 @@ class AADSSO {
 
 	public static function debug_log( $message ) {
 		if ( defined('AADSSO_DEBUG') && true === AADSSO_DEBUG ) {
-			error_log( 'AADSSO: ' . $message );
+			if ( strpos( $message, "\n" ) === false ) {
+				error_log( 'AADSSO: ' . $message );
+			} else {
+				$lines = explode( "\n", str_replace( "\r\n", "\n", $message ) );
+				foreach ( $lines as $line ) {
+					self::debug_log( $line );
+				}
+			}
 		}
+	}
+
+	/**
+	 * Prints the debug backtrace using this class' debug_log function.
+	 */
+	public static function debug_print_backtrace() {
+		ob_start();
+		debug_print_backtrace();
+		$trace = ob_get_contents();
+		ob_end_clean();
+		self::debug_log( $trace );
 	}
 }
 
