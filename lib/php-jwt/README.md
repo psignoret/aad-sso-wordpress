@@ -1,9 +1,11 @@
 [![Build Status](https://travis-ci.org/firebase/php-jwt.png?branch=master)](https://travis-ci.org/firebase/php-jwt)
+[![Latest Stable Version](https://poser.pugx.org/firebase/php-jwt/v/stable)](https://packagist.org/packages/firebase/php-jwt)
+[![Total Downloads](https://poser.pugx.org/firebase/php-jwt/downloads)](https://packagist.org/packages/firebase/php-jwt)
+[![License](https://poser.pugx.org/firebase/php-jwt/license)](https://packagist.org/packages/firebase/php-jwt)
 
 PHP-JWT
 =======
-A simple library to encode and decode JSON Web Tokens (JWT) in PHP. Should
-conform to the [current spec](http://tools.ietf.org/html/draft-ietf-oauth-json-web-token-06)
+A simple library to encode and decode JSON Web Tokens (JWT) in PHP, conforming to [RFC 7519](https://tools.ietf.org/html/rfc7519).
 
 Installation
 ------------
@@ -18,6 +20,7 @@ Example
 -------
 ```php
 <?php
+use \Firebase\JWT\JWT;
 
 $key = "example_key";
 $token = array(
@@ -45,11 +48,50 @@ print_r($decoded);
 
 $decoded_array = (array) $decoded;
 
+/**
+ * You can add a leeway to account for when there is a clock skew times between
+ * the signing and verifying servers. It is recommended that this leeway should
+ * not be bigger than a few minutes.
+ *
+ * Source: http://self-issued.info/docs/draft-ietf-oauth-json-web-token.html#nbfDef
+ */
+JWT::$leeway = 60; // $leeway in seconds
+$decoded = JWT::decode($jwt, $key, array('HS256'));
+
 ?>
 ```
 
 Changelog
 ---------
+
+#### 4.0.0 / 2016-07-17
+- Add support for late static binding. See [#88](https://github.com/firebase/php-jwt/pull/88) for details. Thanks to [@chappy84](https://github.com/chappy84)!
+- Use static `$timestamp` instead of `time()` to improve unit testing. See [#93](https://github.com/firebase/php-jwt/pull/93) for details. Thanks to [@josephmcdermott](https://github.com/josephmcdermott)!
+- Fixes to exceptions classes. See [#81](https://github.com/firebase/php-jwt/pull/81) for details. Thanks to [@Maks3w](https://github.com/Maks3w)!
+- Fixes to PHPDoc. See [#76](https://github.com/firebase/php-jwt/pull/76) for details. Thanks to [@akeeman](https://github.com/akeeman)!
+
+#### 3.0.0 / 2015-07-22
+- Minimum PHP version updated from `5.2.0` to `5.3.0`.
+- Add `\Firebase\JWT` namespace. See
+[#59](https://github.com/firebase/php-jwt/pull/59) for details. Thanks to
+[@Dashron](https://github.com/Dashron)!
+- Require a non-empty key to decode and verify a JWT. See
+[#60](https://github.com/firebase/php-jwt/pull/60) for details. Thanks to
+[@sjones608](https://github.com/sjones608)!
+- Cleaner documentation blocks in the code. See
+[#62](https://github.com/firebase/php-jwt/pull/62) for details. Thanks to
+[@johanderuijter](https://github.com/johanderuijter)!
+
+#### 2.2.0 / 2015-06-22
+- Add support for adding custom, optional JWT headers to `JWT::encode()`. See
+[#53](https://github.com/firebase/php-jwt/pull/53/files) for details. Thanks to
+[@mcocaro](https://github.com/mcocaro)!
+
+#### 2.1.0 / 2015-05-20
+- Add support for adding a leeway to `JWT:decode()` that accounts for clock skew
+between signing and verifying entities. Thanks to [@lcabral](https://github.com/lcabral)!
+- Add support for passing an object implementing the `ArrayAccess` interface for
+`$keys` argument in `JWT::decode()`. Thanks to [@aztech-dev](https://github.com/aztech-dev)!
 
 #### 2.0.0 / 2015-04-01
 - **Note**: It is strongly recommended that you update to > v2.0.0 to address

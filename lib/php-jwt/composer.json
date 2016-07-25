@@ -16,11 +16,12 @@
     ],
     "license": "BSD-3-Clause",
     "require": {
-        "php": ">=5.2.0"
+        "php": ">=5.3.0"
     },
     "autoload": {
-        "classmap": ["Authentication/", "Exceptions/"]
+        "psr-4": {
+            "Firebase\\JWT\\": "src"
+        }
     },
-    "target-dir": "Firebase/PHP-JWT",
     "minimum-stability": "dev"
 }
