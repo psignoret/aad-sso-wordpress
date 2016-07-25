@@ -132,7 +132,7 @@ class AADSSO_AuthorizationHelper
 				            . "-----END CERTIFICATE-----\n";
 
 				// This throws an exception if the id_token cannot be validated.
-				$jwt = JWT::decode( $id_token, $key_pem, self::$allowed_algorithms );
+				$jwt = \Firebase\JWT\JWT::decode( $id_token, $key_pem, self::$allowed_algorithms );
 				break;
 			} catch ( Exception $e ) {
 				$last_exception = $e;

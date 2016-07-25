@@ -28,10 +28,10 @@ require_once AADSSO_PLUGIN_DIR . '/AuthorizationHelper.php';
 require_once AADSSO_PLUGIN_DIR . '/GraphHelper.php';
 
 // TODO: Auto-load the ( the exceptions at least )
-require_once AADSSO_PLUGIN_DIR . '/lib/php-jwt/Authentication/JWT.php';
-require_once AADSSO_PLUGIN_DIR . '/lib/php-jwt/Exceptions/BeforeValidException.php';
-require_once AADSSO_PLUGIN_DIR . '/lib/php-jwt/Exceptions/ExpiredException.php';
-require_once AADSSO_PLUGIN_DIR . '/lib/php-jwt/Exceptions/SignatureInvalidException.php';
+require_once AADSSO_PLUGIN_DIR . '/lib/php-jwt/src/JWT.php';
+require_once AADSSO_PLUGIN_DIR . '/lib/php-jwt/src/BeforeValidException.php';
+require_once AADSSO_PLUGIN_DIR . '/lib/php-jwt/src/ExpiredException.php';
+require_once AADSSO_PLUGIN_DIR . '/lib/php-jwt/src/SignatureInvalidException.php';
 
 class AADSSO {
 
@@ -537,7 +537,7 @@ class AADSSO {
 			} else {
 				$lines = explode( "\n", str_replace( "\r\n", "\n", $message ) );
 				foreach ( $lines as $line ) {
-					self::debug_log( $line );
+					AADSSO::debug_log( $line );
 				}
 			}
 		}
