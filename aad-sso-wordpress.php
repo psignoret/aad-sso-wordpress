@@ -329,11 +329,6 @@ class AADSSO {
 		$user = get_user_by( $this->settings->field_to_match_to_upn, $unique_name );
 
 		if ( ! is_a( $user, 'WP_User' ) ) {
-			$username = explode(sprintf('@%s', $this->settings->org_domain_hint), $unique_name);
-			$user = get_user_by( $this->settings->field_to_match_to_upn, $username[0] );
-		}
-
-		if ( ! is_a( $user, 'WP_User' ) ) {
 
 			// Since the user was authenticated with AAD, but not found in WordPress,
 			// need to decide whether to create a new user in WP on-the-fly, or to stop here.
