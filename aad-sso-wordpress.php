@@ -66,7 +66,7 @@ class AADSSO {
 		}
 
 		// Add the hook that starts the SESSION
-		add_action( 'init', array( $this, 'register_session' ) );
+		add_action( 'login_init', array( $this, 'register_session' ), 10 );
 
 		// The authenticate filter
 		add_filter( 'authenticate', array( $this, 'authenticate' ), 1, 3 );
@@ -81,7 +81,7 @@ class AADSSO {
 		add_action( 'wp_logout', array( $this, 'clear_session' ) );
 
 		// If configured, bypass the login form and redirect straight to AAD
-		add_action( 'login_init', array( $this, 'save_redirect_and_maybe_bypass_login' ) );
+		add_action( 'login_init', array( $this, 'save_redirect_and_maybe_bypass_login' ), 20 );
 
 		// Redirect user back to original location
 		add_filter( 'login_redirect', array( $this, 'redirect_after_login' ), 20, 3 );
