@@ -258,6 +258,14 @@ class AADSSO_Settings_Page {
 		);
 
 		add_settings_field(
+			'match_on_username', // id
+			__( 'Match on logon name', 'aad-sso-wordpress' ), // title
+			array( $this, 'match_on_username_callback' ), // callback
+			'aadsso_settings_page', // page
+			'aadsso_settings_general' // section
+		);
+
+		add_settings_field(
 			'enable_auto_provisioning', // id
 			__( 'Enable auto-provisioning', 'aad-sso-wordpress' ), // title
 			array( $this, 'enable_auto_provisioning_callback' ), // callback
@@ -365,6 +373,7 @@ class AADSSO_Settings_Page {
 			'enable_auto_provisioning',
 			'enable_auto_forward_to_aad',
 			'enable_aad_group_to_wp_role',
+			'match_on_username',
 		);
 		foreach ( $boolean_settings as $boolean_setting )
 		{
@@ -543,6 +552,17 @@ class AADSSO_Settings_Page {
 			'<p class="description">%s</p>',
 			__('This specifies the WordPress user field which will be used to match to the Azure AD user\'s '
 			 . 'UserPrincipalName. Email Address is fine for most instances.', 'aad-sso-wordpress')
+		);
+	}
+
+	/**
+	 * Renders the `match_on_username` checkbox control.
+	 */
+	public function match_on_username_callback() {
+		$this->render_checkbox_field(
+			'match_on_username',
+			__( 'Match WordPress users based on their Azure AD username',
+				'aad-sso-wordpress' )
 		);
 	}
 
