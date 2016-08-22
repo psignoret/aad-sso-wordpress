@@ -20,7 +20,7 @@ Example
 -------
 ```php
 <?php
-use \Firebase\JWT\JWT;
+use \AADSSO\Firebase\JWT\JWT;
 
 $key = "example_key";
 $token = array(
@@ -72,7 +72,7 @@ Changelog
 
 #### 3.0.0 / 2015-07-22
 - Minimum PHP version updated from `5.2.0` to `5.3.0`.
-- Add `\Firebase\JWT` namespace. See
+- Add `\AADSSO\Firebase\JWT` namespace. See
 [#59](https://github.com/firebase/php-jwt/pull/59) for details. Thanks to
 [@Dashron](https://github.com/Dashron)!
 - Require a non-empty key to decode and verify a JWT. See
