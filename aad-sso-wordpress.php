@@ -387,20 +387,26 @@ class AADSSO {
 
 		// Determine which WordPress role the AAD group corresponds to.
 		// TODO: Check for error in the group membership response
-		$role_to_set = $this->settings->default_wp_role;
+		$role_to_set = array();
+
 		if ( ! empty( $group_memberships->value ) ) {
 			foreach ( $this->settings->aad_group_to_wp_role_map as $aad_group => $wp_role ) {
 				if ( in_array( $aad_group, $group_memberships->value ) ) {
-					$role_to_set = $wp_role;
-					break;
+					array_push( $role_to_set, $wp_role );
 				}
 			}
 		}
 
-		if ( null != $role_to_set || "" != $role_to_set ) {
-			// Set the role on the WordPress user
-			$user->set_role( $role_to_set );
-		} else {
+		if ( ! empty( $role_to_set ) ) {
+			$user->set_role("");
+			foreach ( $role_to_set as $role ){
+				$user->add_role( $role );
+			}
+		}
+		else if ( null != $this->settings->default_wp_role || "" != $this->settings->default_wp_role ){
+			$user->set_role( $this->settings->default_wp_role );
+		}
+		else{
 			return new WP_Error(
 				'user_not_member_of_required_group',
 				sprintf(
