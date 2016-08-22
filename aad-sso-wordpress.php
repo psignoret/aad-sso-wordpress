@@ -328,7 +328,7 @@ class AADSSO {
 
 		$user = get_user_by( $this->settings->field_to_match_to_upn, $unique_name );
 
-		if( true === $this->settings->match_on_username ) {
+		if( true === $this->settings->match_on_upn_alias ) {
 			if ( ! is_a( $user, 'WP_User' ) ) {
 				$username = explode( sprintf( '@%s', $this->settings->org_domain_hint ), $unique_name );
 				$user = get_user_by( $this->settings->field_to_match_to_upn, $username[0] );

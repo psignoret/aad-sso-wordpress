@@ -55,12 +55,12 @@ class AADSSO_Settings {
 	public $field_to_match_to_upn = '';
 
 	/**
-	 * Indicates whether or not a WordPress user should be matched against the authenticated user's logon name
-	* which is extracted from the UPN
+	 * Indicates whether or not a WordPress user should be matched against the authenticated user's
+	 * alias portion of their UserPrincipalName ('bob'' in 'bob@example.com').
 	 *
-	 * @var boolean Whether or not to match based on logon name
+	 * @var boolean Whether or not to match based UPN alias
 	 */
-	public $match_on_username = false;
+	public $match_on_upn_alias = false;
 
 	/**
 	* Indicates whether or not a WordPress user should be auto-provisioned if a user is able to
@@ -155,7 +155,7 @@ class AADSSO_Settings {
 			'field_to_match_to_upn' => 'email',
 			'default_wp_role' => null,
 			'enable_auto_provisioning' => false,
-			'match_on_username' => false,
+			'match_on_upn_alias' => false,
 			'enable_auto_forward_to_aad' => false,
 			'enable_aad_group_to_wp_role' => false,
 			'redirect_uri' => wp_login_url(),
