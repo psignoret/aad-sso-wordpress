@@ -108,6 +108,19 @@ Users are matched by their email address in WordPress, and whichever role they h
 | Reply URL | https://www.example.com/blog/wp-login.php
 | Field to match to UPN | Email Address
 
+### Match on username alias
+
+Users are matched by their login names in WordPress and the alias portion of their Azure AD UserPrincipalName. Whichever role they have in WordPress is maintained.
+
+| Setting | Example value
+| --- | ---
+| Display name | Contoso
+| Client ID | 9054eff5-bfef-4cc5-82fd-8c35534e48f9
+| Client Secret | NTY5MmE5YjMwMGY2MWQ0NjU5MzYxNjdjNzE1OGNiZmY=
+| Reply URL | https://www.example.com/blog/wp-login.php
+| Field to match to UPN | Login Name
+| Match on alias of the UPN | Yes
+
 ### Group membership-based roles, no default role
 
 Users are matched by their login names in WordPress, and WordPress roles are dictated by membership to a given Azure AD group. Access is denied if they are not members of any of these groups.
