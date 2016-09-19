@@ -278,7 +278,7 @@ class AADSSO {
 					// exists in WordPress (either because it already existed, or we created it
 					// on-the-fly). All that's left is to set the roles based on group membership.
 					if ( true === $this->settings->enable_aad_group_to_wp_role ) {
-						$user = $this->update_wp_user_roles( $user, $jwt->upn, $jwt->tid );
+						$user = $this->update_wp_user_roles( $user, $jwt->oid, $jwt->tid );
 					}
 				}
 
