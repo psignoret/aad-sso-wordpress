@@ -364,7 +364,7 @@ class AADSSO {
 					'user_not_registered',
 					sprintf(
 						__( 'ERROR: The authenticated user %s is not a registered user in this blog.', 'aad-sso-wordpress' ),
-						$jwt->upn
+						$unique_name
 					)
 				);
 			}
