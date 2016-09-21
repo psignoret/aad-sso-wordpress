@@ -34,6 +34,8 @@ require_once AADSSO_PLUGIN_DIR . '/lib/php-jwt/src/ExpiredException.php';
 require_once AADSSO_PLUGIN_DIR . '/lib/php-jwt/src/SignatureInvalidException.php';
 
 class AADSSO {
+	
+	private $jwt_error = null;
 
 	static $instance = FALSE;
 
@@ -88,6 +90,108 @@ class AADSSO {
 
 		// Register the textdomain for localization after all plugins are loaded
 		add_action( 'plugins_loaded', array( $this, 'load_textdomain' ) );
+		
+		
+		
+		
+		
+ 		add_filter( 'determine_current_user', array( $this, 'determine_current_user' ), 20 );
+		
+		add_filter( 'wp_rest_server_class', array($this, 'wp_rest_server_class' ) );
+		
+		add_filter( 'rest_pre_dispatch', array($this, 'rest_pre_dispatch' ), 10, 2 );
+	}
+	
+	
+    /**
+     * Get the bearer token from the request header
+	 *
+	 * @return string|bool
+     */
+	private function get_bearer(){
+		$headers = getallheaders();
+		if(isset($headers['Authorization'])){
+			if(substr( $headers['Authorization'], 0, 7 ) === 'Bearer '){
+				return substr( $headers['Authorization'], 7);
+			}
+		}
+		return false;
+	}
+	
+    /**
+     * Filter to hook the rest_pre_dispatch, if the is an error in the request
+     * send it, if there is no error just continue with the current request.
+     *
+     * @param $request
+     */
+    public function rest_pre_dispatch($request)
+    {
+        if (is_wp_error($this->jwt_error)) {
+            return $this->jwt_error;
+        }
+        return $request;
+    }
+	
+	/**
+	 * Loosely Based on https://github.com/WP-API/Basic-Auth/blob/master/basic-auth.php
+	 *
+	 * @param $input_user
+	 *
+	 * @return WP_User|int
+	 */
+	public function determine_current_user( $input_user ){
+		// Don't authenticate twice
+		if ( ! empty( $input_user ) ) {
+			return $input_user;
+		}
+		
+		if(($bearer = $this->get_bearer()) !== false){
+			try{
+				$jwt = AADSSO_AuthorizationHelper::validate_bearer_token($bearer, $this->settings);
+				$user = $this->get_wp_user_from_aad_user( $jwt );
+				if ( is_a( $user, 'WP_User' ) ) {
+					return $user->ID;
+				}
+			}
+			catch ( Exception $e ) {
+				$this->jwt_error = new WP_Error(
+							 'aad-sso-wordpress-validation',
+							 $e->getMessage(),
+							 array(
+								 'status' => 401,
+							 )
+						 );
+			}
+			
+		}
+		
+		// If it wasn't a user what got returned, just pass on what we had received originally.
+		return $input_user;
+	}
+	
+	/**
+	 * Prevent caching of unauthenticated status.  See comment below.
+	 *
+	 * We don't actually care about the `wp_rest_server_class` filter, it just
+	 * happens right after the constant we do care about is defined.
+	 *
+	 */
+	public static function wp_rest_server_class( $class ) {
+		global $current_user;
+		if ( defined( 'REST_REQUEST' )
+		     && REST_REQUEST
+		     && $current_user instanceof WP_User
+		     && 0 === $current_user->ID ) {
+			/*
+			 * For our authentication to work, we need to remove the cached lack
+			 * of a current user, so the next time it checks, we can detect that
+			 * this is a rest api request and allow our override to happen.  This
+			 * is because the constant is defined later than the first get current
+			 * user call may run.
+			 */
+			$current_user = null;
+		}
+		return $class;
 	}
 
 	/**
@@ -234,7 +338,7 @@ class AADSSO {
 		/* If 'code' is present, this is the Authorization Response from Azure AD, and 'code' has
 		 * the Authorization Code, which will be exchanged for an ID Token and an Access Token.
 		 */
-		if ( isset( $_GET['code'] ) ) {
+	    if ( isset( $_GET['code'] ) ) {
 
 			$antiforgery_id = $_SESSION['aadsso_antiforgery-id'];
 			$state_is_missing = ! isset( $_GET['state'] );
