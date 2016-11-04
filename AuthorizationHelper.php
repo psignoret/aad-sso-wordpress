@@ -94,14 +94,14 @@ class AADSSO_AuthorizationHelper
 	}
 
 	/**
-	 * Decodes and signature validates an id_token value returned
+	 * Decodes an id_token value returned
 	 *
-	 * @param array $authentication_request_body The body to use in the Authentication Request.
+	 * @param string $id_token The JWT token
 	 * @param \AADSSO_Settings $settings The settings to use.
 	 *
 	 * @return mixed The decoded authorization result.
 	 */
-	private static function validate_token_signature( $id_token, $settings) {
+	private static function decode_token( $id_token, $settings) {
 
 		$jwt = null;
 		$last_exception = null;
@@ -150,34 +150,18 @@ class AADSSO_AuthorizationHelper
 	/**
 	 * Validates claims of bearer_token
 	 *
-	 * @param array $authentication_request_body The body to use in the Authentication Request.
+	 * @param string $jwt The JWT token
 	 * @param \AADSSO_Settings $settings The settings to use.
 	 *
 	 */
-	private static function validate_token_claims( $bearer_token, $settings){
-		
-		$data = self::split_id_token($bearer_token);
-		
-		$audience = $data['payload']['aud']; 
+	private static function validate_token_claims( $jwt, $settings){
+		$audience = $jwt->aud; 
 		if ($audience != $settings->resource_id) {
 			throw new \AADSSO\Firebase\JWT\SignatureInvalidException('Invalid Audience');
 		}
 		
-		
-		$cur_time = time();
-		$not_before = $data['payload']['nbf']; // epoch time, time after which token is valid (so basically nbf < cur time < exp)
-		$expiration = $data['payload']['exp']; // epoch time, check that the token is still valid
-		
-		if ($not_before > $cur_time) {
-			throw new \AADSSO\Firebase\JWT\BeforeValidException('Bearer before valid');
-		}
-		
-		if ($cur_time > $expiration) {
-			throw new \AADSSO\Firebase\JWT\ExpiredException('Bearer expired');
-		}
-		
 		// The Issuer Identifier for the OpenID Provider MUST exactly match the value of the iss (issuer) Claim.
-		$iss_token = $data['payload']['iss']; 
+		$iss_token = $jwt->iss; 
 		$iss_metadata = $settings->issuer;
 		
 		if ($iss_token != $iss_metadata) {
@@ -185,31 +169,11 @@ class AADSSO_AuthorizationHelper
 		}
 		
 	}
-	
-	/**
-	 * Splits a bearer_token into header and payload
-	 *
-	 * @param array $authentication_request_body The body to use in the Authentication Request.
-	 * @param \AADSSO_Settings $settings The settings to use.
-	 *
-	 * @return mixed The decoded authorization result.
-	 */
-	private static function split_id_token($bearer_token) {
-		
-		$retVal = array();
-		
-		// Split the token into Header, Payload, and Signature, and decode
-		$retVal['id_token_array'] = explode('.', $bearer_token, 3);
-		$retVal['head'] = json_decode(base64_decode($retVal['id_token_array'][0]), true);
-		$retVal['payload'] = json_decode(base64_decode($retVal['id_token_array'][1]), true);
-		
-		return $retVal;
-	}
 
 	/**
 	 * Validates signature and claims of a bearer_token value returned
 	 *
-	 * @param array $authentication_request_body The body to use in the Authentication Request.
+	 * @param string $bearer_token The bearer token
 	 * @param \AADSSO_Settings $settings The settings to use.
 	 *
 	 * @return mixed The decoded authorization result.
@@ -220,8 +184,8 @@ class AADSSO_AuthorizationHelper
 		$last_exception = null;
 
 		try{
-			$jwt = self::validate_token_signature( $bearer_token, $settings);			
-			self::validate_token_claims( $bearer_token, $settings);
+			$jwt = self::decode_token( $bearer_token, $settings);			
+			self::validate_token_claims( $jwt, $settings);
 		}
 		catch ( Exception $e ) {
 			throw $e;
@@ -233,7 +197,7 @@ class AADSSO_AuthorizationHelper
 	/**
 	 * Decodes and validates an id_token value returned
 	 *
-	 * @param array $authentication_request_body The body to use in the Authentication Request.
+	 * @param string $id_token The token
 	 * @param \AADSSO_Settings $settings The settings to use.
 	 *
 	 * @return mixed The decoded authorization result.
@@ -244,7 +208,7 @@ class AADSSO_AuthorizationHelper
 		$last_exception = null;
 
 		try{
-			$jwt = self::validate_token_signature( $id_token, $settings);
+			$jwt = self::decode_token( $id_token, $settings);
 		}
 		catch ( Exception $e ) {
 			$last_exception = $e;

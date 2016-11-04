@@ -117,8 +117,7 @@ class AADSSO_Settings {
 	/**
 	 * @var string The OpenID Connect configuration discovery endpoint.
 	 */
-	public $openid_configuration_endpoint_prefix = 'https://login.microsoftonline.com/';
-	public $openid_configuration_endpoint_suffix ='/.well-known/openid-configuration';
+	public $openid_configuration_endpoint = 'https://login.microsoftonline.com/common/.well-known/openid-configuration';
 
 	/**
 	 * @var string The OAuth 2.0 authorization endpoint.
@@ -203,12 +202,9 @@ class AADSSO_Settings {
 	 * @return \AADSSO_Settings The (only) configured instance of this class.
 	 */
 	public static function init() {
-
 		$instance = self::get_instance();
-
 		// First, set the settings stored in the WordPress database.
 		$instance->set_settings( get_option( 'aadsso_settings' ) );
-
 		/*
 		 * Then, add the settings stored in the OpenID Connect configuration endpoint.
 		 * We're using transient as a cache, to prevent from making a request on every WP page load.
@@ -217,16 +213,13 @@ class AADSSO_Settings {
 		 */
 		$openid_configuration = get_transient( 'aadsso_openid_configuration' );
 		if( false === $openid_configuration || isset( $_GET['aadsso_reload_openid_config'] ) ) {
-			$tenant = !empty($instance->org_domain_hint) ? $instance->org_domain_hint : 'common';
-			$openid_configuration_endpoint = $instance->openid_configuration_endpoint_prefix . $tenant . $instance->openid_configuration_endpoint_suffix;
 			$openid_configuration = json_decode(
-				self::get_remote_contents( $openid_configuration_endpoint ),
+				self::get_remote_contents( $instance->openid_configuration_endpoint ),
 				true // Return associative array
 			);
 			set_transient( 'aadsso_openid_configuration', $openid_configuration, 3600 );
 		}
 		$instance->set_settings( $openid_configuration );
-
 		return $instance;
 	}
 
