@@ -137,7 +137,7 @@ class AADSSO_Settings {
 	/**
 	 * @var string The version of the AAD Graph API to use.
 	 */
-	public $graph_version = '2013-11-08';
+	public $graph_version = '1.6';
 
 	/**
 	 * Returns a sensible set of defaults for the plugin.
