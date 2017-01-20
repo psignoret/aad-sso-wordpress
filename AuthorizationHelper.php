@@ -30,9 +30,9 @@ class AADSSO_AuthorizationHelper
 					'state'         => $antiforgery_id,
 					'nonce'         => $antiforgery_id,
 				) );
+
 		return $auth_url;
 	}
-
 
 	/**
 	 * Exchanges an Authorization Code and obtains an Access Token and an ID Token.
@@ -73,6 +73,7 @@ class AADSSO_AuthorizationHelper
 		$response = wp_remote_post( $settings->token_endpoint, array(
 			'body' => $authentication_request_body
 		) );
+
 		if( is_wp_error( $response ) ) {
 			return new WP_Error( $response->get_error_code(), $response->get_error_message() );
 		}
@@ -86,8 +87,8 @@ class AADSSO_AuthorizationHelper
 
 			// Add the token information to the session so that we can use it later
 			// TODO: these probably shouldn't be in SESSION...
-			$_SESSION['aadsso_token_type'] = $result->token_type;
-			$_SESSION['aadsso_access_token'] = $result->access_token;
+			$_SESSION['aadsso_token_type'] = sanitize_text_field( $result->token_type );
+			$_SESSION['aadsso_access_token'] = sanitize_text_field( $result->access_token );
 		}
 
 		return $result;

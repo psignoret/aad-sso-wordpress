@@ -159,12 +159,12 @@ class AADSSO {
 
 			// Save the redirect_to query param ( if present ) to session
 			if ( isset( $_GET['redirect_to'] ) ) {
-				$_SESSION['aadsso_redirect_to'] = $_GET['redirect_to'];
+				$_SESSION['aadsso_redirect_to'] = sanitize_text_field( $_GET['redirect_to'] );
 			}
 
 			if ( $bypass && ! isset( $_GET['code'] ) ) {
-				wp_redirect( $this->get_login_url() );
-				die();
+				wp_safe_redirect( $this->get_login_url() );
+				exit;
 			}
 		}
 	}
@@ -181,7 +181,7 @@ class AADSSO {
 	 */
 	public function redirect_after_login( $redirect_to, $requested_redirect_to, $user ) {
 		if ( is_a( $user, 'WP_User' ) && isset( $_SESSION['aadsso_redirect_to'] ) ) {
-			$redirect_to = $_SESSION['aadsso_redirect_to'];
+			$redirect_to = esc_url( $_SESSION['aadsso_redirect_to'] );
 		}
 
 		return $redirect_to;
@@ -201,12 +201,13 @@ class AADSSO {
 	private function wants_to_login() {
 		$wants_to_login = false;
 		// Cover default WordPress behavior
-		$action = isset( $_REQUEST['action'] ) ? $_REQUEST['action'] : 'login';
+		$action = isset( $_REQUEST['action'] ) ? sanitize_text_field( $_REQUEST['action'] ) : 'login';
 		// And now the exceptions
 		$action = isset( $_GET['loggedout'] ) ? 'loggedout' : $action;
 		if( 'login' == $action ) {
 			$wants_to_login = true;
 		}
+
 		return $wants_to_login;
 	}
 
@@ -246,7 +247,7 @@ class AADSSO {
 			}
 
 			// Looks like we got a valid authorization code, let's try to get an access token with it
-			$token = AADSSO_AuthorizationHelper::get_access_token( $_GET['code'], $this->settings );
+			$token = AADSSO_AuthorizationHelper::get_access_token( sanitize_text_field( $_GET['code'] ), $this->settings );
 
 			// Happy path
 			if ( isset( $token->access_token ) ) {
@@ -279,7 +280,6 @@ class AADSSO {
 						$user = $this->update_wp_user_roles( $user, $jwt->upn, $jwt->tid );
 					}
 				}
-
 			} elseif ( isset( $token->error ) ) {
 
 				// Unable to get an access token ( although we did get an authorization code )
@@ -293,7 +293,7 @@ class AADSSO {
 			} else {
 
 				// None of the above, I have no idea what happened.
-				return new WP_Error( 'unknown', __( 'ERROR: An unknown error occured.', 'aad-sso-wordpress' ) );
+				return new WP_Error( 'unknown', __( 'ERROR: An unknown error occurred.', 'aad-sso-wordpress' ) );
 			}
 
 		} elseif ( isset( $_GET['error'] ) ) {
@@ -303,7 +303,7 @@ class AADSSO {
 				$_GET['error'],
 				sprintf(
 					__( 'ERROR: Access denied to Azure Active Directory. %s', 'aad-sso-wordpress' ),
-					$_GET['error_description']
+					sanitize_text_field( $_GET['error_description'] )
 				)
 			);
 		}
@@ -407,11 +407,9 @@ class AADSSO {
 			foreach ( $role_to_set as $role ){
 				$user->add_role( $role );
 			}
-		}
-		else if ( null != $this->settings->default_wp_role || "" != $this->settings->default_wp_role ){
+		} else if ( null != $this->settings->default_wp_role || "" != $this->settings->default_wp_role ){
 			$user->set_role( $this->settings->default_wp_role );
-		}
-		else{
+		} else{
 			return new WP_Error(
 				'user_not_member_of_required_group',
 				sprintf(
@@ -432,9 +430,11 @@ class AADSSO {
 	 * @return array The new list of links to display
 	 */
 	function add_settings_link( $links ) {
-		$link_to_settings =
-			'<a href="' . admin_url( 'options-general.php?page=aadsso_settings' ) . '">Settings</a>';
+		$link_to_settings = '<a href="' . esc_url( admin_url( 'options-general.php?page=aadsso_settings' ) ) . '">' .
+		                    __( 'Settings', 'aad-sso-wordpress' ) .
+		                    '</a>';
 		array_push( $links, $link_to_settings );
+
 		return $links;
 	}
 
@@ -536,8 +536,8 @@ class AADSSO {
 		         . __( 'Sign out', 'aad-sso-wordpress' ) . '</a></p>';
 		printf(
 			$html,
-			$this->get_login_url(),
-			$this->get_logout_url()
+			esc_url( $this->get_login_url() ),
+			esc_url( $this->get_logout_url() )
 		);
 	}
 
