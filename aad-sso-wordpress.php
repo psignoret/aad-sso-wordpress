@@ -86,7 +86,7 @@ class AADSSO {
 		add_filter( 'login_redirect', array( $this, 'redirect_after_login' ), 20, 3 );
 
 		// Register the textdomain for localization after all plugins are loaded
-		add_action( 'plugins_loaded', array( $this, 'load_textdomain' ) );
+		add_action( 'init', array( $this, 'load_textdomain' ) );
 	}
 
 	/**
@@ -107,8 +107,7 @@ class AADSSO {
 	/**
 	 * Load the textdomain for localization.
 	 */
-	public function load_textdomain()
-	{
+	public function load_textdomain() {
 		load_plugin_textdomain(
 			'aad-sso-wordpress',
 			false, // deprecated
