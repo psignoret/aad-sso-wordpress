@@ -61,10 +61,10 @@ class AADSSO_Settings_Page {
 	public function maybe_reset_settings()
 	{
 		$should_reset_settings = isset( $_GET['aadsso_nonce'] )
-		                          && wp_verify_nonce( $_GET['aadsso_nonce'], 'aadsso_reset_settings' );
+		                          && wp_verify_nonce( sanitize_text_field( $_GET['aadsso_nonce'] ), 'aadsso_reset_settings' );
 		if ( $should_reset_settings ) {
 			delete_option( 'aadsso_settings' );
-			wp_redirect( admin_url( 'options-general.php?page=aadsso_settings&aadsso_reset=success' ) );
+			wp_safe_redirect( admin_url( 'options-general.php?page=aadsso_settings&aadsso_reset=success' ) );
 		}
 	}
 
@@ -80,7 +80,7 @@ class AADSSO_Settings_Page {
 		 * - There is a file at that legacy settings path
 		 */
 		$should_migrate_settings = isset( $_GET['aadsso_nonce'] )
-			&& wp_verify_nonce( $_GET['aadsso_nonce'], 'aadsso_migrate_from_json' )
+			&& wp_verify_nonce( sanitize_text_field( $_GET['aadsso_nonce'] ), 'aadsso_migrate_from_json' )
 			&& defined( 'AADSSO_SETTINGS_PATH' )
 			&& file_exists( AADSSO_SETTINGS_PATH );
 
@@ -89,7 +89,7 @@ class AADSSO_Settings_Page {
 			$legacy_settings = json_decode( file_get_contents( AADSSO_SETTINGS_PATH ), true );
 
 			if ( null === $legacy_settings ) {
-				wp_redirect( admin_url( 'options-general.php?page=aadsso_settings&aadsso_migrate_from_json_status=invalid_json') );
+				wp_safe_redirect( admin_url( 'options-general.php?page=aadsso_settings&aadsso_migrate_from_json_status=invalid_json') );
 			}
 
 			// If aad_group_to_wp_role_map is set in the legacy settings, build the inverted role_map array,
@@ -110,9 +110,9 @@ class AADSSO_Settings_Page {
 			update_option( 'aadsso_settings', $sanitized_settings );
 
 			if ( is_writable( AADSSO_SETTINGS_PATH ) && is_writable( dirname( AADSSO_SETTINGS_PATH ) ) && unlink( AADSSO_SETTINGS_PATH ) ) {
-				wp_redirect( admin_url( 'options-general.php?page=aadsso_settings&aadsso_migrate_from_json_status=success' ) );
+				wp_safe_redirect( admin_url( 'options-general.php?page=aadsso_settings&aadsso_migrate_from_json_status=success' ) );
 			} else {
-				wp_redirect( admin_url( 'options-general.php?page=aadsso_settings&aadsso_migrate_from_json_status=manual' ) );
+				wp_safe_redirect( admin_url( 'options-general.php?page=aadsso_settings&aadsso_migrate_from_json_status=manual' ) );
 			}
 		}
 	}
