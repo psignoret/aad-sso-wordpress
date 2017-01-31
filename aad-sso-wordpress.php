@@ -21,6 +21,8 @@ define( 'AADSSO_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 //define( 'WP_PROXY_HOST', '127.0.0.1' );
 //define( 'WP_PROXY_PORT', '8888' );
 
+require_once AADSSO_PLUGIN_DIR . '/includes/sessions/AADSSO_Session.php';
+require_once AADSSO_PLUGIN_DIR . '/includes/sessions/AADSSO_PHP_Session.php';
 require_once AADSSO_PLUGIN_DIR . '/Settings.php';
 require_once AADSSO_PLUGIN_DIR . '/SettingsPage.php';
 require_once AADSSO_PLUGIN_DIR . '/AuthorizationHelper.php';
@@ -38,8 +40,14 @@ class AADSSO {
 
 	private $settings = null;
 
-	public function __construct( $settings ) {
+	/**
+	 * Instance of AADSSO_Session that provides session replacement.
+	 */
+	private $session = null;
+
+	public function __construct( $settings, $session ) {
 		$this->settings = $settings;
+		$this->session = $session;
 
 		// Setup the admin settings page
 		$this->setup_admin_settings();
@@ -159,7 +167,7 @@ class AADSSO {
 
 			// Save the redirect_to query param ( if present ) to session
 			if ( isset( $_GET['redirect_to'] ) ) {
-				$_SESSION['aadsso_redirect_to'] = sanitize_text_field( $_GET['redirect_to'] );
+				$this->session->write( 'aadsso_redirect_to', sanitize_text_field( $_GET['redirect_to'] ) );
 			}
 
 			if ( $bypass && ! isset( $_GET['code'] ) ) {
@@ -180,8 +188,10 @@ class AADSSO {
 	 * @return string
 	 */
 	public function redirect_after_login( $redirect_to, $requested_redirect_to, $user ) {
-		if ( is_a( $user, 'WP_User' ) && isset( $_SESSION['aadsso_redirect_to'] ) ) {
-			$redirect_to = esc_url( $_SESSION['aadsso_redirect_to'] );
+		$raw_redirect_to = $this->session->read( 'aadsso_redirect_to' );
+
+		if ( is_a( $user, 'WP_User' ) && null !== $raw_redirect_to ) {
+			$redirect_to = esc_url( $raw_redirect_to );
 		}
 
 		return $redirect_to;
@@ -235,7 +245,7 @@ class AADSSO {
 		 */
 		if ( isset( $_GET['code'] ) ) {
 
-			$antiforgery_id = $_SESSION['aadsso_antiforgery-id'];
+			$antiforgery_id = $this->session->read( 'aadsso_antiforgery-id' );
 			$state_is_missing = ! isset( $_GET['state'] );
 			$state_doesnt_match = $_GET['state'] != $antiforgery_id;
 
@@ -445,7 +455,7 @@ class AADSSO {
 	 */
 	function get_login_url() {
 		$antiforgery_id = com_create_guid();
-		$_SESSION['aadsso_antiforgery-id'] = $antiforgery_id;
+		$this->session->write( 'aadsso_antiforgery-id', $antiforgery_id );
 		return AADSSO_AuthorizationHelper::get_authorization_url( $this->settings, $antiforgery_id );
 	}
 
@@ -468,19 +478,26 @@ class AADSSO {
 	}
 
 	/**
+	 * Get Session Instance.
+	 *
+	 * @return AADSSO_Session
+	 */
+	public function get_session() {
+		return $this->session;
+	}
+
+	/**
 	 * Starts a new session.
 	 */
 	function register_session() {
-		if ( ! session_id() ) {
-			session_start();
-		}
+		$this->session->start();
 	}
 
 	/**
 	 * Clears the current the session (e.g. as part of logout).
 	 */
 	function clear_session() {
-		session_destroy();
+		$this->session->destroy();
 	}
 
 	/*** Settings ***/
@@ -511,7 +528,7 @@ class AADSSO {
 	 * Renders some debugging data.
 	 */
 	function print_debug() {
-		echo '<p>SESSION</p><pre>' . var_export( $_SESSION, TRUE ) . '</pre>';
+		echo '<p>SESSION</p><pre>' . var_export( $this->session, TRUE ) . '</pre>';
 		echo '<p>GET</pre><pre>' . var_export( $_GET, TRUE ) . '</pre>';
 		echo '<p>Database settings</p><pre>' .var_export( get_option( 'aadsso_settings' ), true ) . '</pre>';
 		echo '<p>Plugin settings</p><pre>' . var_export( $this->settings, true ) . '</pre>';
@@ -566,10 +583,29 @@ class AADSSO {
 	}
 }
 
-// Load settings JSON contents from DB and initialize the plugin
-$aadsso_settings_instance = AADSSO_Settings::init();
-$aadsso = AADSSO::get_instance( $aadsso_settings_instance );
+/**
+ * Initialize the AADSSO Plugin main class and return the single instance of AADSSO.
+ */
+function aadsso() {
+	global $aadsso;
 
+	if ( ! isset( $aadsso ) ) {
+
+		// Load settings JSON contents from DB and initialize the plugin
+		$aadsso_settings_instance = AADSSO_Settings::init();
+
+		/**
+		 * Filter the AADSSO Session instance.
+		 * By default `AADSSO_PHP_Session` is used. You can replace it with your implementation of `AADSSO_Session`.
+		 */
+		$aadsso_session_instance = apply_filters( 'aad_sso_session', new AADSSO_PHP_Session() );
+
+		$aadsso = AADSSO::get_instance( $aadsso_settings_instance, $aadsso_session_instance );
+	}
+
+	return $aadsso;
+}
+add_action( 'plugins_loaded', 'aadsso' );
 
 /*** Utility functions ***/
 
