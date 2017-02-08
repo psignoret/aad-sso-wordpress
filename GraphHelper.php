@@ -53,15 +53,16 @@ class AADSSO_GraphHelper
 	 * @return mixed The decoded response.
 	 */
 	public static function get_request( $url, $query_params = array() ) {
-
 		// Build the full query URL, adding api-version if necessary
 		$query_params = http_build_query( self::maybe_add_api_version( $query_params ) );
 		$url = $url . '?' . $query_params;
 
-		$_SESSION['aadsso_last_request'] = array(
+		$aadsso = aadsso();
+
+		$aadsso->get_session()->write( 'aadsso_last_request', array(
 			'method' => 'GET',
-			'url' => $url,
-		);
+			'url'    => $url,
+		) );
 
 		// Make the GET request
 		$response = wp_remote_get( $url, array(
@@ -71,7 +72,10 @@ class AADSSO_GraphHelper
 		// Parse the response
 		$decoded_output = json_decode( wp_remote_retrieve_body( $response ) );
 
-		$_SESSION['aadsso_last_request']['response'] = $decoded_output;
+		$last_request = $aadsso->get_session()->read( 'aadsso_last_request' );
+		$last_request['response'] = $decoded_output;
+		$aadsso->get_session()->write( 'aadsso_last_request', $last_request );
+
 		return $decoded_output;
 	}
 
@@ -81,17 +85,17 @@ class AADSSO_GraphHelper
 	 * @return mixed The decoded response.
 	 */
 	public static function post_request( $url, $query_params = array(), $data = array() ) {
-
 		// Build the full query URL and encode the payload
 		$query_params = http_build_query( self::maybe_add_api_version( $query_params ) );
 		$url = $url . '?' . $query_params;
 		$payload = json_encode( $data );
 
-		$_SESSION['aadsso_last_request'] = array(
+		$aadsso = aadsso();
+		$aadsso->get_session()->write( ' AADSSO_AuthorizationHelper', array(
 			'method' => 'POST',
-			'url' => $url,
-			'body' => $payload,
-		);
+			'url'    => $url,
+			'body'   => $payload,
+		) );
 
 		// Make the POST request
 		$response = wp_remote_post( $url, array(
@@ -102,7 +106,10 @@ class AADSSO_GraphHelper
 		// Parse the response
 		$decoded_output = json_decode( wp_remote_retrieve_body( $response ) );
 
-		$_SESSION['aadsso_last_request']['response'] = $decoded_output;
+		$last_request = $aadsso->get_session()->read( 'aadsso_last_request' );
+		$last_request['response'] = $decoded_output;
+		$aadsso->get_session()->write( 'aadsso_last_request', $last_request );
+
 		return $decoded_output;
 	}
 
@@ -125,11 +132,12 @@ class AADSSO_GraphHelper
 	  *
 	  * @return array An associative array with the HTTP headers for AAD Graph API calls.
 	  */
-	public static function get_required_headers_and_settings()
-	{
+	public static function get_required_headers_and_settings() {
+		$aadsso = aadsso();
+
 		// Generate the authentication header
 		return array(
-			'Authorization' => $_SESSION['aadsso_token_type'] . ' ' . $_SESSION['aadsso_access_token'],
+			'Authorization' => $aadsso->get_session()->read( 'aadsso_token_type' ) . ' ' . $aadsso->get_session()->read( 'aadsso_access_token' ),
 			'Accept'        => 'application/json;odata=minimalmetadata',
 			'Content-Type'  => 'application/json;odata=minimalmetadata',
 			'Prefer'        => 'return-content',
