@@ -37,8 +37,8 @@ class AADSSO_PHP_Session extends AADSSO_Session {
 	 * @return mixed Value. Null if key is not found.
 	 */
 	public function read( $key ) {
-		if ( isset( $_SESSION[ $key ] ) ) {
-			return $_SESSION[ $key ];
+		if ( isset( $_SESSION[ 'aadsso_' . $key ] ) ) {
+			return $_SESSION[ 'aadsso_' . $key ];
 		}
 
 		return null;
@@ -53,7 +53,7 @@ class AADSSO_PHP_Session extends AADSSO_Session {
 	 * @return void
 	 */
 	public function write( $key, $value ) {
-		$_SESSION[ $key ] = $value;
+		$_SESSION[ 'aadsso_' . $key ] = $value;
 	}
 
 	/**
@@ -64,6 +64,6 @@ class AADSSO_PHP_Session extends AADSSO_Session {
 	 * @return void
 	 */
 	public function delete( $key ) {
-		unset( $_SESSION[ $key ] );
+		unset( $_SESSION[ 'aadsso_' . $key ] );
 	}
 }
