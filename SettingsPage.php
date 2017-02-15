@@ -58,10 +58,8 @@ class AADSSO_Settings_Page {
 	/**
 	 * Clears settings if $_GET['aadsso_nonce'] is set and if the nonce is valid.
 	 */
-	public function maybe_reset_settings()
-	{
-		$should_reset_settings = isset( $_GET['aadsso_nonce'] )
-		                          && wp_verify_nonce( sanitize_text_field( $_GET['aadsso_nonce'] ), 'aadsso_reset_settings' );
+	public function maybe_reset_settings() {
+		$should_reset_settings = isset( $_GET['aadsso_nonce'] ) && wp_verify_nonce( $_GET['aadsso_nonce'], 'aadsso_reset_settings' );
 		if ( $should_reset_settings ) {
 			delete_option( 'aadsso_settings' );
 			wp_safe_redirect( admin_url( 'options-general.php?page=aadsso_settings&aadsso_reset=success' ) );
@@ -80,7 +78,7 @@ class AADSSO_Settings_Page {
 		 * - There is a file at that legacy settings path
 		 */
 		$should_migrate_settings = isset( $_GET['aadsso_nonce'] )
-			&& wp_verify_nonce( sanitize_text_field( $_GET['aadsso_nonce'] ), 'aadsso_migrate_from_json' )
+			&& wp_verify_nonce( $_GET['aadsso_nonce'], 'aadsso_migrate_from_json' )
 			&& defined( 'AADSSO_SETTINGS_PATH' )
 			&& file_exists( AADSSO_SETTINGS_PATH );
 
