@@ -283,7 +283,7 @@ class AADSSO {
 				 *
 				 * @param $jwt JSON Web Token.
 				 */
-				do_action( 'aad_validated_id_token', $jwt );
+				do_action( 'aadsso_validated_id_token', $jwt );
 
 				// Invoke any configured matching and auto-provisioning strategy and get the user.
 				$user = $this->get_wp_user_from_aad_user( $jwt );
@@ -331,7 +331,7 @@ class AADSSO {
 			 *
 			 * @param WP_User $user User who was authenticated.
 			 */
-			do_action( 'aad_user_authenticated', $user );
+			do_action( 'aadsso_user_authenticated', $user );
 		}
 
 		return $user;
@@ -381,7 +381,7 @@ class AADSSO {
 				 *
 				 * @param array $userdata User Data to be inserted.
 				 */
-				do_action( 'aad_insert_user', $userdata );
+				do_action( 'aadsso_insert_user', $userdata );
 
 				$new_user_id = wp_insert_user( $userdata );
 				AADSSO::debug_log( 'Created new user: \'' . $unique_name . '\', user id ' . $new_user_id . '.' );
