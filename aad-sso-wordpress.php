@@ -621,7 +621,7 @@ function aadsso() {
 		 * Filter the AADSSO Session instance.
 		 * By default `AADSSO_PHP_Session` is used. You can replace it with your implementation of `AADSSO_Session`.
 		 */
-		$aadsso_session_instance = apply_filters( 'aad_sso_session', new AADSSO_PHP_Session() );
+		$aadsso_session_instance = apply_filters( 'aadsso_session_init', new AADSSO_PHP_Session() );
 
 		$aadsso = AADSSO::get_instance( $aadsso_settings_instance, $aadsso_session_instance );
 	}
