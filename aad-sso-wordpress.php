@@ -93,7 +93,7 @@ class AADSSO {
 		// Redirect user back to original location
 		add_filter( 'login_redirect', array( $this, 'redirect_after_login' ), 20, 3 );
 
-		// Register the textdomain for localization after all plugins are loaded
+		// Register the textdomain for localization after WordPress is initialized.
 		add_action( 'init', array( $this, 'load_textdomain' ) );
 	}
 
