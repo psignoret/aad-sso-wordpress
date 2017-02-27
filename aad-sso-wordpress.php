@@ -141,9 +141,9 @@ class AADSSO {
 	 *
 	 * @return \AADSSO The (only) instance of the class.
 	 */
-	public static function get_instance( $settings ) {
+	public static function get_instance( $settings, $session ) {
 		if ( ! self::$instance ) {
-			self::$instance = new self( $settings );
+			self::$instance = new self( $settings, $session );
 		}
 		return self::$instance;
 	}
