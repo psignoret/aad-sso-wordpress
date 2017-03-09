@@ -1,15 +1,14 @@
 <?php
-
-/*
-Plugin Name: Single Sign-on with Azure Active Directory
-Plugin URI: http://github.com/psignoret/aad-sso-wordpress
-Description: Allows you to use your organization's Azure Active Directory user accounts to log in to WordPress. If your organization is using Office 365, your user accounts are already in Azure Active Directory. This plugin uses OAuth 2.0 to authenticate users, and the Azure Active Directory Graph to get group membership and other details.
-Author: Philippe Signoret
-Version: 0.6a
-Author URI: http://psignoret.com/
-Text Domain: aad-sso-wordpress
-Domain Path: /languages/
-*/
+/**
+ * Plugin Name: Single Sign-on with Azure Active Directory
+ * Plugin URI: http://github.com/psignoret/aad-sso-wordpress
+ * Description: Allows you to use your organization's Azure Active Directory user accounts to log in to WordPress. If your organization is using Office 365, your user accounts are already in Azure Active Directory. This plugin uses OAuth 2.0 to authenticate users, and the Azure Active Directory Graph to get group membership and other details.
+ * Author: Philippe Signoret
+ * Version: 0.6a
+ * Author URI: http://psignoret.com/
+ * Text Domain: aad-sso-wordpress
+ * Domain Path: /languages/
+ */
 
 defined( 'ABSPATH' ) or die( 'No script kiddies please!' );
 
@@ -22,6 +21,8 @@ define( 'AADSSO_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 //define( 'WP_PROXY_HOST', '127.0.0.1' );
 //define( 'WP_PROXY_PORT', '8888' );
 
+require_once AADSSO_PLUGIN_DIR . '/includes/sessions/AADSSO_Session.php';
+require_once AADSSO_PLUGIN_DIR . '/includes/sessions/AADSSO_PHP_Session.php';
 require_once AADSSO_PLUGIN_DIR . '/Settings.php';
 require_once AADSSO_PLUGIN_DIR . '/SettingsPage.php';
 require_once AADSSO_PLUGIN_DIR . '/AuthorizationHelper.php';
@@ -39,8 +40,14 @@ class AADSSO {
 
 	private $settings = null;
 
-	public function __construct( $settings ) {
+	/**
+	 * Instance of AADSSO_Session that provides session replacement.
+	 */
+	private $session = null;
+
+	public function __construct( $settings, $session ) {
 		$this->settings = $settings;
+		$this->session = $session;
 
 		// Setup the admin settings page
 		$this->setup_admin_settings();
@@ -86,8 +93,8 @@ class AADSSO {
 		// Redirect user back to original location
 		add_filter( 'login_redirect', array( $this, 'redirect_after_login' ), 20, 3 );
 
-		// Register the textdomain for localization after all plugins are loaded
-		add_action( 'plugins_loaded', array( $this, 'load_textdomain' ) );
+		// Register the textdomain for localization after WordPress is initialized.
+		add_action( 'init', array( $this, 'load_textdomain' ) );
 	}
 
 	/**
@@ -108,8 +115,7 @@ class AADSSO {
 	/**
 	 * Load the textdomain for localization.
 	 */
-	public function load_textdomain()
-	{
+	public function load_textdomain() {
 		load_plugin_textdomain(
 			'aad-sso-wordpress',
 			false, // deprecated
@@ -135,9 +141,9 @@ class AADSSO {
 	 *
 	 * @return \AADSSO The (only) instance of the class.
 	 */
-	public static function get_instance( $settings ) {
+	public static function get_instance( $settings, $session ) {
 		if ( ! self::$instance ) {
-			self::$instance = new self( $settings );
+			self::$instance = new self( $settings, $session );
 		}
 		return self::$instance;
 	}
@@ -161,12 +167,12 @@ class AADSSO {
 
 			// Save the redirect_to query param ( if present ) to session
 			if ( isset( $_GET['redirect_to'] ) ) {
-				$_SESSION['aadsso_redirect_to'] = $_GET['redirect_to'];
+				$this->session->write( 'aadsso_redirect_to', sanitize_text_field( $_GET['redirect_to'] ) );
 			}
 
 			if ( $bypass && ! isset( $_GET['code'] ) ) {
-				wp_redirect( $this->get_login_url() );
-				die();
+				wp_safe_redirect( $this->get_login_url() );
+				exit;
 			}
 		}
 	}
@@ -182,8 +188,10 @@ class AADSSO {
 	 * @return string
 	 */
 	public function redirect_after_login( $redirect_to, $requested_redirect_to, $user ) {
-		if ( is_a( $user, 'WP_User' ) && isset( $_SESSION['aadsso_redirect_to'] ) ) {
-			$redirect_to = $_SESSION['aadsso_redirect_to'];
+		$raw_redirect_to = $this->session->read( 'aadsso_redirect_to' );
+
+		if ( is_a( $user, 'WP_User' ) && null !== $raw_redirect_to ) {
+			$redirect_to = esc_url( $raw_redirect_to );
 		}
 
 		return $redirect_to;
@@ -203,12 +211,13 @@ class AADSSO {
 	private function wants_to_login() {
 		$wants_to_login = false;
 		// Cover default WordPress behavior
-		$action = isset( $_REQUEST['action'] ) ? $_REQUEST['action'] : 'login';
+		$action = isset( $_REQUEST['action'] ) ? sanitize_text_field( $_REQUEST['action'] ) : 'login';
 		// And now the exceptions
 		$action = isset( $_GET['loggedout'] ) ? 'loggedout' : $action;
 		if( 'login' == $action ) {
 			$wants_to_login = true;
 		}
+
 		return $wants_to_login;
 	}
 
@@ -236,7 +245,7 @@ class AADSSO {
 		 */
 		if ( isset( $_GET['code'] ) ) {
 
-			$antiforgery_id = $_SESSION['aadsso_antiforgery-id'];
+			$antiforgery_id = $this->session->read( 'aadsso_antiforgery-id' );
 			$state_is_missing = ! isset( $_GET['state'] );
 			$state_doesnt_match = $_GET['state'] != $antiforgery_id;
 
@@ -248,7 +257,7 @@ class AADSSO {
 			}
 
 			// Looks like we got a valid authorization code, let's try to get an access token with it
-			$token = AADSSO_AuthorizationHelper::get_access_token( $_GET['code'], $this->settings );
+			$token = AADSSO_AuthorizationHelper::get_access_token( sanitize_text_field( $_GET['code'] ), $this->settings );
 
 			// Happy path
 			if ( isset( $token->access_token ) ) {
@@ -269,6 +278,13 @@ class AADSSO {
 					);
 				}
 
+				/**
+				 * Fires once AAD SSO has validated the JWT token.
+				 *
+				 * @param $jwt JSON Web Token.
+				 */
+				do_action( 'aadsso_validated_id_token', $jwt );
+
 				// Invoke any configured matching and auto-provisioning strategy and get the user.
 				$user = $this->get_wp_user_from_aad_user( $jwt );
 
@@ -281,7 +297,6 @@ class AADSSO {
 						$user = $this->update_wp_user_roles( $user, $jwt->upn, $jwt->tid );
 					}
 				}
-
 			} elseif ( isset( $token->error ) ) {
 
 				// Unable to get an access token ( although we did get an authorization code )
@@ -295,7 +310,7 @@ class AADSSO {
 			} else {
 
 				// None of the above, I have no idea what happened.
-				return new WP_Error( 'unknown', __( 'ERROR: An unknown error occured.', 'aad-sso-wordpress' ) );
+				return new WP_Error( 'unknown', __( 'ERROR: An unknown error occurred.', 'aad-sso-wordpress' ) );
 			}
 
 		} elseif ( isset( $_GET['error'] ) ) {
@@ -305,9 +320,18 @@ class AADSSO {
 				$_GET['error'],
 				sprintf(
 					__( 'ERROR: Access denied to Azure Active Directory. %s', 'aad-sso-wordpress' ),
-					$_GET['error_description']
+					sanitize_text_field( $_GET['error_description'] )
 				)
 			);
+		}
+
+		if ( is_a( $user, 'WP_User' ) ) {
+			/**
+			 * Fires after a user is authenticated.
+			 *
+			 * @param WP_User $user User who was authenticated.
+			 */
+			do_action( 'aadsso_user_authenticated', $user );
 		}
 
 		return $user;
@@ -351,6 +375,13 @@ class AADSSO {
 					'last_name'	=> $jwt->family_name,
 					'user_pass'	=> null
 				);
+
+				/**
+				 * Fires before a new user is inserted.
+				 *
+				 * @param array $userdata User Data to be inserted.
+				 */
+				do_action( 'aadsso_insert_user', $userdata );
 
 				$new_user_id = wp_insert_user( $userdata );
 				AADSSO::debug_log( 'Created new user: \'' . $unique_name . '\', user id ' . $new_user_id . '.' );
@@ -409,11 +440,9 @@ class AADSSO {
 			foreach ( $role_to_set as $role ){
 				$user->add_role( $role );
 			}
-		}
-		else if ( null != $this->settings->default_wp_role || "" != $this->settings->default_wp_role ){
+		} else if ( null != $this->settings->default_wp_role || "" != $this->settings->default_wp_role ){
 			$user->set_role( $this->settings->default_wp_role );
-		}
-		else{
+		} else{
 			return new WP_Error(
 				'user_not_member_of_required_group',
 				sprintf(
@@ -434,9 +463,11 @@ class AADSSO {
 	 * @return array The new list of links to display
 	 */
 	function add_settings_link( $links ) {
-		$link_to_settings =
-			'<a href="' . admin_url( 'options-general.php?page=aadsso_settings' ) . '">Settings</a>';
+		$link_to_settings = '<a href="' . esc_url( admin_url( 'options-general.php?page=aadsso_settings' ) ) . '">' .
+		                    __( 'Settings', 'aad-sso-wordpress' ) .
+		                    '</a>';
 		array_push( $links, $link_to_settings );
+
 		return $links;
 	}
 
@@ -447,7 +478,7 @@ class AADSSO {
 	 */
 	function get_login_url() {
 		$antiforgery_id = com_create_guid();
-		$_SESSION['aadsso_antiforgery-id'] = $antiforgery_id;
+		$this->session->write( 'aadsso_antiforgery-id', $antiforgery_id );
 		return AADSSO_AuthorizationHelper::get_authorization_url( $this->settings, $antiforgery_id );
 	}
 
@@ -470,19 +501,26 @@ class AADSSO {
 	}
 
 	/**
+	 * Get Session Instance.
+	 *
+	 * @return AADSSO_Session
+	 */
+	public function get_session() {
+		return $this->session;
+	}
+
+	/**
 	 * Starts a new session.
 	 */
 	function register_session() {
-		if ( ! session_id() ) {
-			session_start();
-		}
+		$this->session->start();
 	}
 
 	/**
 	 * Clears the current the session (e.g. as part of logout).
 	 */
 	function clear_session() {
-		session_destroy();
+		$this->session->destroy();
 	}
 
 	/*** Settings ***/
@@ -513,7 +551,7 @@ class AADSSO {
 	 * Renders some debugging data.
 	 */
 	function print_debug() {
-		echo '<p>SESSION</p><pre>' . var_export( $_SESSION, TRUE ) . '</pre>';
+		echo '<p>SESSION</p><pre>' . var_export( $this->session, TRUE ) . '</pre>';
 		echo '<p>GET</pre><pre>' . var_export( $_GET, TRUE ) . '</pre>';
 		echo '<p>Database settings</p><pre>' .var_export( get_option( 'aadsso_settings' ), true ) . '</pre>';
 		echo '<p>Plugin settings</p><pre>' . var_export( $this->settings, true ) . '</pre>';
@@ -538,8 +576,8 @@ class AADSSO {
 		         . __( 'Sign out', 'aad-sso-wordpress' ) . '</a></p>';
 		printf(
 			$html,
-			$this->get_login_url(),
-			$this->get_logout_url()
+			esc_url( $this->get_login_url() ),
+			esc_url( $this->get_logout_url() )
 		);
 	}
 
@@ -568,10 +606,29 @@ class AADSSO {
 	}
 }
 
-// Load settings JSON contents from DB and initialize the plugin
-$aadsso_settings_instance = AADSSO_Settings::init();
-$aadsso = AADSSO::get_instance( $aadsso_settings_instance );
+/**
+ * Initialize the AADSSO Plugin main class and return the single instance of AADSSO.
+ */
+function aadsso() {
+	global $aadsso;
 
+	if ( ! isset( $aadsso ) ) {
+
+		// Load settings JSON contents from DB and initialize the plugin
+		$aadsso_settings_instance = AADSSO_Settings::init();
+
+		/**
+		 * Filter the AADSSO Session instance.
+		 * By default `AADSSO_PHP_Session` is used. You can replace it with your implementation of `AADSSO_Session`.
+		 */
+		$aadsso_session_instance = apply_filters( 'aadsso_session_init', new AADSSO_PHP_Session() );
+
+		$aadsso = AADSSO::get_instance( $aadsso_settings_instance, $aadsso_session_instance );
+	}
+
+	return $aadsso;
+}
+add_action( 'plugins_loaded', 'aadsso' );
 
 /*** Utility functions ***/
 
