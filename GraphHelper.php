@@ -59,7 +59,7 @@ class AADSSO_GraphHelper
 
 		$aadsso = aadsso();
 
-		$aadsso->get_session()->write( 'aadsso_last_request', array(
+		$aadsso->get_session()->set( 'aadsso_last_request', array(
 			'method' => 'GET',
 			'url'    => $url,
 		) );
@@ -72,9 +72,9 @@ class AADSSO_GraphHelper
 		// Parse the response
 		$decoded_output = json_decode( wp_remote_retrieve_body( $response ) );
 
-		$last_request = $aadsso->get_session()->read( 'aadsso_last_request' );
+		$last_request = $aadsso->get_session()->get( 'aadsso_last_request' );
 		$last_request['response'] = $decoded_output;
-		$aadsso->get_session()->write( 'aadsso_last_request', $last_request );
+		$aadsso->get_session()->set( 'aadsso_last_request', $last_request );
 
 		return $decoded_output;
 	}
@@ -91,7 +91,7 @@ class AADSSO_GraphHelper
 		$payload = json_encode( $data );
 
 		$aadsso = aadsso();
-		$aadsso->get_session()->write( ' AADSSO_AuthorizationHelper', array(
+		$aadsso->get_session()->set( ' AADSSO_AuthorizationHelper', array(
 			'method' => 'POST',
 			'url'    => $url,
 			'body'   => $payload,
@@ -106,9 +106,9 @@ class AADSSO_GraphHelper
 		// Parse the response
 		$decoded_output = json_decode( wp_remote_retrieve_body( $response ) );
 
-		$last_request = $aadsso->get_session()->read( 'aadsso_last_request' );
+		$last_request = $aadsso->get_session()->get( 'aadsso_last_request' );
 		$last_request['response'] = $decoded_output;
-		$aadsso->get_session()->write( 'aadsso_last_request', $last_request );
+		$aadsso->get_session()->set( 'aadsso_last_request', $last_request );
 
 		return $decoded_output;
 	}
@@ -137,7 +137,7 @@ class AADSSO_GraphHelper
 
 		// Generate the authentication header
 		return array(
-			'Authorization' => $aadsso->get_session()->read( 'aadsso_token_type' ) . ' ' . $aadsso->get_session()->read( 'aadsso_access_token' ),
+			'Authorization' => $aadsso->get_session()->get( 'aadsso_token_type' ) . ' ' . $aadsso->get_session()->get( 'aadsso_access_token' ),
 			'Accept'        => 'application/json;odata=minimalmetadata',
 			'Content-Type'  => 'application/json;odata=minimalmetadata',
 			'Prefer'        => 'return-content',

@@ -23,23 +23,23 @@ abstract class AADSSO_Session {
 	abstract public function destroy();
 
 	/**
-	 * Read session data.
+	 * Get session data.
 	 *
 	 * @param string $key Key.
 	 *
 	 * @return mixed Value. Null if key is not found.
 	 */
-	abstract public function read( $key );
+	abstract public function get( $key );
 
 	/**
-	 * Write session data.
+	 * Set session data.
 	 *
 	 * @param string $key   Key.
 	 * @param mixed  $value Value.
 	 *
 	 * @return void
 	 */
-	abstract public function write( $key, $value );
+	abstract public function set( $key, $value );
 
 	/**
 	 * Delete a key.

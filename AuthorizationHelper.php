@@ -88,8 +88,8 @@ class AADSSO_AuthorizationHelper
 
 			// Add the token information to the session so that we can use it later
 			// TODO: these probably shouldn't be in SESSION...
-			$aadsso->get_session()->write( 'aadsso_token_type', sanitize_text_field( $result->token_type ) );
-			$aadsso->get_session()->write( 'aadsso_access_token', sanitize_text_field( $result->access_token ) );
+			$aadsso->get_session()->set( 'aadsso_token_type', sanitize_text_field( $result->token_type ) );
+			$aadsso->get_session()->set( 'aadsso_access_token', sanitize_text_field( $result->access_token ) );
 		}
 
 		return $result;
