@@ -9,21 +9,21 @@
 abstract class AADSSO_Session {
 
 	/**
-	 * Start a multi-server-safe session.
+	 * Start a session.
 	 *
 	 * @return void
 	 */
 	abstract public function start();
 
 	/**
-	 * Close a multi-server-safe session.
+	 * Close a session.
 	 *
 	 * @return void
 	 */
 	abstract public function destroy();
 
 	/**
-	 * Read multi-server-safe session data.
+	 * Read session data.
 	 *
 	 * @param string $key Key.
 	 *
@@ -32,7 +32,7 @@ abstract class AADSSO_Session {
 	abstract public function read( $key );
 
 	/**
-	 * Write multi-server-safe session data.
+	 * Write session data.
 	 *
 	 * @param string $key   Key.
 	 * @param mixed  $value Value.
