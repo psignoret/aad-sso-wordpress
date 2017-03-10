@@ -167,7 +167,7 @@ class AADSSO {
 
 			// Save the redirect_to query param ( if present ) to session
 			if ( isset( $_GET['redirect_to'] ) ) {
-				$this->session->write( 'aadsso_redirect_to', sanitize_text_field( $_GET['redirect_to'] ) );
+				$this->session->set( 'aadsso_redirect_to', sanitize_text_field( $_GET['redirect_to'] ) );
 			}
 
 			if ( $bypass && ! isset( $_GET['code'] ) ) {
@@ -188,7 +188,7 @@ class AADSSO {
 	 * @return string
 	 */
 	public function redirect_after_login( $redirect_to, $requested_redirect_to, $user ) {
-		$raw_redirect_to = $this->session->read( 'aadsso_redirect_to' );
+		$raw_redirect_to = $this->session->get( 'aadsso_redirect_to' );
 
 		if ( is_a( $user, 'WP_User' ) && null !== $raw_redirect_to ) {
 			$redirect_to = esc_url( $raw_redirect_to );
@@ -245,7 +245,7 @@ class AADSSO {
 		 */
 		if ( isset( $_GET['code'] ) ) {
 
-			$antiforgery_id = $this->session->read( 'aadsso_antiforgery-id' );
+			$antiforgery_id = $this->session->get( 'aadsso_antiforgery-id' );
 			$state_is_missing = ! isset( $_GET['state'] );
 			$state_doesnt_match = $_GET['state'] != $antiforgery_id;
 
@@ -478,7 +478,7 @@ class AADSSO {
 	 */
 	function get_login_url() {
 		$antiforgery_id = com_create_guid();
-		$this->session->write( 'aadsso_antiforgery-id', $antiforgery_id );
+		$this->session->set( 'aadsso_antiforgery-id', $antiforgery_id );
 		return AADSSO_AuthorizationHelper::get_authorization_url( $this->settings, $antiforgery_id );
 	}
 
