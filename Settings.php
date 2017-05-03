@@ -80,6 +80,14 @@ class AADSSO_Settings {
 	public $enable_auto_forward_to_aad = false;
 
 	/**
+	* Indicates if all visitors are forced to AAD for login, preventing anyone who is not signed in
+	* from accessing the site. Can be overridden with 'aad_force_login' filter.
+	*
+	* @var boolean Whether or not to force AAD sign-in for all visitors
+	*/
+	public $enable_force_aad_login = false;
+
+	/**
 	 * @var boolean Whether or not to use AAD group memberships to set WordPress roles.
 	 */
 	public $enable_aad_group_to_wp_role = false;
@@ -157,6 +165,7 @@ class AADSSO_Settings {
 			'enable_auto_provisioning' => false,
 			'match_on_upn_alias' => false,
 			'enable_auto_forward_to_aad' => false,
+			'enable_force_aad_login' => false,
 			'enable_aad_group_to_wp_role' => false,
 			'redirect_uri' => wp_login_url(),
 			'logout_redirect_uri' => wp_login_url(),
