@@ -33,6 +33,8 @@ require_once AADSSO_PLUGIN_DIR . '/lib/php-jwt/src/BeforeValidException.php';
 require_once AADSSO_PLUGIN_DIR . '/lib/php-jwt/src/ExpiredException.php';
 require_once AADSSO_PLUGIN_DIR . '/lib/php-jwt/src/SignatureInvalidException.php';
 
+//define ('AADSSO_DEBUG', true);
+
 class AADSSO {
 
 	static $instance = FALSE;
@@ -314,16 +316,23 @@ class AADSSO {
 	}
 
 	function get_wp_user_from_aad_user( $jwt ) {
-
+		
 		// Try to find an existing user in WP where the upn or unique_name of the current AAD user is
 		// (depending on config) the 'login' or 'email' field in WordPress
-		$unique_name = isset( $jwt->upn ) ? $jwt->upn : ( isset( $jwt->unique_name ) ? $jwt->unique_name : null );
+		$unique_name = isset( $jwt->upn ) ? $jwt->upn : ( isset( $jwt->unique_name ) ? $jwt->unique_name : null );	
 		if ( null === $unique_name ) {
 			return new WP_Error(
 					'unique_name_not_found',
 					__( 'ERROR: Neither \'upn\' nor \'unique_name\' claims not found in ID Token.',
 						'aad-sso-wordpress' )
 				);
+		}
+		
+		// Check if unique name is a reasonable email address
+		$bad_char = strpos($unique_name, "#");
+		if ($bad_char != false)
+		{
+			$unique_name = substr($unique_name, $bad_char + 1);	
 		}
 
 		$user = get_user_by( $this->settings->field_to_match_to_upn, $unique_name );
@@ -334,7 +343,7 @@ class AADSSO {
 				$user = get_user_by( $this->settings->field_to_match_to_upn, $username[0] );
 			}
 		}
-
+		
 		if ( ! is_a( $user, 'WP_User' ) ) {
 
 			// Since the user was authenticated with AAD, but not found in WordPress,
@@ -353,10 +362,23 @@ class AADSSO {
 				);
 
 				$new_user_id = wp_insert_user( $userdata );
-				AADSSO::debug_log( 'Created new user: \'' . $unique_name . '\', user id ' . $new_user_id . '.' );
-
-				$user = new WP_User( $new_user_id );
-
+				
+				if (is_wp_error( $new_user_id ) ) {
+					// The user was authenticated, but not found in WP and auto-provisioning is disabled
+					return new WP_Error(
+						'user_not_registered',
+						sprintf(
+							__( 'ERROR: Cannot create user %s.', 'aad-sso-wordpress' ),
+							$unique_name
+						)
+					);
+				}
+				else
+				{
+					AADSSO::debug_log( 'Created new user: \'' . $unique_name . '\', user id ' . $new_user_id . '.' );
+				
+					$user = new WP_User( $new_user_id );					
+				}
 			} else {
 
 				// The user was authenticated, but not found in WP and auto-provisioning is disabled
