@@ -33,6 +33,8 @@ require_once AADSSO_PLUGIN_DIR . '/lib/php-jwt/src/BeforeValidException.php';
 require_once AADSSO_PLUGIN_DIR . '/lib/php-jwt/src/ExpiredException.php';
 require_once AADSSO_PLUGIN_DIR . '/lib/php-jwt/src/SignatureInvalidException.php';
 
+//define ('AADSSO_DEBUG', true);
+
 class AADSSO {
 
 	static $instance = FALSE;
@@ -353,10 +355,23 @@ class AADSSO {
 				);
 
 				$new_user_id = wp_insert_user( $userdata );
-				AADSSO::debug_log( 'Created new user: \'' . $unique_name . '\', user id ' . $new_user_id . '.' );
-
-				$user = new WP_User( $new_user_id );
-
+				
+				if (is_wp_error( $new_user_id ) ) {
+					// The user was authenticated, but not found in WP and auto-provisioning is disabled
+					return new WP_Error(
+						'user_not_registered',
+						sprintf(
+							__( 'ERROR: Cannot create user %s.', 'aad-sso-wordpress' ),
+							$unique_name
+						)
+					);
+				}
+				else
+				{
+					AADSSO::debug_log( 'Created new user: \'' . $unique_name . '\', user id ' . $new_user_id . '.' );
+				
+					$user = new WP_User( $new_user_id );					
+				}
 			} else {
 
 				// The user was authenticated, but not found in WP and auto-provisioning is disabled
