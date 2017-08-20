@@ -5,8 +5,8 @@ Plugin Name: Single Sign-on with Azure Active Directory
 Plugin URI: http://github.com/psignoret/aad-sso-wordpress
 Description: Allows you to use your organization's Azure Active Directory user accounts to log in to WordPress. If your organization is using Office 365, your user accounts are already in Azure Active Directory. This plugin uses OAuth 2.0 to authenticate users, and the Azure Active Directory Graph to get group membership and other details.
 Author: Philippe Signoret
-Version: 0.6a
-Author URI: http://psignoret.com/
+Version: 0.6.1
+Author URI: https://www.psignoret.com/
 Text Domain: aad-sso-wordpress
 Domain Path: /languages/
 */
@@ -149,10 +149,21 @@ class AADSSO {
 	 */
 	public function save_redirect_and_maybe_bypass_login() {
 
-		$bypass = apply_filters(
+		$auto_redirect = apply_filters(
 			'aad_auto_forward_login',
 			$this->settings->enable_auto_forward_to_aad
 		);
+		
+		/*
+		 * This offers a query parameter to offer an easy method to skip any sort of automatic 
+		 * redirect to Azure AD, displaying the login form instead. This check is intentionally
+		 * done after the 'aad_auto_forward_login' filter is applied, to ensure it also overrides
+		 * any filters.
+		 */ 
+		if ( isset( $_GET['aadsso_no_redirect'] ) ) {
+			AADSSO::debug_log( 'Skipping automatic redirects to Azure AD.' );
+			$auto_redirect = FALSE;
+		}
 
 		/*
 		 * If the user is attempting to log out AND the auto-forward to AAD
@@ -166,7 +177,12 @@ class AADSSO {
 				$_SESSION['aadsso_redirect_to'] = $_GET['redirect_to'];
 			}
 
-			if ( $bypass && ! isset( $_GET['code'] ) ) {
+			/*
+			 * $_POST['log'] is set when the login form is submitted. It's important to check
+			 * for this condition also because we want to allow the login form to be usable
+			 * when the 'aadsso_no_redirect' anti-lockout option is used.
+			 */
+			if ( $auto_redirect && ! isset( $_GET['code'] ) && ! isset( $_POST['log'] ) ) {
 				wp_redirect( $this->get_login_url() );
 				die();
 			}
