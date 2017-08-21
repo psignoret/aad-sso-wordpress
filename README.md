@@ -190,6 +190,19 @@ Users are matched by their email in WordPress, and WordPress roles are dictated 
 | Default WordPress role if not in Azure AD group | Subscriber
 | WordPress role to Azure AD group map | <table><tr><td>Administrator</td><td>5d1915c4-2373-42ba-9796-7c092fa1dfc6</td></tr><tr><td>Editor</td><td>21c0f87b-4b65-48c1-9231-2f9295ef601c</td></tr><tr><td>Author</td><td>f5784693-11e5-4812-87db-8c6e51a18ffd</td></tr><tr><td>Contributor</td><td>780e055f-7e64-4e34-9ff3-012910b7e5ad</td></tr><tr><td>Subscriber</td><td>f1be9515-0aeb-458a-8c0a-30a03c1afb67</td></tr></table>
 
+## Groups
+
+As described above, you can map Azure AD groups to WordPress roles. Users who are members of the Azure AD group will be granted the WordPress role(s) the groups were mapped to.
+
+There are several ways Azure AD groups can be created/managed. Some of them require the group owner/creator to be a tenant administrator, others not necessarily (depending on your organization's policy):
+
+ * **Azure portal**. The Azure portal ([https://portal.azure.com](https://portal.azure.com)), under [Azure Active Directory](https://portal.azure.com/#blade/Microsoft_AAD_IAM/ActiveDirectoryMenuBlade/Overview) > [Users and groups](https://portal.azure.com/#blade/Microsoft_AAD_IAM/UserManagementMenuBlade/Overview/menuId/) > [All groups](https://portal.azure.com/#blade/Microsoft_AAD_IAM/UserManagementMenuBlade/All%20groups/menuId/) > New group, allows admins and (optionally) users to create and manage groups.
+ * **Access Panel**. The Azure AD Access Panel ([https://myapps.microsoft.com](https://myapps.microsoft.com)) provides an interface for users to create and manage [groups](https://account.activedirectory.windowsazure.com/#/groups).
+ * **Outlook**. The Outlook web interface ([https://outlook.office.com/](https://outlook.office.com/)) offers users the option to create Office 365 Groups. These groups are stored in Azure AD and can be used with this plugin.
+ * **Microsoft Teams**. Creating a team in Microsoft Teams ([https://teams.microsoft.com](https://teams.microsoft.com)) also results in an Office 365 Group getting created.
+ * **Azure AD PowerShell**. The [Azure AD PowerShell module](https://docs.microsoft.com/en-us/powershell/azure/active-directory/install-adv2?view=azureadps-2.0) allows admins and (optionally) users to create and manage groups. (e.g. [New-AzureADGroup](https://docs.microsoft.com/en-us/powershell/module/azuread/new-azureadgroup?view=azureadps-2.0), and [Add-AzureADGroupMember](https://docs.microsoft.com/en-us/powershell/module/azuread/add-azureadgroupmember?view=azureadps-2.0) cmdlets.)
+ * **On-premises**. Many large organizations use Azure AD Connect to sync their on-premises AD to Azure AD. This usually includes all on-premises AD groups and memberships. Once these groups are synced to Azrue AD, they can be used with this plugin.
+
 ## Advanced
 
 ### Refreshing the OpenID Connect configuration cache
