@@ -52,11 +52,11 @@ With these steps, you will register an application with Azure AD. This applicati
 
     ![Adding a reply URL](https://user-images.githubusercontent.com/231140/29496951-54b63d74-85de-11e7-848d-d1ed0b7ce105.png)
 
-5. Under **Required permissions**, choose the "Windows Azure Active Directory" API. You will need at minimum delegated permissions to "Sign in and read user profile". If you wish to map Azure AD groups to WordPress roles, you will also need delegated permission to "Read all groups". Once you've selected the permissions, click **Save**.
+5. Under **Required permissions**, choose the "Windows Azure Active Directory" API. You will need at minimum delegated permissions to "Sign in and read user profile". If you wish to map Azure AD groups to WordPress roles, you will also need delegated permission to "Read directory data". Once you've selected the permissions, click **Save**.
     
-    **Important**: The "Read all groups" delegated permissions requires a tenant administrator to consent to the application. The tenant administrator can use the **Grant Permissions** option to grant permissions (i.e. consent) on behalf of all users.
+    **Important**: The "Read directory data" delegated permissions requires a tenant administrator to consent to the application. The tenant administrator can use the **Grant Permissions** option to grant permissions (i.e. consent) on behalf of all users.
 
-    ![Delegated permissions to sign in and read all groups](https://user-images.githubusercontent.com/231140/29496967-cc635a78-85de-11e7-8e3c-34cc3ca39ac8.png)
+    ![Delegated permissions to sign in and read directory data](https://user-images.githubusercontent.com/231140/30487748-a6fe8e5a-9a34-11e7-8730-ce44472817cf.png)
 
 7. Under **Keys**, provide a new secret key description and duration, and click **Save**. After saving, the secret key value will appear. Copy it, as this is the only time it will be available.
 
