@@ -87,11 +87,8 @@ class AADSSO_GraphHelper
 		$url = $url . '?' . $query_params;
 		$payload = json_encode( $data );
 
-		$_SESSION['aadsso_last_request'] = array(
-			'method' => 'POST',
-			'url' => $url,
-			'body' => $payload,
-		);
+		AADSSO::debug_log( 'POST ' . $url, 50 );
+		AADSSO::debug_log( $payload, 99 );
 
 		// Make the POST request
 		$response = wp_remote_post( $url, array(
@@ -99,11 +96,13 @@ class AADSSO_GraphHelper
 			'headers' => self::get_required_headers_and_settings(),
 		) );
 
-		// Parse the response
-		$decoded_output = json_decode( wp_remote_retrieve_body( $response ) );
+		$response_headers = wp_remote_retrieve_headers( $response );
+		$response_body = wp_remote_retrieve_body( $response );
 
-		$_SESSION['aadsso_last_request']['response'] = $decoded_output;
-		return $decoded_output;
+		AADSSO::debug_log( 'Response headers: ' . json_encode( $response_headers ), 99 );
+		AADSSO::debug_log( 'Response body: ' . json_encode( $response_body ), 50 );
+
+		return json_decode( $response_body );
 	}
 
 	/**

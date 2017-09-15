@@ -5,7 +5,7 @@ Plugin Name: Single Sign-on with Azure Active Directory
 Plugin URI: http://github.com/psignoret/aad-sso-wordpress
 Description: Allows you to use your organization's Azure Active Directory user accounts to log in to WordPress. If your organization is using Office 365, your user accounts are already in Azure Active Directory. This plugin uses OAuth 2.0 to authenticate users, and the Azure Active Directory Graph to get group membership and other details.
 Author: Philippe Signoret
-Version: 0.6.1
+Version: 0.6.2
 Author URI: https://www.psignoret.com/
 Text Domain: aad-sso-wordpress
 Domain Path: /languages/
@@ -16,6 +16,9 @@ defined( 'ABSPATH' ) or die( 'No script kiddies please!' );
 define( 'AADSSO', 'aad-sso-wordpress' );
 define( 'AADSSO_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'AADSSO_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
+
+defined( 'AADSSO_DEBUG' ) or define( 'AADSSO_DEBUG', FALSE );
+defined( 'AADSSO_DEBUG_LEVEL' ) or define( 'AADSSO_DEBUG_LEVEL', 0 );
 
 // Proxy to be used for calls, should be useful for tracing with Fiddler
 // BUGBUG: Doesn't actually work, at least not with WP running on WAMP stack
@@ -278,7 +281,8 @@ class AADSSO {
 						$antiforgery_id
 					);
 
-					AADSSO::debug_log( json_encode( $jwt ) );
+					AADSSO::debug_log( 'ID Token: iss: \'' . $jwt->iss . '\', oid: \'' . $jwt->oid, 10 );
+					AADSSO::debug_log( json_encode( $jwt ), 50 );
 
 				} catch ( Exception $e ) {
 					return new WP_Error(
@@ -338,22 +342,25 @@ class AADSSO {
 		$unique_name = isset( $jwt->upn ) ? $jwt->upn : ( isset( $jwt->unique_name ) ? $jwt->unique_name : null );
 		if ( null === $unique_name ) {
 			return new WP_Error(
-					'unique_name_not_found',
-					__( 'ERROR: Neither \'upn\' nor \'unique_name\' claims not found in ID Token.',
-						'aad-sso-wordpress' )
-				);
+				'unique_name_not_found',
+				__( 'ERROR: Neither \'upn\' nor \'unique_name\' claims not found in ID Token.',
+					'aad-sso-wordpress' )
+			);
 		}
 
 		$user = get_user_by( $this->settings->field_to_match_to_upn, $unique_name );
 
-		if( true === $this->settings->match_on_upn_alias ) {
+		if ( true === $this->settings->match_on_upn_alias ) {
 			if ( ! is_a( $user, 'WP_User' ) ) {
 				$username = explode( sprintf( '@%s', $this->settings->org_domain_hint ), $unique_name );
 				$user = get_user_by( $this->settings->field_to_match_to_upn, $username[0] );
 			}
 		}
 
-		if ( ! is_a( $user, 'WP_User' ) ) {
+		if ( is_a( $user, 'WP_User' ) ) {
+			AADSSO::debug_log( sprintf(
+				'Matched Azure AD user [%s] to existing WordPress user [%s].', $unique_name, $user->ID ), 10 );
+		} else {
 
 			// Since the user was authenticated with AAD, but not found in WordPress,
 			// need to decide whether to create a new user in WP on-the-fly, or to stop here.
@@ -372,12 +379,12 @@ class AADSSO {
 
 				$new_user_id = wp_insert_user( $userdata );
 				
-				if (is_wp_error( $new_user_id ) ) {
+				if ( is_wp_error( $new_user_id ) ) {
 					// The user was authenticated, but not found in WP and auto-provisioning is disabled
 					return new WP_Error(
 						'user_not_registered',
 						sprintf(
-							__( 'ERROR: Cannot create user %s.', 'aad-sso-wordpress' ),
+							__( 'ERROR: Error creating user \'%s\'.', 'aad-sso-wordpress' ),
 							$unique_name
 						)
 					);
@@ -385,7 +392,6 @@ class AADSSO {
 				else
 				{
 					AADSSO::debug_log( 'Created new user: \'' . $unique_name . '\', user id ' . $new_user_id . '.' );
-				
 					$user = new WP_User( $new_user_id );					
 				}
 			} else {
@@ -394,8 +400,9 @@ class AADSSO {
 				return new WP_Error(
 					'user_not_registered',
 					sprintf(
-						__( 'ERROR: The authenticated user %s is not a registered user in this blog.', 'aad-sso-wordpress' ),
-						$jwt->upn
+						__( 'ERROR: The authenticated user \'%s\' is not a registered user in this site.', 
+						    'aad-sso-wordpress' ),
+						$unique_name
 					)
 				);
 			}
@@ -411,47 +418,70 @@ class AADSSO {
 		* @param string $aad_user_id The AAD object id of the user
 		* @param string $aad_tenant_id The AAD directory tenant ID
 		*
-		* @return WP_User|WP_Error Return the WP_User with updated rols, or WP_Error if failed.
+		* @return WP_User|WP_Error Return the WP_User with updated roles, or WP_Error if failed.
 		*/
 	function update_wp_user_roles( $user, $aad_user_id, $aad_tenant_id ) {
 
-		// Pass the settings to GraphHelper
+		// TODO: Cleaner (but still lazy) initialization of GraphHelper
 		AADSSO_GraphHelper::$settings = $this->settings;
 		AADSSO_GraphHelper::$tenant_id = $aad_tenant_id;
 
 		// Of the AAD groups defined in the settings, get only those where the user is a member
 		$group_ids = array_keys( $this->settings->aad_group_to_wp_role_map );
 		$group_memberships = AADSSO_GraphHelper::user_check_member_groups( $aad_user_id, $group_ids );
+		
+		// Check for errors in the group membership check response
+		if ( isset( $group_memberships->value ) ) {
+			AADSSO::debug_log( sprintf(
+				'Out of [%s], user \'%s\' is a member of [%s]', 
+				implode( ',', $group_ids ), $aad_user_id, implode( ',', $group_memberships->value ) ), 20
+			);
+		} elseif ( isset ( $group_memberships->{'odata.error'} ) ) {
+			AADSSO::debug_log( 'Error when checking group membership: ' . json_encode( $group_memberships ) );
+			return new WP_Error(
+				'error_checking_group_membership',
+				sprintf(
+					__( 'ERROR: Unable to check group membership in Azure AD: <b>%s</b>.', 
+					    'aad-sso-wordpress' ), $group_memberships->{'odata.error'}->code )
+			);
+		} else {
+			AADSSO::debug_log( 'Unexpected response to checkMemberGroups: ' . json_encode( $group_memberships ) );
+			return new WP_Error(
+				'unexpected_response_to_checkMemberGroups',
+				__( 'ERROR: Unexpected response when checking group membership in Azure AD.', 
+			        'aad-sso-wordpress' )
+			);
+		}
 
 		// Determine which WordPress role the AAD group corresponds to.
-		// TODO: Check for error in the group membership response
-		$role_to_set = array();
+		$roles_to_set = array();
 
 		if ( ! empty( $group_memberships->value ) ) {
 			foreach ( $this->settings->aad_group_to_wp_role_map as $aad_group => $wp_role ) {
 				if ( in_array( $aad_group, $group_memberships->value ) ) {
-					array_push( $role_to_set, $wp_role );
+					array_push( $roles_to_set, $wp_role );
 				}
 			}
 		}
 
-		if ( ! empty( $role_to_set ) ) {
-			$user->set_role("");
-			foreach ( $role_to_set as $role ){
+		if ( ! empty( $roles_to_set ) ) {
+			$user->set_role( '' );
+			foreach ( $roles_to_set as $role ) {
 				$user->add_role( $role );
 			}
-		}
-		else if ( null != $this->settings->default_wp_role || "" != $this->settings->default_wp_role ){
+			AADSSO::debug_log( sprintf(
+				'Set roles [%s] for user [%s].', implode( ', ', $roles_to_set ), $user->ID ), 10 );
+		} else if ( ! empty( $this->settings->default_wp_role ) ) {
 			$user->set_role( $this->settings->default_wp_role );
-		}
-		else{
-			return new WP_Error(
-				'user_not_member_of_required_group',
-				sprintf(
-					__( 'ERROR: AAD user %s is not a member of any group granting a role.', 'aad-sso-wordpress' ),
-					$aad_user_id
-				)
+			AADSSO::debug_log( sprintf( 
+				'Set default role [%s] for user [%s].', $this->settings->default_wp_role, $user->ID ), 10 );
+		} else {
+			$error_message = sprintf(
+				__( 'ERROR: Azure AD user %s is not a member of any group granting a role.', 'aad-sso-wordpress' ),
+				$aad_user_id
 			);
+			AADSSO::debug_log( $error_message, 10 );
+			return new WP_Error( 'user_not_member_of_required_group', $error_message );
 		}
 
 		return $user;
@@ -574,14 +604,21 @@ class AADSSO {
 		);
 	}
 
-	public static function debug_log( $message ) {
-		if ( defined('AADSSO_DEBUG') && true === AADSSO_DEBUG ) {
-			if ( strpos( $message, "\n" ) === false ) {
+	/**
+	 * Emits debug details to the logs. The higher the level, the more verbose.
+	 *
+	 * If there are multiple lines in the message, they will each be emitted as a log line.
+	 */
+	public static function debug_log( $message, $level = 0 ) {
+		
+		// AADSSO_DEBUG and AADSSO_DEBUG_LEVEL are already defined.
+		if ( AADSSO_DEBUG && AADSSO_DEBUG_LEVEL >= $level ) {
+			if ( FALSE === strpos( $message, "\n" ) ) {
 				error_log( 'AADSSO: ' . $message );
 			} else {
 				$lines = explode( "\n", str_replace( "\r\n", "\n", $message ) );
 				foreach ( $lines as $line ) {
-					AADSSO::debug_log( $line );
+					AADSSO::debug_log( $line, $level );
 				}
 			}
 		}
@@ -590,19 +627,14 @@ class AADSSO {
 	/**
 	 * Prints the debug backtrace using this class' debug_log function.
 	 */
-	public static function debug_print_backtrace() {
+	public static function debug_print_backtrace( $level = 10 ) {
 		ob_start();
 		debug_print_backtrace();
 		$trace = ob_get_contents();
 		ob_end_clean();
-		self::debug_log( $trace );
+		self::debug_log( $trace, $level );
 	}
 }
-
-// Load settings JSON contents from DB and initialize the plugin
-$aadsso_settings_instance = AADSSO_Settings::init();
-$aadsso = AADSSO::get_instance( $aadsso_settings_instance );
-
 
 /*** Utility functions ***/
 
@@ -626,3 +658,7 @@ if ( ! function_exists( 'com_create_guid' ) ) {
 		return $uuid;
 	}
 }
+
+// Load settings JSON contents from DB and initialize the plugin
+$aadsso_settings_instance = AADSSO_Settings::init();
+$aadsso = AADSSO::get_instance( $aadsso_settings_instance, com_create_guid() );
