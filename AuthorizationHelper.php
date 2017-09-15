@@ -94,14 +94,14 @@ class AADSSO_AuthorizationHelper
 	}
 
 	/**
-	 * Decodes and validates an id_token value returned
+	 * Decodes an id_token value returned
 	 *
-	 * @param array $authentication_request_body The body to use in the Authentication Request.
+	 * @param string $id_token The JWT token
 	 * @param \AADSSO_Settings $settings The settings to use.
 	 *
 	 * @return mixed The decoded authorization result.
 	 */
-	public static function validate_id_token( $id_token, $settings, $antiforgery_id ) {
+	private static function decode_token( $id_token, $settings) {
 
 		$jwt = null;
 		$last_exception = null;
@@ -132,11 +132,86 @@ class AADSSO_AuthorizationHelper
 				            . "-----END CERTIFICATE-----\n";
 
 				// This throws an exception if the id_token cannot be validated.
+				
 				$jwt = \AADSSO\Firebase\JWT\JWT::decode( $id_token, $key_pem, self::$allowed_algorithms );
 				break;
 			} catch ( Exception $e ) {
 				$last_exception = $e;
 			}
+		}
+
+		if ( null == $jwt ) {
+			throw $last_exception;
+		}
+		
+		return $jwt;
+	}
+
+	/**
+	 * Validates claims of bearer_token
+	 *
+	 * @param string $jwt The JWT token
+	 * @param \AADSSO_Settings $settings The settings to use.
+	 *
+	 */
+	private static function validate_token_claims( $jwt, $settings){
+		$audience = $jwt->aud; 
+		if ($audience != $settings->resource_id) {
+			throw new \AADSSO\Firebase\JWT\SignatureInvalidException('Invalid Audience');
+		}
+		
+		// The Issuer Identifier for the OpenID Provider MUST exactly match the value of the iss (issuer) Claim.
+		$iss_token = $jwt->iss; 
+		$iss_metadata = $settings->issuer;
+		
+		if ($iss_token != $iss_metadata) {
+			throw new \AADSSO\Firebase\JWT\SignatureInvalidException('Signature invalid');
+		}
+		
+	}
+
+	/**
+	 * Validates signature and claims of a bearer_token value returned
+	 *
+	 * @param string $bearer_token The bearer token
+	 * @param \AADSSO_Settings $settings The settings to use.
+	 *
+	 * @return mixed The decoded authorization result.
+	 */
+	public static function validate_bearer_token( $bearer_token, $settings) {
+
+		$jwt = null;
+		$last_exception = null;
+
+		try{
+			$jwt = self::decode_token( $bearer_token, $settings);			
+			self::validate_token_claims( $jwt, $settings);
+		}
+		catch ( Exception $e ) {
+			throw $e;
+		}
+
+		return $jwt;
+	}
+
+	/**
+	 * Decodes and validates an id_token value returned
+	 *
+	 * @param string $id_token The token
+	 * @param \AADSSO_Settings $settings The settings to use.
+	 *
+	 * @return mixed The decoded authorization result.
+	 */
+	public static function validate_id_token( $id_token, $settings, $antiforgery_id) {
+
+		$jwt = null;
+		$last_exception = null;
+
+		try{
+			$jwt = self::decode_token( $id_token, $settings);
+		}
+		catch ( Exception $e ) {
+			$last_exception = $e;
 		}
 
 		if ( null == $jwt ) {

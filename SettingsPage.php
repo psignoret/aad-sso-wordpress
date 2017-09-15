@@ -226,6 +226,14 @@ class AADSSO_Settings_Page {
 		);
 
 		add_settings_field(
+			'resource_id', // id
+			__( 'Resource ID', 'aad-sso-wordpress' ), // title
+			array( $this, 'resource_id_callback' ), // callback
+			'aadsso_settings_page', // page
+			'aadsso_settings_general' // section
+		);
+
+		add_settings_field(
 			'client_secret', // id
 			__( 'Client secret', 'aad-sso-wordpress' ), // title
 			array( $this, 'client_secret_callback' ), // callback
@@ -342,6 +350,7 @@ class AADSSO_Settings_Page {
 			'org_display_name',
 			'org_domain_hint',
 			'client_id',
+			'resource_id',
 			'client_secret',
 			'redirect_uri',
 			'logout_redirect_uri',
@@ -483,6 +492,17 @@ class AADSSO_Settings_Page {
 		printf(
 			'<p class="description">%s</p>',
 			__( 'The client ID of the Azure AD application representing this blog.', 'aad-sso-wordpress' )
+		);
+	}
+
+	/**
+	 * Renders the `resource_id` form control
+	 */
+	public function resource_id_callback() {
+		$this->render_text_field( 'resource_id' );
+		printf(
+			'<p class="description">%s</p>',
+			__( 'The resource ID of the Azure AD application representing this blog.', 'aad-sso-wordpress' )
 		);
 	}
 

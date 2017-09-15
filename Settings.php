@@ -19,6 +19,11 @@ class AADSSO_Settings {
 	public $client_id = '';
 
 	/**
+	 * @var string The resource ID obtained after registering an application in AAD.
+	 */
+	public $resource_id = '';
+
+	/**
 	 * @var string The client secret key, which is generated on the app configuration page in AAD.
 	 */
 	public $client_secret = '';
@@ -37,6 +42,11 @@ class AADSSO_Settings {
 	 * @var string The display name of the organization, used only in the link in the login page.
 	 */
 	public $org_display_name = '';
+
+	/**
+	 * @var string The issuer obtained from metadata endpoints.
+	 */
+	public $issuer = '';
 
 	/**
 	 * The value of the domain_hint is a registered domain for the tenant. If the tenant is federated
@@ -192,12 +202,9 @@ class AADSSO_Settings {
 	 * @return \AADSSO_Settings The (only) configured instance of this class.
 	 */
 	public static function init() {
-
 		$instance = self::get_instance();
-
 		// First, set the settings stored in the WordPress database.
 		$instance->set_settings( get_option( 'aadsso_settings' ) );
-
 		/*
 		 * Then, add the settings stored in the OpenID Connect configuration endpoint.
 		 * We're using transient as a cache, to prevent from making a request on every WP page load.
@@ -213,7 +220,6 @@ class AADSSO_Settings {
 			set_transient( 'aadsso_openid_configuration', $openid_configuration, 3600 );
 		}
 		$instance->set_settings( $openid_configuration );
-
 		return $instance;
 	}
 
