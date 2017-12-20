@@ -1,4 +1,11 @@
 <?php
+/**
+ * Settings: class-aadsso-settings.php
+ *
+ * Defines the AADSSO_Settings class, which is used to read and persist configuration
+ *
+ * @package aad-sso-wordpress
+ */
 
 /**
  * Class containing all settings used by the AADSSO plugin.
@@ -48,7 +55,7 @@ class AADSSO_Settings {
 
 	/**
 	 * Indicates which field is matched against the authenticated user's User Principal Name (UPN)
-	* to find a corresponding WordPress user. Valid options are 'login', 'email', or 'slug'.
+	 * to find a corresponding WordPress user. Valid options are 'login', 'email', or 'slug'.
 	 *
 	 * @var string The WordPress field which is matched to the AAD UserPrincipalName.
 	 */
@@ -63,20 +70,20 @@ class AADSSO_Settings {
 	public $match_on_upn_alias = false;
 
 	/**
-	* Indicates whether or not a WordPress user should be auto-provisioned if a user is able to
-	* authenticate with Azure AD, but was not matched to a current WordPress user.
-	*
-	* @var boolean Whether or not to auto-provision a new user.
-	*/
+	 * Indicates whether or not a WordPress user should be auto-provisioned if a user is able to
+	 * authenticate with Azure AD, but was not matched to a current WordPress user.
+	 *
+	 * @var boolean Whether or not to auto-provision a new user.
+	 */
 	public $enable_auto_provisioning = false;
 
 
 	/**
-	* Indicates if unauthenticated users are automatically redirecteded to AAD for login, instead of
-	* being shown the WordPress login form. Can be overridden with 'aad_auto_forward_login' filter.
-	*
-	* @var boolean Whether or not to auto-redirect to AAD for sign-in
-	*/
+	 * Indicates if unauthenticated users are automatically redirecteded to AAD for login, instead of
+	 * being shown the WordPress login form. Can be overridden with 'aad_auto_forward_login' filter.
+	 *
+	 * @var boolean Whether or not to auto-redirect to AAD for sign-in
+	 */
 	public $enable_auto_forward_to_aad = false;
 
 	/**
@@ -151,15 +158,15 @@ class AADSSO_Settings {
 	public static function get_defaults( $key = null ) {
 
 		$defaults = array(
-			'org_display_name' => get_bloginfo( 'name' ),
-			'field_to_match_to_upn' => 'email',
-			'default_wp_role' => null,
-			'enable_auto_provisioning' => false,
-			'match_on_upn_alias' => false,
-			'enable_auto_forward_to_aad' => false,
-			'enable_aad_group_to_wp_role' => false,
-			'redirect_uri' => wp_login_url(),
-			'logout_redirect_uri' => wp_login_url(),
+			'org_display_name'              => get_bloginfo( 'name' ),
+			'field_to_match_to_upn'         => 'email',
+			'default_wp_role'               => null,
+			'enable_auto_provisioning'      => false,
+			'match_on_upn_alias'            => false,
+			'enable_auto_forward_to_aad'    => false,
+			'enable_aad_group_to_wp_role'   => false,
+			'redirect_uri'                  => wp_login_url(),
+			'logout_redirect_uri'           => wp_login_url(),
 			'openid_configuration_endpoint' => 'https://login.microsoftonline.com/common/.well-known/openid-configuration',
 		);
 
@@ -181,7 +188,7 @@ class AADSSO_Settings {
 	 */
 	public static function get_instance() {
 		if ( ! self::$instance ) {
-			self::$instance = new self;
+			self::$instance = new self();
 		}
 		return self::$instance;
 	}
@@ -205,10 +212,10 @@ class AADSSO_Settings {
 		 * required, adding aadsso_reload_openid_config=1 in the URL will do the trick.
 		 */
 		$openid_configuration = get_transient( 'aadsso_openid_configuration' );
-		if( false === $openid_configuration || isset( $_GET['aadsso_reload_openid_config'] ) ) {
+		if ( false === $openid_configuration || isset( $_GET['aadsso_reload_openid_config'] ) ) {
 			$openid_configuration = json_decode(
 				self::get_remote_contents( $instance->openid_configuration_endpoint ),
-				true // Return associative array
+				true // Returns an associative array, instead of an object.
 			);
 			set_transient( 'aadsso_openid_configuration', $openid_configuration, 3600 );
 		}
@@ -226,7 +233,7 @@ class AADSSO_Settings {
 	 */
 	public static function get_remote_contents( $file_path ) {
 
-		$response = wp_remote_get( $file_path );
+		$response      = wp_remote_get( $file_path );
 		$file_contents = wp_remote_retrieve_body( $response );
 
 		return $file_contents;
@@ -239,7 +246,7 @@ class AADSSO_Settings {
 	 *
 	 * @return \AADSSO_Settings The current (only) instance with new configuration.
 	 */
-	function set_settings( $settings ) {
+	public function set_settings( $settings ) {
 
 		// Expecting $settings to be an associative array. Do nothing if it isn't.
 		if ( ! is_array( $settings ) || empty( $settings ) ) {
@@ -251,7 +258,7 @@ class AADSSO_Settings {
 		 * <group> => <role> map is used during the authorization check. If a group appears twice, the first
 		 * occurence (the first role) will take precedence.
 		 */
-		if( ! empty( $settings['role_map'] ) ) {
+		if ( ! empty( $settings['role_map'] ) ) {
 			$settings['aad_group_to_wp_role_map'] = array();
 			foreach ( $settings['role_map'] as $role_slug => $group_ids_list ) {
 				$group_ids = explode( ',', $group_ids_list );
