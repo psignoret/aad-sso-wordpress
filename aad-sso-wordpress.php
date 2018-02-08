@@ -610,10 +610,20 @@ class AADSSO {
 	 * If there are multiple lines in the message, they will each be emitted as a log line.
 	 */
 	public static function debug_log( $message, $level = 0 ) {
-		
+		/**
+		 * Fire an action when logging.
+		 *
+		 * This allows external services to tie into these logs. We're adding it here so this can be used in prod for services such as Stream
+		 *
+		 * @since 0.6.2
+		 *
+		 * @param string $message The message being logged.
+		 */
+		do_action( 'aad_sso_debug_log', $message );
+
 		// AADSSO_DEBUG and AADSSO_DEBUG_LEVEL are already defined.
 		if ( AADSSO_DEBUG && AADSSO_DEBUG_LEVEL >= $level ) {
-			if ( FALSE === strpos( $message, "\n" ) ) {
+			if ( false === strpos( $message, "\n" ) ) {
 				error_log( 'AADSSO: ' . $message );
 			} else {
 				$lines = explode( "\n", str_replace( "\r\n", "\n", $message ) );
