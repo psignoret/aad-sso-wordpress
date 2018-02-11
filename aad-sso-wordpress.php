@@ -619,7 +619,7 @@ class AADSSO {
 		 *
 		 * @param string $message The message being logged.
 		 */
-		do_action( 'aad_sso_debug_log', $message );
+		do_action( 'aadsso_debug_log', $message );
 
 		// AADSSO_DEBUG and AADSSO_DEBUG_LEVEL are already defined.
 		if ( AADSSO_DEBUG && AADSSO_DEBUG_LEVEL >= $level ) {
