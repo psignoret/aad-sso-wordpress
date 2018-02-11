@@ -271,6 +271,18 @@ class AADSSO {
 			// Looks like we got a valid authorization code, let's try to get an access token with it
 			$token = AADSSO_AuthorizationHelper::get_access_token( $_GET['code'], $this->settings );
 
+			/**
+			 * Allow filtering of the token in order to use alternate AAD applications to sign in.
+			 *
+			 * @param mixed           $token The token returned from the standard auth call
+			 * @param string                 The $_GET['code'] variable
+			 * @param \AADSSO_Settings       The settings object for the AADSSO instance.
+			 * @since 0.6.2
+			 *
+			 * @return mixed
+			 */
+			$token = apply_filters( 'addsso_auth_token', $token, $_GET['code'], $this->settings );
+
 			// Happy path
 			if ( isset( $token->access_token ) ) {
 
