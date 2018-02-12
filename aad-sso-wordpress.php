@@ -383,7 +383,7 @@ class AADSSO {
 			if ( true === $this->settings->enable_auto_provisioning ) {
 
 				// 3. If we are configured to check, and there are no groups for this user, we should not be creating it.
-				if ( true === $this->settings->enable_aad_group_to_wp_role && ! empty( $group_memberships->value ) ) {
+				if ( true === $this->settings->enable_aad_group_to_wp_role && empty( $group_memberships->value ) ) {
 					// The user was authenticated, but not found in WP and auto-provisioning is disabled
 					return new WP_Error(
 						'user_not_registered',
