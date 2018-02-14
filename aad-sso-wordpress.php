@@ -384,9 +384,9 @@ class AADSSO {
 
 				// 3. If we are configured to check, and there are no groups for this user, we should not be creating it.
 				if ( true === $this->settings->enable_aad_group_to_wp_role && empty( $group_memberships->value ) ) {
-					// The user was authenticated, but not found in WP and auto-provisioning is disabled
+					// The user was authenticated, but is not a member a role-granting group.
 					return new WP_Error(
-						'user_not_registered',
+						'user_not_assigned_to_group',
 						sprintf(
 							__( 'ERROR: The authenticated user \'%s\' does not have a group assignment for this site.',
 							'aad-sso-wordpress' ),
@@ -441,8 +441,7 @@ class AADSSO {
 		* Sets a WordPress user's role based on their AAD group memberships
 		*
 		* @param WP_User $user
-		* @param string $aad_user_id The AAD object id of the user
-		* @param string $aad_tenant_id The AAD directory tenant ID
+		* @param mixed   $group_memberships The response to the checkMemberGroups request.
 		*
 		* @return WP_User|WP_Error Return the WP_User with updated roles, or WP_Error if failed.
 		*/
@@ -451,7 +450,7 @@ class AADSSO {
 		// Check for errors in the group membership check response
 		if ( isset( $group_memberships->value ) ) {
 			AADSSO::debug_log( sprintf(
-				'Out of [%s], user \'%s\' is a member of [%s]', 
+				'Out of [%s], user \'%s\' is a member of [%s]',
 				implode( ',', $group_ids ), $aad_user_id, implode( ',', $group_memberships->value ) ), 20
 			);
 		} elseif ( isset ( $group_memberships->{'odata.error'} ) ) {
