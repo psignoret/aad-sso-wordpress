@@ -291,19 +291,35 @@ class AADSSO {
 					);
 				}
 
+				// Set a default value for group_memberships.
+				$group_memberships = false;
+
+				if ( true === $this->settings->enable_aad_group_to_wp_role ) {
+					// 1. Retrieve the Groups for this user once here so we can pass them around as needed.
+					// Pass the settings to GraphHelper
+					AADSSO_GraphHelper::$settings  = $this->settings;
+					AADSSO_GraphHelper::$tenant_id = $jwt->tid;
+
+					// Of the AAD groups defined in the settings, get only those where the user is a member
+					$group_ids         = array_keys( $this->settings->aad_group_to_wp_role_map );
+					$group_memberships = AADSSO_GraphHelper::user_check_member_groups( $jwt->oid, $group_ids );
+				}
+
+
 				// Invoke any configured matching and auto-provisioning strategy and get the user.
-				$user = $this->get_wp_user_from_aad_user( $jwt );
+				// 2. Pass the Group Membership to allow us to control when a user is created if auto-provisioning is enabled.
+				$user = $this->get_wp_user_from_aad_user( $jwt, $group_memberships );
 
 				if ( is_a( $user, 'WP_User' ) ) {
 
 					// At this point, we have an authorization code, an access token and the user
 					// exists in WordPress (either because it already existed, or we created it
 					// on-the-fly). All that's left is to set the roles based on group membership.
+					// 4. If a user was created or found above, we can pass the groups here to have them assigned normally
 					if ( true === $this->settings->enable_aad_group_to_wp_role ) {
-						$user = $this->update_wp_user_roles( $user, $jwt->oid, $jwt->tid );
+						$user = $this->update_wp_user_roles( $user, $group_memberships );
 					}
 				}
-
 			} elseif ( isset( $token->error ) ) {
 
 				// Unable to get an access token ( although we did get an authorization code )
@@ -335,7 +351,7 @@ class AADSSO {
 		return $user;
 	}
 
-	function get_wp_user_from_aad_user( $jwt ) {
+	function get_wp_user_from_aad_user( $jwt, $group_memberships ) {
 
 		// Try to find an existing user in WP where the upn or unique_name of the current AAD user is
 		// (depending on config) the 'login' or 'email' field in WordPress
@@ -364,8 +380,20 @@ class AADSSO {
 
 			// Since the user was authenticated with AAD, but not found in WordPress,
 			// need to decide whether to create a new user in WP on-the-fly, or to stop here.
-			if( true === $this->settings->enable_auto_provisioning ) {
+			if ( true === $this->settings->enable_auto_provisioning ) {
 
+				// 3. If we are configured to check, and there are no groups for this user, we should not be creating it.
+				if ( true === $this->settings->enable_aad_group_to_wp_role && empty( $group_memberships->value ) ) {
+					// The user was authenticated, but is not a member a role-granting group.
+					return new WP_Error(
+						'user_not_assigned_to_group',
+						sprintf(
+							__( 'ERROR: The authenticated user \'%s\' does not have a group assignment for this site.',
+							'aad-sso-wordpress' ),
+							$unique_name
+						)
+					);
+				}
 				// Setup the minimum required user data
 				// TODO: Is null better than a random password?
 				// TODO: Look for otherMail, or proxyAddresses before UPN for email
@@ -373,12 +401,12 @@ class AADSSO {
 					'user_email' => $unique_name,
 					'user_login' => $unique_name,
 					'first_name' => $jwt->given_name,
-					'last_name'	=> $jwt->family_name,
-					'user_pass'	=> null
+					'last_name'  => $jwt->family_name,
+					'user_pass'  => null,
 				);
 
 				$new_user_id = wp_insert_user( $userdata );
-				
+
 				if ( is_wp_error( $new_user_id ) ) {
 					// The user was authenticated, but not found in WP and auto-provisioning is disabled
 					return new WP_Error(
@@ -388,11 +416,9 @@ class AADSSO {
 							$unique_name
 						)
 					);
-				}
-				else
-				{
+				} else {
 					AADSSO::debug_log( 'Created new user: \'' . $unique_name . '\', user id ' . $new_user_id . '.' );
-					$user = new WP_User( $new_user_id );					
+					$user = new WP_User( $new_user_id );
 				}
 			} else {
 
@@ -415,25 +441,16 @@ class AADSSO {
 		* Sets a WordPress user's role based on their AAD group memberships
 		*
 		* @param WP_User $user
-		* @param string $aad_user_id The AAD object id of the user
-		* @param string $aad_tenant_id The AAD directory tenant ID
+		* @param mixed   $group_memberships The response to the checkMemberGroups request.
 		*
 		* @return WP_User|WP_Error Return the WP_User with updated roles, or WP_Error if failed.
 		*/
-	function update_wp_user_roles( $user, $aad_user_id, $aad_tenant_id ) {
-
-		// TODO: Cleaner (but still lazy) initialization of GraphHelper
-		AADSSO_GraphHelper::$settings = $this->settings;
-		AADSSO_GraphHelper::$tenant_id = $aad_tenant_id;
-
-		// Of the AAD groups defined in the settings, get only those where the user is a member
-		$group_ids = array_keys( $this->settings->aad_group_to_wp_role_map );
-		$group_memberships = AADSSO_GraphHelper::user_check_member_groups( $aad_user_id, $group_ids );
+	function update_wp_user_roles( $user, $group_memberships ) {
 		
 		// Check for errors in the group membership check response
 		if ( isset( $group_memberships->value ) ) {
 			AADSSO::debug_log( sprintf(
-				'Out of [%s], user \'%s\' is a member of [%s]', 
+				'Out of [%s], user \'%s\' is a member of [%s]',
 				implode( ',', $group_ids ), $aad_user_id, implode( ',', $group_memberships->value ) ), 20
 			);
 		} elseif ( isset ( $group_memberships->{'odata.error'} ) ) {
