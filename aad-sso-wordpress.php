@@ -17,7 +17,7 @@ define( 'AADSSO', 'aad-sso-wordpress' );
 define( 'AADSSO_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'AADSSO_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 
-defined( 'AADSSO_DEBUG' ) or define( 'AADSSO_DEBUG', FALSE );
+
 defined( 'AADSSO_DEBUG_LEVEL' ) or define( 'AADSSO_DEBUG_LEVEL', 0 );
 
 // Proxy to be used for calls, should be useful for tracing with Fiddler
@@ -638,8 +638,24 @@ class AADSSO {
 		 */
 		do_action( 'aadsso_debug_log', $message );
 
-		// AADSSO_DEBUG and AADSSO_DEBUG_LEVEL are already defined.
-		if ( AADSSO_DEBUG && AADSSO_DEBUG_LEVEL >= $level ) {
+		/**
+		 * Allow other plugins or themes to set the debug status of this plugin.
+		 *
+		 * @since 0.6.2
+		 * @param bool The current debug status.
+		 */
+		$aad_sso_debug = apply_filters( 'aadsso_debug', false );
+
+
+		/**
+		 * Allow other plugins or themes to set the debug level
+		 * @since 0.6.2
+		 * @param int
+		 */
+		$aad_sso_debug_level = apply_filters( 'aadsso_debug_level', 0 );
+
+
+		if ( true === $aad_sso_debug && $aad_sso_debug_level >= $level ) {
 			if ( false === strpos( $message, "\n" ) ) {
 				error_log( 'AADSSO: ' . $message );
 			} else {
