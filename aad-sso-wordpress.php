@@ -5,7 +5,7 @@ Plugin Name: Single Sign-on with Azure Active Directory
 Plugin URI: http://github.com/psignoret/aad-sso-wordpress
 Description: Allows you to use your organization's Azure Active Directory user accounts to log in to WordPress. If your organization is using Office 365, your user accounts are already in Azure Active Directory. This plugin uses OAuth 2.0 to authenticate users, and the Azure Active Directory Graph to get group membership and other details.
 Author: Philippe Signoret
-Version: 0.6.2
+Version: 0.6.3
 Author URI: https://www.psignoret.com/
 Text Domain: aad-sso-wordpress
 Domain Path: /languages/
@@ -17,7 +17,7 @@ define( 'AADSSO', 'aad-sso-wordpress' );
 define( 'AADSSO_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'AADSSO_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 
-defined( 'AADSSO_DEBUG' ) or define( 'AADSSO_DEBUG', FALSE );
+defined( 'AADSSO_DEBUG' ) or define( 'AADSSP_DEBUG', FALSE );
 defined( 'AADSSO_DEBUG_LEVEL' ) or define( 'AADSSO_DEBUG_LEVEL', 0 );
 
 // Proxy to be used for calls, should be useful for tracing with Fiddler
@@ -638,8 +638,24 @@ class AADSSO {
 		 */
 		do_action( 'aadsso_debug_log', $message );
 
-		// AADSSO_DEBUG and AADSSO_DEBUG_LEVEL are already defined.
-		if ( AADSSO_DEBUG && AADSSO_DEBUG_LEVEL >= $level ) {
+		/**
+		 * Allow other plugins or themes to set the debug status of this plugin.
+		 *
+		 * @since 0.6.3
+		 * @param bool The current debug status.
+		 */
+		$debug_enabled = apply_filters( 'aadsso_debug', AADSSO_DEBUG );
+
+
+		/**
+		 * Allow other plugins or themes to set the debug level
+		 * @since 0.6.3
+		 * @param int
+		 */
+		$debug_level = apply_filters( 'aadsso_debug_level', AADSSO_DEBUG_LEVEL );
+
+
+		if ( true === $debug_enabled && $debug_level >= $level ) {
 			if ( false === strpos( $message, "\n" ) ) {
 				error_log( 'AADSSO: ' . $message );
 			} else {
