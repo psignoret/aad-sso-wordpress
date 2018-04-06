@@ -248,6 +248,14 @@ class AADSSO_Settings_Page {
 			'aadsso_settings_page', // page
 			'aadsso_settings_general' // section
 		);
+		
+		add_settings_field(
+			'enable_full_logout', // id
+			__( 'Enable full logout', 'aad-sso-wordpress' ), // title
+			array( $this, 'enable_full_logout_callback' ), // callback
+			'aadsso_settings_page', // page
+			'aadsso_settings_general' // section
+		);
 
 		add_settings_field(
 			'field_to_match_to_upn', // id
@@ -374,6 +382,7 @@ class AADSSO_Settings_Page {
 			'enable_auto_forward_to_aad',
 			'enable_aad_group_to_wp_role',
 			'match_on_upn_alias',
+			'enable_full_logout',
 		);
 		foreach ( $boolean_settings as $boolean_setting )
 		{
@@ -642,6 +651,17 @@ class AADSSO_Settings_Page {
 			  . 'users (users invited in from other Azure AD directories, known sometimes as "B2B users") you '
 			  . 'must use: <code>https://login.microsoftonline.com/{tenant-id}/.well-known/openid-configuration</code>, '
 			  . 'where <code>{tenant-id}</code> is the tenant ID or a verified domain name of your directory.',
+				'aad-sso-wordpress' )
+		);
+	}
+
+	/**
+	 * Renders the `enable_full_logout` checkbox control.
+	 */
+	public function enable_full_logout_callback() {
+		$this->render_checkbox_field(
+			'enable_full_logout',
+			__( 'Do a full logout of Azure AD when logging out of WordPress.',
 				'aad-sso-wordpress' )
 		);
 	}

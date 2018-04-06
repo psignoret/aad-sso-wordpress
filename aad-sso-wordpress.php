@@ -83,7 +83,7 @@ class AADSSO {
 		add_action( 'login_form', array( $this, 'print_login_link' ) ) ;
 
 		// Clear session variables when logging out
-		add_action( 'wp_logout', array( $this, 'clear_session' ) );
+		add_action( 'wp_logout', array( $this, 'logout' ) );
 
 		// If configured, bypass the login form and redirect straight to AAD
 		add_action( 'login_init', array( $this, 'save_redirect_and_maybe_bypass_login' ), 20 );
@@ -348,6 +348,10 @@ class AADSSO {
 			);
 		}
 
+		if ( is_a( $user, 'WP_User' ) ) {
+			$_SESSION['aadsso_signed_in_with_azuread'] = true;
+		}
+
 		return $user;
 	}
 
@@ -561,6 +565,21 @@ class AADSSO {
 	 */
 	function clear_session() {
 		session_destroy();
+	}
+
+	/**
+	 * Clears the current the session, and triggers a full Azure AD logout if needed.
+	 */
+	function logout() {
+
+		$signed_in_with_azuread = isset( $_SESSION['aadsso_signed_in_with_azuread'] ) 
+									&& true === $_SESSION['aadsso_signed_in_with_azuread'];
+		$this->clear_session();
+
+		if ( $signed_in_with_azuread && $this->settings->enable_full_logout ) {
+			wp_redirect( $this->get_logout_url() );
+			die();
+		}
 	}
 
 	/*** Settings ***/
