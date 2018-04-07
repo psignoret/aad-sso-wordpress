@@ -5,7 +5,7 @@ Plugin Name: Single Sign-on with Azure Active Directory
 Plugin URI: http://github.com/psignoret/aad-sso-wordpress
 Description: Allows you to use your organization's Azure Active Directory user accounts to log in to WordPress. If your organization is using Office 365, your user accounts are already in Azure Active Directory. This plugin uses OAuth 2.0 to authenticate users, and the Azure Active Directory Graph to get group membership and other details.
 Author: Philippe Signoret
-Version: 0.6.3
+Version: 0.6.4
 Author URI: https://www.psignoret.com/
 Text Domain: aad-sso-wordpress
 Domain Path: /languages/
@@ -257,6 +257,13 @@ class AADSSO {
 		 */
 		if ( isset( $_GET['code'] ) ) {
 
+			if ( ! isset( $_SESSION['aadsso_antiforgery-id'] ) ) {
+				return new WP_Error(
+					'missing_antiforgery_id',
+					__( 'Session does not contain antiforgery ID.', 'aad-sso-wordpress')
+				);
+			}
+
 			$antiforgery_id = $_SESSION['aadsso_antiforgery-id'];
 			$state_is_missing = ! isset( $_GET['state'] );
 			$state_doesnt_match = $_GET['state'] != $antiforgery_id;
@@ -454,8 +461,8 @@ class AADSSO {
 		// Check for errors in the group membership check response
 		if ( isset( $group_memberships->value ) ) {
 			AADSSO::debug_log( sprintf(
-				'Out of [%s], user \'%s\' is a member of [%s]',
-				implode( ',', $group_ids ), $aad_user_id, implode( ',', $group_memberships->value ) ), 20
+				'User \'%s\' is a member of [%s]',
+				$user->ID, implode( ',', $group_memberships->value ) ), 20
 			);
 		} elseif ( isset ( $group_memberships->{'odata.error'} ) ) {
 			AADSSO::debug_log( 'Error when checking group membership: ' . json_encode( $group_memberships ) );
@@ -564,7 +571,9 @@ class AADSSO {
 	 * Clears the current the session (e.g. as part of logout).
 	 */
 	function clear_session() {
-		session_destroy();
+		if ( session_id() ) {
+			session_destroy();
+		}
 	}
 
 	/**
