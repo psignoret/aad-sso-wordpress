@@ -257,6 +257,13 @@ class AADSSO {
 		 */
 		if ( isset( $_GET['code'] ) ) {
 
+			if ( ! isset( $_SESSION['aadsso_antiforgery-id'] ) ) {
+				return new WP_Error(
+					'missing_antiforgery_id',
+					__( 'Session does not contain antiforgery ID.', 'aad-sso-wordpress')
+				);
+			}
+
 			$antiforgery_id = $_SESSION['aadsso_antiforgery-id'];
 			$state_is_missing = ! isset( $_GET['state'] );
 			$state_doesnt_match = $_GET['state'] != $antiforgery_id;
@@ -454,8 +461,8 @@ class AADSSO {
 		// Check for errors in the group membership check response
 		if ( isset( $group_memberships->value ) ) {
 			AADSSO::debug_log( sprintf(
-				'Out of [%s], user \'%s\' is a member of [%s]',
-				implode( ',', $group_ids ), $aad_user_id, implode( ',', $group_memberships->value ) ), 20
+				'User \'%s\' is a member of [%s]',
+				$user->ID, implode( ',', $group_memberships->value ) ), 20
 			);
 		} elseif ( isset ( $group_memberships->{'odata.error'} ) ) {
 			AADSSO::debug_log( 'Error when checking group membership: ' . json_encode( $group_memberships ) );
@@ -564,7 +571,9 @@ class AADSSO {
 	 * Clears the current the session (e.g. as part of logout).
 	 */
 	function clear_session() {
-		session_destroy();
+		if ( session_id() ) {
+			session_destroy();
+		}
 	}
 
 	/**
