@@ -5,7 +5,7 @@ Plugin Name: Single Sign-on with Azure Active Directory
 Plugin URI: http://github.com/psignoret/aad-sso-wordpress
 Description: Allows you to use your organization's Azure Active Directory user accounts to log in to WordPress. If your organization is using Office 365, your user accounts are already in Azure Active Directory. This plugin uses OAuth 2.0 to authenticate users, and the Azure Active Directory Graph to get group membership and other details.
 Author: Philippe Signoret
-Version: 0.6.3
+Version: 0.7.0
 Author URI: https://www.psignoret.com/
 Text Domain: aad-sso-wordpress
 Domain Path: /languages/
@@ -44,6 +44,8 @@ class AADSSO {
 
 	private $settings = null;
 
+	private $login_errors = array();
+
 	public function __construct( $settings ) {
 		$this->settings = $settings;
 
@@ -69,24 +71,27 @@ class AADSSO {
 			add_action( 'all_admin_notices', array( $this, 'print_plugin_not_configured' ) );
 			return;
 		}
+		
+		// Start the session. Must be executed before the sso() or authenticate() methods.
+		add_action( 'login_init', array( $this, 'register_session' ), 9 );
+		
+		// Do the single sign-on.
+		add_action( 'login_init', array( $this, 'sso' ), 10 );
 
-		// Add the hook that starts the SESSION
-		add_action( 'login_init', array( $this, 'register_session' ), 10 );
-
-		// The authenticate filter
-		add_filter( 'authenticate', array( $this, 'authenticate' ), 1, 3 );
+		// If configured, bypass the login form and redirect straight to AAD
+		add_action( 'login_init', array( $this, 'save_redirect_and_maybe_bypass_login' ), 20 );
 
 		// Add the <style> element to the login page
 		add_action( 'login_enqueue_scripts', array( $this, 'print_login_css' ) );
+
+		// Add errors exprienced to the login form's error list.
+		add_filter( 'wp_login_errors', array( $this, 'add_login_errors' ), 10, 2 );
 
 		// Add the link to the organization's sign-in page
 		add_action( 'login_form', array( $this, 'print_login_link' ) ) ;
 
 		// Clear session variables when logging out
 		add_action( 'wp_logout', array( $this, 'logout' ) );
-
-		// If configured, bypass the login form and redirect straight to AAD
-		add_action( 'login_init', array( $this, 'save_redirect_and_maybe_bypass_login' ), 20 );
 
 		// Redirect user back to original location
 		add_filter( 'login_redirect', array( $this, 'redirect_after_login' ), 20, 3 );
@@ -233,21 +238,74 @@ class AADSSO {
 		return $wants_to_login;
 	}
 
+	function sso() {
+
+		// Don't do anything if we're already logged in.
+		if ( is_user_logged_in() ) { return; }
+
+		// Initiate the Azure AD sign-in (and handle the response).  
+		$user = $this->authenticate();
+
+		if ( is_wp_error( $user ) ) {
+			
+			$this->display_login_error( $user );
+
+		} elseif ( is_a ( $user, 'WP_User' ) ) {
+
+			// Set the auth cookie for the signed-in user.
+			wp_set_auth_cookie( $user->ID );
+			
+			// Call any existing wp_login hooks. (This is what wp_signon() does.)
+			// TODO: Is it kosher to run a bult-in action like this?
+			do_action( 'wp_login', $user->user_login, $user );
+
+			/* 
+			 * Ideally, here we'd call a method to get the WordPress login redirect URL, but
+			 *  this doesn't exist, so the best we can do (for now) is to simply the logic.
+			 */
+
+			// Start with a redirect to /wp-admin, unless some filter changes that.
+			$redirect_to = apply_filters('login_redirect', admin_url(), '', $user);
+
+			/*
+			 * The following lines are copied straight out of wp-login.php
+			 */
+			if ( ( empty( $redirect_to ) || $redirect_to == 'wp-admin/' || $redirect_to == admin_url() ) ) {
+
+				// If the user doesn't belong to a blog, send them to user admin. If the user can't edit posts, send them to their profile.
+				if ( is_multisite() && !get_active_blog_for_user($user->ID) && !is_super_admin( $user->ID ) )
+					$redirect_to = user_admin_url();
+				elseif ( is_multisite() && !$user->has_cap('read') )
+					$redirect_to = get_dashboard_url( $user->ID );
+				elseif ( !$user->has_cap('edit_posts') )
+					$redirect_to = $user->has_cap( 'read' ) ? admin_url( 'profile.php' ) : home_url();
+	
+				wp_redirect( $redirect_to );
+				exit();
+			}
+
+			wp_safe_redirect($redirect_to);
+			exit();
+		}
+	}
+
 	/**
-	 * Authenticates the user with Azure AD and WordPress.
+	 * Authenticates the user with Azure AD and returns a matching WordPress user.
 	 *
-	 * This method, invoked as an 'authenticate' filter, implements the OpenID Connect
-	 * Authorization Code Flow grant to sign the user in to Azure AD (if they aren't already),
-	 * obtain an ID Token to identify the current user, and obtain an Access Token to access
-	 * the Azure AD Graph API.
+	 * This method implements the OpenID Connect Authorization Code Flow grant to sign the user
+	 * in to Azure AD (if they aren't already), obtain an ID Token to identify the current user,
+	 * and obtain an Access Token to access the Azure AD Graph API.
+	 * 
+	 * This method is compatible as an 'authenticate' filter (which explains the paramters), but
+	 * can also be called independently.
 	 *
 	 * @param WP_User|WP_Error $user A WP_User, if the user has already authenticated.
-	 * @param string $username The username provided during form-based signing. Not used.
-	 * @param string $password The password provided during form-based signing. Not used.
+	 * @param string $username The username provided during form-based sign-in. Not used.
+	 * @param string $password The password provided during form-based sign-in. Not used.
 	 *
 	 * @return WP_User|WP_Error The authenticated WP_User, or a WP_Error if there were errors.
 	 */
-	function authenticate( $user, $username, $password ) {
+	function authenticate( $user = null, $username = null, $password = null ) {
 
 		// Don't re-authenticate if already authenticated
 		if ( is_a( $user, 'WP_User' ) ) { return $user; }
@@ -360,6 +418,44 @@ class AADSSO {
 		}
 
 		return $user;
+	}
+
+	/**
+	 * Queues up an error to be displayed in the login form.
+	 *
+	 * @param WP_Error $error The error to display.
+	 */
+	function display_login_error( $error ) {
+		
+		if ( ! is_wp_error( $error ) ) {
+			return;
+		}
+
+		$this->login_errors[] = $error;
+		AADSSO::debug_log( print_r( $error, true ) );
+	}
+
+	/**
+	 * Filter which adds login errors from this plugin to the errors displayed on the login page.
+	 * 
+	 * @param WP_Error $errors The existing errors (e.g. from other plugins).
+	 * @param string $redirect_to The redirect URL.
+	 * 
+	 * @return WP_Error The original $errors, augmented with any additional login errors.
+	 */
+	function add_login_errors( $errors, $redirect_to ) {
+		
+		if ( ! empty( $this->login_errors ) ) {
+			foreach ( $this->login_errors as $login_error ) {
+				foreach ( $login_error->errors as $login_error_code => $login_error_messages ) {
+					foreach ( $login_error_messages as $login_error_message ) {
+						$errors->add( $login_error_code, $login_error_message );
+					}
+				}
+			}
+		}
+		
+		return $errors;
 	}
 
 	function get_wp_user_from_aad_user( $jwt, $group_memberships ) {
