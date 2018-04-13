@@ -8,7 +8,7 @@ Stable tag: 0.6.4
 License: MIT
 License URI: https://github.com/psignoret/aad-sso-wordpress/blob/master/LICENSE.md
 
-Allows you to use your organization\'s Azure Active Directory user accounts to log in to WordPress. If your organization is using Office 365, your user accounts are already in Azure Active Directory. This plugin uses OAuth 2.0 to authenticate users, and the Azure Active Directory Graph to get group membership and other details.
+Sign in to WordPress using your organization's Azure Active Directory accounts (the same ones used to sign in to Office 365).
 
 == Description ==
 A WordPress plugin that allows organizations to use their Azure Active Directory user accounts to sign in to WordPress. Organizations with Office 365 already have Azure Active Directory (Azure AD) and can use this plugin for all of their users.
