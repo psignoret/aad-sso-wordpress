@@ -1,5 +1,5 @@
 === Azure AD Single-Sign-On ===
-Contributors: psignoret, hajekj
+Contributors: psignoret, blobaugh, welcher, jtsternberg, christianhennen, hajekj
 Tags: azure-ad, sso, azure-active-directory
 Requires at least: 4.1
 Tested up to: 4.9.5
@@ -30,11 +30,7 @@ In the typical flow:
 == Installation ==
 ### 1. Download and activate the plugin
 
-This plugin is not yet registered in the WordPress plugin directory (coming soon!), but you can still install it manually:
-
-1. Download the plugin using `git` or with the 'Download ZIP' link on the right.
-2. Place the `aad-sso-wordpress` folder in your WordPress' plugin folder. Normally, this is `<your-blog>/wp-content/plugins`.
-3. Activate the plugin in the WordPress admin console, under **Plugins** > **Installed Plugins**.
+Download and active the plugin from WordPress.org repository.
 
 ### 2. Register an Azure Active Directory application
 
