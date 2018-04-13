@@ -6,7 +6,7 @@ Tested up to: 4.9.5
 Requires PHP: 5.6
 Stable tag: 0.6.4
 License: MIT
-License URI: https://github.com/hajekj/aad-sso-wordpress/blob/master/LICENSE.md
+License URI: https://github.com/psignoret/aad-sso-wordpress/blob/master/LICENSE.md
 
 Allows you to use your organization\'s Azure Active Directory user accounts to log in to WordPress. If your organization is using Office 365, your user accounts are already in Azure Active Directory. This plugin uses OAuth 2.0 to authenticate users, and the Azure Active Directory Graph to get group membership and other details.
 
@@ -79,4 +79,4 @@ Once the plugin is activated, update your settings from the WordPress admin cons
 **WordPress role to Azure AD group map** - For each of the blog's WordPress roles, there is a field for the ObjectId of the Azure AD group that will be associated with that role.
 
 == Frequently Asked Questions ==
-For more configuration information and bug reports, please visit [plugin's repo on GitHub](https://github.com/hajekj/aad-sso-wordpress).
+For more configuration information and bug reports, please visit [plugin's repo on GitHub](https://github.com/psignoret/aad-sso-wordpress).
