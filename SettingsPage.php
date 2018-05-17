@@ -282,6 +282,14 @@ class AADSSO_Settings_Page {
 		);
 
 		add_settings_field(
+			'default_wp_user', // id
+			__( 'Default WordPress User', 'aad-sso-wordpress' ), // title
+			array( $this, 'default_wp_user_callback' ), // callback
+			'aadsso_settings_page', // page
+			'aadsso_settings_general' // section
+		);
+
+		add_settings_field(
 			'enable_auto_forward_to_aad', // id
 			__( 'Enable auto-forward to Azure AD', 'aad-sso-wordpress' ), // title
 			array( $this, 'enable_auto_forward_to_aad_callback' ), // callback
@@ -336,6 +344,21 @@ class AADSSO_Settings_Page {
 	}
 
 	/**
+	 * Gets the array of roles determined by other plugins to be "editable".
+	 */
+	function get_editable_users() {
+
+		$args = array(
+			'orderby' => 'email'
+		);
+
+		$all_users = get_users( $args );
+		$editable_users = apply_filters( 'editable_users', $all_users );
+
+		return $editable_users;
+	}
+
+	/**
 	 * Cleans and validates form information before saving.
 	 *
 	 * @param array $input key-value information to be cleaned before saving.
@@ -354,6 +377,7 @@ class AADSSO_Settings_Page {
 			'redirect_uri',
 			'logout_redirect_uri',
 			'openid_configuration_endpoint',
+			'default_wp_user'
 		);
 
 		foreach ($text_fields as $text_field) {
@@ -601,6 +625,36 @@ class AADSSO_Settings_Page {
 			__('This is the default role that users will be assigned to if matching Azure AD group to '
 			 . 'WordPress roles is enabled, but the signed in user isn\'t a member of any of the '
 			 . 'configured Azure AD groups.', 'aad-sso-wordpress')
+		);
+	}
+
+	/**
+	 * Renders the `default_wp_user_callback` control.
+	 */
+	public function default_wp_user_callback() {
+
+		// Default configuration should be most-benign
+		if( ! isset( $this->settings['default_wp_user'] ) ) {
+			$this->settings['default_wp_user'] = '';
+		}
+
+		echo '<select name="aadsso_settings[default_wp_user]" id="default_wp_user">';
+		printf( '<option value="%s">%s</option>', '', '(None, deny access)' );
+		foreach( $this->get_editable_users() as $user ) {
+			$selected = $this->settings['default_wp_user'] == $user->data->user_login ? ' selected="selected"' : '';
+			printf(
+				'<option value="%s"%s>%s</option>',
+				esc_attr( $user->data->user_login ), $selected, htmlentities( $user->data->user_email  )
+			);
+		}
+		echo '</select>';
+		printf(
+			'<p class="description">%s</p>',
+			__('This will be the logged-in user when the AAD user does not exist in WordPress', 'aad-sso-wordpress')
+		);
+		printf(
+			'<p class="description">%s</p>',
+			__('If you select an user, auto-provisioning functionality will be ignore, and the WordPress role to Azure AD Group map will be ignore for this default user', 'aad-sso-wordpress')
 		);
 	}
 
