@@ -26,7 +26,7 @@ class AADSSO_AuthorizationHelper
 					'domain_hint'   => $settings->org_domain_hint,
 					'client_id'     => $settings->client_id,
 					'resource'      => $settings->graph_endpoint,
-					'redirect_uri'  => $settings->redirect_uri,
+					'redirect_uri'  => $settings->redirect_uri.($_SERVER['QUERY_STRING']?'?'.urlencode($_SERVER['QUERY_STRING']):''),
 					'state'         => $antiforgery_id,
 					'nonce'         => $antiforgery_id,
 				) );
@@ -49,7 +49,7 @@ class AADSSO_AuthorizationHelper
 			array(
 				'grant_type'    => 'authorization_code',
 				'code'          => $code,
-				'redirect_uri'  => $settings->redirect_uri,
+				'redirect_uri'  => $settings->redirect_uri.($_SERVER['QUERY_STRING']?'?'.urlencode($_SERVER['QUERY_STRING']):''),
 				'resource'      => $settings->graph_endpoint,
 				'client_id'     => $settings->client_id,
 				'client_secret' => $settings->client_secret
