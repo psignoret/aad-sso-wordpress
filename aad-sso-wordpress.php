@@ -5,7 +5,7 @@ Plugin Name: Single Sign-on with Azure Active Directory
 Plugin URI: http://github.com/psignoret/aad-sso-wordpress
 Description: Allows you to use your organization's Azure Active Directory user accounts to log in to WordPress. If your organization is using Office 365, your user accounts are already in Azure Active Directory. This plugin uses OAuth 2.0 to authenticate users, and the Azure Active Directory Graph to get group membership and other details.
 Author: Philippe Signoret
-Version: 0.6.3
+Version: 0.6.4
 Author URI: https://www.psignoret.com/
 Text Domain: aad-sso-wordpress
 Domain Path: /languages/
@@ -17,7 +17,7 @@ define( 'AADSSO', 'aad-sso-wordpress' );
 define( 'AADSSO_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'AADSSO_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 
-defined( 'AADSSO_DEBUG' ) or define( 'AADSSP_DEBUG', FALSE );
+defined( 'AADSSO_DEBUG' ) or define( 'AADSSO_DEBUG', FALSE );
 defined( 'AADSSO_DEBUG_LEVEL' ) or define( 'AADSSO_DEBUG_LEVEL', 0 );
 
 // Proxy to be used for calls, should be useful for tracing with Fiddler
@@ -83,7 +83,7 @@ class AADSSO {
 		add_action( 'login_form', array( $this, 'print_login_link' ) ) ;
 
 		// Clear session variables when logging out
-		add_action( 'wp_logout', array( $this, 'clear_session' ) );
+		add_action( 'wp_logout', array( $this, 'logout' ) );
 
 		// If configured, bypass the login form and redirect straight to AAD
 		add_action( 'login_init', array( $this, 'save_redirect_and_maybe_bypass_login' ), 20 );
@@ -257,6 +257,13 @@ class AADSSO {
 		 */
 		if ( isset( $_GET['code'] ) ) {
 
+			if ( ! isset( $_SESSION['aadsso_antiforgery-id'] ) ) {
+				return new WP_Error(
+					'missing_antiforgery_id',
+					__( 'Session does not contain antiforgery ID.', 'aad-sso-wordpress')
+				);
+			}
+
 			$antiforgery_id = $_SESSION['aadsso_antiforgery-id'];
 			$state_is_missing = ! isset( $_GET['state'] );
 			$state_doesnt_match = $_GET['state'] != $antiforgery_id;
@@ -346,6 +353,10 @@ class AADSSO {
 					$_GET['error_description']
 				)
 			);
+		}
+
+		if ( is_a( $user, 'WP_User' ) ) {
+			$_SESSION['aadsso_signed_in_with_azuread'] = true;
 		}
 
 		return $user;
@@ -450,8 +461,8 @@ class AADSSO {
 		// Check for errors in the group membership check response
 		if ( isset( $group_memberships->value ) ) {
 			AADSSO::debug_log( sprintf(
-				'Out of [%s], user \'%s\' is a member of [%s]',
-				implode( ',', $group_ids ), $aad_user_id, implode( ',', $group_memberships->value ) ), 20
+				'User \'%s\' is a member of [%s]',
+				$user->ID, implode( ',', $group_memberships->value ) ), 20
 			);
 		} elseif ( isset ( $group_memberships->{'odata.error'} ) ) {
 			AADSSO::debug_log( 'Error when checking group membership: ' . json_encode( $group_memberships ) );
@@ -560,7 +571,24 @@ class AADSSO {
 	 * Clears the current the session (e.g. as part of logout).
 	 */
 	function clear_session() {
-		session_destroy();
+		if ( session_id() ) {
+			session_destroy();
+		}
+	}
+
+	/**
+	 * Clears the current the session, and triggers a full Azure AD logout if needed.
+	 */
+	function logout() {
+
+		$signed_in_with_azuread = isset( $_SESSION['aadsso_signed_in_with_azuread'] ) 
+									&& true === $_SESSION['aadsso_signed_in_with_azuread'];
+		$this->clear_session();
+
+		if ( $signed_in_with_azuread && $this->settings->enable_full_logout ) {
+			wp_redirect( $this->get_logout_url() );
+			die();
+		}
 	}
 
 	/*** Settings ***/

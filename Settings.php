@@ -105,6 +105,13 @@ class AADSSO_Settings {
 	public $default_wp_role = null;
 
 	/**
+	* Indicates whether a logout of WordPress should also trigger a logout of Azure AD.
+	*
+	* @var boolean Whether or not logging out of WordPress triggers logging out of Azure AD.
+	*/
+	public $enable_full_logout = false;
+
+	/**
 	 * @var string The OpenID Connect configuration discovery endpoint.
 	 */
 	public $openid_configuration_endpoint = 'https://login.microsoftonline.com/common/.well-known/openid-configuration';
