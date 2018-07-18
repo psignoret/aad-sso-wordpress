@@ -5,7 +5,7 @@ Plugin Name: Single Sign-on with Azure Active Directory
 Plugin URI: http://github.com/psignoret/aad-sso-wordpress
 Description: Allows you to use your organization's Azure Active Directory user accounts to log in to WordPress. If your organization is using Office 365, your user accounts are already in Azure Active Directory. This plugin uses OAuth 2.0 to authenticate users, and the Azure Active Directory Graph to get group membership and other details.
 Author: Philippe Signoret
-Version: 0.6.4
+Version: 0.6.5
 Author URI: https://www.psignoret.com/
 Text Domain: aad-sso-wordpress
 Domain Path: /languages/
@@ -414,13 +414,19 @@ class AADSSO {
 			// need to decide whether to create a new user in WordPress on-the-fly, or to stop here.
 			if ( true === $this->settings->enable_auto_provisioning ) {
 
-				// 3. If we are configured to check, and there are no groups for this user, we should not be creating it.
-				if ( true === $this->settings->enable_aad_group_to_wp_role && empty( $group_memberships->value ) ) {
-					// The user was authenticated, but is not a member a role-granting group.
+				// Do not create a user if the user is required to be a member of a group, but is not a member
+				// of any of the groups, and there is no fall-back role configured.
+				if ( true === $this->settings->enable_aad_group_to_wp_role 
+						&& empty( $group_memberships->value )
+						&& empty( $this->settings->default_wp_role ) ) {
+
+					// The user was authenticated, but is not a member a role-granting group, and there is
+					// no default role defined. Deny access.
 					return new WP_Error(
 						'user_not_assigned_to_group',
 						sprintf(
-							__( 'ERROR: The authenticated user \'%s\' does not have a group assignment for this site.',
+							__( 'ERROR: Access denied. You\'re not a member of any group granting you '
+							    . 'access to this site. You\'re signed in as \'%s\'.',
 							'aad-sso-wordpress' ),
 							$unique_name
 						)
