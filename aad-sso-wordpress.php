@@ -405,14 +405,15 @@ class AADSSO {
 						)
 					);
 				}
+
 				// Setup the minimum required user data
 				// TODO: Is null better than a random password?
 				// TODO: Look for otherMail, or proxyAddresses before UPN for email
 				$userdata = array(
 					'user_email' => $unique_name,
 					'user_login' => $unique_name,
-					'first_name' => $jwt->given_name,
-					'last_name'  => $jwt->family_name,
+					'first_name' => ! empty( $jwt->given_name ) ? $jwt->given_name : '',
+					'last_name'  => ! empty( $jwt->family_name ) ? $jwt->family_name : '',
 					'user_pass'  => null,
 				);
 
