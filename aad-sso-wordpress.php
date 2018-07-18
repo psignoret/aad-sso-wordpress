@@ -298,12 +298,11 @@ class AADSSO {
 					);
 				}
 
-				// Set a default value for group_memberships.
+				// Retrieve group membership details, if needed
 				$group_memberships = false;
-
 				if ( true === $this->settings->enable_aad_group_to_wp_role ) {
-					// 1. Retrieve the Groups for this user once here so we can pass them around as needed.
-					// Pass the settings to GraphHelper
+
+					// If we're mapping Azure AD groups to WordPress roles, make the Graph API call here
 					AADSSO_GraphHelper::$settings  = $this->settings;
 					AADSSO_GraphHelper::$tenant_id = $jwt->tid;
 
@@ -312,9 +311,8 @@ class AADSSO {
 					$group_memberships = AADSSO_GraphHelper::user_check_member_groups( $jwt->oid, $group_ids );
 				}
 
-
-				// Invoke any configured matching and auto-provisioning strategy and get the user.
-				// 2. Pass the Group Membership to allow us to control when a user is created if auto-provisioning is enabled.
+				// Invoke any configured matching and auto-provisioning strategy and get the user. We include
+				// group membership details in case they're needed to decide whether or not to create the user.
 				$user = $this->get_wp_user_from_aad_user( $jwt, $group_memberships );
 
 				if ( is_a( $user, 'WP_User' ) ) {
@@ -364,7 +362,7 @@ class AADSSO {
 
 	function get_wp_user_from_aad_user( $jwt, $group_memberships ) {
 
-		// Try to find an existing user in WP where the upn or unique_name of the current AAD user is
+		// Try to find an existing user in WP where the upn or unique_name of the current Azure AD user is
 		// (depending on config) the 'login' or 'email' field in WordPress
 		$unique_name = isset( $jwt->upn ) ? $jwt->upn : ( isset( $jwt->unique_name ) ? $jwt->unique_name : null );
 		if ( null === $unique_name ) {
@@ -389,8 +387,8 @@ class AADSSO {
 				'Matched Azure AD user [%s] to existing WordPress user [%s].', $unique_name, $user->ID ), 10 );
 		} else {
 
-			// Since the user was authenticated with AAD, but not found in WordPress,
-			// need to decide whether to create a new user in WP on-the-fly, or to stop here.
+			// Since the user was authenticated with Azure AD, but not found in WordPress,
+			// need to decide whether to create a new user in WordPress on-the-fly, or to stop here.
 			if ( true === $this->settings->enable_auto_provisioning ) {
 
 				// 3. If we are configured to check, and there are no groups for this user, we should not be creating it.
