@@ -4,7 +4,7 @@ Tags: azure-ad, sso, azure-active-directory
 Requires at least: 4.1
 Tested up to: 4.9.5
 Requires PHP: 5.6
-Stable tag: 0.6.4
+Stable tag: 0.6.5
 License: MIT
 License URI: https://github.com/psignoret/aad-sso-wordpress/blob/master/LICENSE.md
 
