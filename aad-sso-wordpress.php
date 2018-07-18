@@ -309,6 +309,29 @@ class AADSSO {
 					// Of the AAD groups defined in the settings, get only those where the user is a member
 					$group_ids         = array_keys( $this->settings->aad_group_to_wp_role_map );
 					$group_memberships = AADSSO_GraphHelper::user_check_member_groups( $jwt->oid, $group_ids );
+					
+					// Validate response to throw an early error if unable to check group membership.
+					if ( isset( $group_memberships->value ) ) {
+						AADSSO::debug_log( sprintf(
+							'Azure AD user \'%s\' is a member of [%s]',
+							$jwt->oid, implode( ',', $group_memberships->value ) ), 20
+						);
+					} elseif ( isset ( $group_memberships->{'odata.error'} ) ) {
+						AADSSO::debug_log( 'Error when checking group membership: ' . json_encode( $group_memberships ) );
+						return new WP_Error(
+							'error_checking_group_membership',
+							sprintf(
+								__( 'ERROR: Unable to check group membership in Azure AD: <b>%s</b>.', 
+									'aad-sso-wordpress' ), $group_memberships->{'odata.error'}->code )
+						);
+					} else {
+						AADSSO::debug_log( 'Unexpected response to checkMemberGroups: ' . json_encode( $group_memberships ) );
+						return new WP_Error(
+							'unexpected_response_to_checkMemberGroups',
+							__( 'ERROR: Unexpected response when checking group membership in Azure AD.', 
+								'aad-sso-wordpress' )
+						);
+					}
 				}
 
 				// Invoke any configured matching and auto-provisioning strategy and get the user. We include
@@ -456,29 +479,6 @@ class AADSSO {
 		* @return WP_User|WP_Error Return the WP_User with updated roles, or WP_Error if failed.
 		*/
 	function update_wp_user_roles( $user, $group_memberships ) {
-		
-		// Check for errors in the group membership check response
-		if ( isset( $group_memberships->value ) ) {
-			AADSSO::debug_log( sprintf(
-				'User \'%s\' is a member of [%s]',
-				$user->ID, implode( ',', $group_memberships->value ) ), 20
-			);
-		} elseif ( isset ( $group_memberships->{'odata.error'} ) ) {
-			AADSSO::debug_log( 'Error when checking group membership: ' . json_encode( $group_memberships ) );
-			return new WP_Error(
-				'error_checking_group_membership',
-				sprintf(
-					__( 'ERROR: Unable to check group membership in Azure AD: <b>%s</b>.', 
-					    'aad-sso-wordpress' ), $group_memberships->{'odata.error'}->code )
-			);
-		} else {
-			AADSSO::debug_log( 'Unexpected response to checkMemberGroups: ' . json_encode( $group_memberships ) );
-			return new WP_Error(
-				'unexpected_response_to_checkMemberGroups',
-				__( 'ERROR: Unexpected response when checking group membership in Azure AD.', 
-			        'aad-sso-wordpress' )
-			);
-		}
 
 		// Determine which WordPress role the AAD group corresponds to.
 		$roles_to_set = array();
