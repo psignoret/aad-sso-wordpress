@@ -5,7 +5,7 @@ Plugin Name: Single Sign-on with Azure Active Directory
 Plugin URI: http://github.com/psignoret/aad-sso-wordpress
 Description: Allows you to use your organization's Azure Active Directory user accounts to log in to WordPress. If your organization is using Office 365, your user accounts are already in Azure Active Directory. This plugin uses OAuth 2.0 to authenticate users, and the Azure Active Directory Graph to get group membership and other details.
 Author: Philippe Signoret
-Version: 0.6.4
+Version: 0.6.5
 Author URI: https://www.psignoret.com/
 Text Domain: aad-sso-wordpress
 Domain Path: /languages/
@@ -298,23 +298,44 @@ class AADSSO {
 					);
 				}
 
-				// Set a default value for group_memberships.
+				// Retrieve group membership details, if needed
 				$group_memberships = false;
-
 				if ( true === $this->settings->enable_aad_group_to_wp_role ) {
-					// 1. Retrieve the Groups for this user once here so we can pass them around as needed.
-					// Pass the settings to GraphHelper
+
+					// If we're mapping Azure AD groups to WordPress roles, make the Graph API call here
 					AADSSO_GraphHelper::$settings  = $this->settings;
 					AADSSO_GraphHelper::$tenant_id = $jwt->tid;
 
 					// Of the AAD groups defined in the settings, get only those where the user is a member
 					$group_ids         = array_keys( $this->settings->aad_group_to_wp_role_map );
 					$group_memberships = AADSSO_GraphHelper::user_check_member_groups( $jwt->oid, $group_ids );
+					
+					// Validate response to throw an early error if unable to check group membership.
+					if ( isset( $group_memberships->value ) ) {
+						AADSSO::debug_log( sprintf(
+							'Azure AD user \'%s\' is a member of [%s]',
+							$jwt->oid, implode( ',', $group_memberships->value ) ), 20
+						);
+					} elseif ( isset ( $group_memberships->{'odata.error'} ) ) {
+						AADSSO::debug_log( 'Error when checking group membership: ' . json_encode( $group_memberships ) );
+						return new WP_Error(
+							'error_checking_group_membership',
+							sprintf(
+								__( 'ERROR: Unable to check group membership in Azure AD: <b>%s</b>.', 
+									'aad-sso-wordpress' ), $group_memberships->{'odata.error'}->code )
+						);
+					} else {
+						AADSSO::debug_log( 'Unexpected response to checkMemberGroups: ' . json_encode( $group_memberships ) );
+						return new WP_Error(
+							'unexpected_response_to_checkMemberGroups',
+							__( 'ERROR: Unexpected response when checking group membership in Azure AD.', 
+								'aad-sso-wordpress' )
+						);
+					}
 				}
 
-
-				// Invoke any configured matching and auto-provisioning strategy and get the user.
-				// 2. Pass the Group Membership to allow us to control when a user is created if auto-provisioning is enabled.
+				// Invoke any configured matching and auto-provisioning strategy and get the user. We include
+				// group membership details in case they're needed to decide whether or not to create the user.
 				$user = $this->get_wp_user_from_aad_user( $jwt, $group_memberships );
 
 				if ( is_a( $user, 'WP_User' ) ) {
@@ -364,7 +385,7 @@ class AADSSO {
 
 	function get_wp_user_from_aad_user( $jwt, $group_memberships ) {
 
-		// Try to find an existing user in WP where the upn or unique_name of the current AAD user is
+		// Try to find an existing user in WP where the upn or unique_name of the current Azure AD user is
 		// (depending on config) the 'login' or 'email' field in WordPress
 		$unique_name = isset( $jwt->upn ) ? $jwt->upn : ( isset( $jwt->unique_name ) ? $jwt->unique_name : null );
 		if ( null === $unique_name ) {
@@ -389,30 +410,37 @@ class AADSSO {
 				'Matched Azure AD user [%s] to existing WordPress user [%s].', $unique_name, $user->ID ), 10 );
 		} else {
 
-			// Since the user was authenticated with AAD, but not found in WordPress,
-			// need to decide whether to create a new user in WP on-the-fly, or to stop here.
+			// Since the user was authenticated with Azure AD, but not found in WordPress,
+			// need to decide whether to create a new user in WordPress on-the-fly, or to stop here.
 			if ( true === $this->settings->enable_auto_provisioning ) {
 
-				// 3. If we are configured to check, and there are no groups for this user, we should not be creating it.
-				if ( true === $this->settings->enable_aad_group_to_wp_role && empty( $group_memberships->value ) ) {
-					// The user was authenticated, but is not a member a role-granting group.
+				// Do not create a user if the user is required to be a member of a group, but is not a member
+				// of any of the groups, and there is no fall-back role configured.
+				if ( true === $this->settings->enable_aad_group_to_wp_role 
+						&& empty( $group_memberships->value )
+						&& empty( $this->settings->default_wp_role ) ) {
+
+					// The user was authenticated, but is not a member a role-granting group, and there is
+					// no default role defined. Deny access.
 					return new WP_Error(
 						'user_not_assigned_to_group',
 						sprintf(
-							__( 'ERROR: The authenticated user \'%s\' does not have a group assignment for this site.',
+							__( 'ERROR: Access denied. You\'re not a member of any group granting you '
+							    . 'access to this site. You\'re signed in as \'%s\'.',
 							'aad-sso-wordpress' ),
 							$unique_name
 						)
 					);
 				}
+
 				// Setup the minimum required user data
 				// TODO: Is null better than a random password?
 				// TODO: Look for otherMail, or proxyAddresses before UPN for email
 				$userdata = array(
 					'user_email' => $unique_name,
 					'user_login' => $unique_name,
-					'first_name' => $jwt->given_name,
-					'last_name'  => $jwt->family_name,
+					'first_name' => ! empty( $jwt->given_name ) ? $jwt->given_name : '',
+					'last_name'  => ! empty( $jwt->family_name ) ? $jwt->family_name : '',
 					'user_pass'  => null,
 				);
 
@@ -457,29 +485,6 @@ class AADSSO {
 		* @return WP_User|WP_Error Return the WP_User with updated roles, or WP_Error if failed.
 		*/
 	function update_wp_user_roles( $user, $group_memberships ) {
-		
-		// Check for errors in the group membership check response
-		if ( isset( $group_memberships->value ) ) {
-			AADSSO::debug_log( sprintf(
-				'User \'%s\' is a member of [%s]',
-				$user->ID, implode( ',', $group_memberships->value ) ), 20
-			);
-		} elseif ( isset ( $group_memberships->{'odata.error'} ) ) {
-			AADSSO::debug_log( 'Error when checking group membership: ' . json_encode( $group_memberships ) );
-			return new WP_Error(
-				'error_checking_group_membership',
-				sprintf(
-					__( 'ERROR: Unable to check group membership in Azure AD: <b>%s</b>.', 
-					    'aad-sso-wordpress' ), $group_memberships->{'odata.error'}->code )
-			);
-		} else {
-			AADSSO::debug_log( 'Unexpected response to checkMemberGroups: ' . json_encode( $group_memberships ) );
-			return new WP_Error(
-				'unexpected_response_to_checkMemberGroups',
-				__( 'ERROR: Unexpected response when checking group membership in Azure AD.', 
-			        'aad-sso-wordpress' )
-			);
-		}
 
 		// Determine which WordPress role the AAD group corresponds to.
 		$roles_to_set = array();
