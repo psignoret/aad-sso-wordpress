@@ -17,11 +17,11 @@
 		<?php
 		printf(
 			'<a href="%s" class="button">%s</a> <span class="description">%s</span>',
-			wp_nonce_url(
+			esc_url( wp_nonce_url(
 				admin_url( 'options-general.php?page=aadsso_settings' ),
 				'aadsso_reset_settings',
 				'aadsso_nonce'
-			),
+			) ),
 			esc_html__( 'Reset Settings' , 'aad-sso-wordpress' ),
 			esc_html__( 'Reset the plugin to default settings. Careful, there is no undo for this.' , 'aad-sso-wordpress' )
 		)
@@ -55,11 +55,11 @@
 		<p><?php
 		printf(
 			'<a href="%s" class="button">%s</a> <span class="description">%s</span>',
-			wp_nonce_url(
+			esc_url( wp_nonce_url(
 				admin_url( 'options-general.php?page=aadsso_settings' ),
 				'aadsso_migrate_from_json',
 				'aadsso_nonce'
-			),
+			) ),
 			esc_html__( 'Migrate Settings' , 'aad-sso-wordpress' ),
 			esc_html__( 'Migrate settings from old plugin versions to new configuration. This will overwrite existing settings! Careful, there is no undo for this.' , 'aad-sso-wordpress' )
 		)
