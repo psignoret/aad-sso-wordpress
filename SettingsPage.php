@@ -124,18 +124,18 @@ class AADSSO_Settings_Page {
 		if( isset( $_GET['aadsso_migrate_from_json_status'] ) ) {
 			if( 'success' === $_GET['aadsso_migrate_from_json_status'] ) {
 				echo '<div id="message" class="notice notice-success"><p>'
-					. __( 'Legacy settings have been migrated and the old configuration file has been deleted.', 'aad-sso-wordpress' )
-					. __('To finish migration, unset <code>AADSSO_SETTINGS_PATH</code> from <code>wp-config.php</code>. ', 'aad-sso-wordpress')
+					. esc_html__( 'Legacy settings have been migrated and the old configuration file has been deleted.', 'aad-sso-wordpress' )
+					. esc_html__('To finish migration, unset <code>AADSSO_SETTINGS_PATH</code> from <code>wp-config.php</code>. ', 'aad-sso-wordpress')
 					.'</p></div>';
 			} elseif ( 'manual' === $_GET['aadsso_migrate_from_json_status'] ) {
 				echo '<div id="message" class="notice notice-warning"><p>'
 					. esc_html__( 'Legacy settings have been migrated successfully. ', 'aad-sso-wordpress' )
-					. sprintf( __('To finish migration, delete the file at the path <code>%s</code>. ', 'aad-sso-wordpress'), AADSSO_SETTINGS_PATH )
-					. sprintf( __('Then, unset <code>AADSSO_SETTINGS_PATH</code> from <code>wp-config.php</code>. ', 'aad-sso-wordpress') )
+					. sprintf( esc_html__('To finish migration, delete the file at the path <code>%s</code>. ', 'aad-sso-wordpress'), esc_html( AADSSO_SETTINGS_PATH ) )
+					. sprintf( esc_html__('Then, unset <code>AADSSO_SETTINGS_PATH</code> from <code>wp-config.php</code>. ', 'aad-sso-wordpress') )
 					.'</p></div>';
 			} elseif( 'invalid_json' === $_GET['aadsso_migrate_from_json_status'] ) {
 				echo '<div id="message" class="notice notice-error"><p>'
-					. sprintf( __('Legacy settings could not be migrated from <code>%s</code>. ', 'aad-sso-wordpress'), AADSSO_SETTINGS_PATH )
+					. sprintf( esc_html__('Legacy settings could not be migrated from <code>%s</code>. ', 'aad-sso-wordpress'), esc_html( AADSSO_SETTINGS_PATH ) )
 					. esc_html( 'File could not be parsed as JSON. ', 'aad-sso-wordpress' )
 					. esc_html( 'Delete the file, or check its syntax.', 'aad-sso-wordpress' )
 					.'</p></div>';
@@ -150,7 +150,7 @@ class AADSSO_Settings_Page {
 	{
 		if ( isset( $_GET['aadsso_reset'] ) && 'success' === $_GET['aadsso_reset'] ) {
 			echo '<div id="message" class="notice notice-warning"><p>'
-				. __( 'Single Sign-on with Azure Active Directory settings have been reset to default.',
+				. esc_html__( 'Single Sign-on with Azure Active Directory settings have been reset to default.',
 					'aad-sso-wordpress' )
 				.'</p></div>';
 		}
@@ -432,18 +432,23 @@ class AADSSO_Settings_Page {
 	 */
 	function role_map_callback() {
 		printf( '<p>%s</p>',
-			__( 'Map WordPress roles to Azure Active Directory groups.', 'aad-sso-wordpress' )
+			esc_html__( 'Map WordPress roles to Azure Active Directory groups.', 'aad-sso-wordpress' )
 		);
 		echo '<table>';
 		printf(
 			'<thead><tr><th>%s</th><th>%s</th></tr></thead>',
-			__( 'WordPress Role', 'aad-sso-wordpress' ),
-			__( 'Azure AD Group Object ID', 'aad-sso-wordpress' )
+			esc_html__( 'WordPress Role', 'aad-sso-wordpress' ),
+			esc_html__( 'Azure AD Group Object ID', 'aad-sso-wordpress' )
 		);
 		echo '<tbody>';
 		foreach( $this->get_editable_roles( ) as $role_slug => $role ) {
 			echo '<tr>';
-				echo '<td>' . htmlentities( $role['name'] ) . '</td>';
+				/*echo '<td>' . htmlentities( $role['name'] ) . '</td>';*/
+				/**
+				 * In WordPress coding standards Data Validation APIs are recommended to use
+				 * rather than PHP generic functions.
+				 */
+				echo '<td>' . esc_html( $role['name'] ) . '</td>';
 				echo '<td>';
 					printf(
 						'<input type="text" class="regular-text" name="aadsso_settings[role_map][%1$s]" '
@@ -467,7 +472,7 @@ class AADSSO_Settings_Page {
 		$this->render_text_field( 'org_display_name' );
 		printf(
 			'<p class="description">%s</p>',
-			__( 'Display Name will be shown on the WordPress login screen.', 'aad-sso-wordpress' )
+			esc_html__( 'Display Name will be shown on the WordPress login screen.', 'aad-sso-wordpress' )
 		);
 	}
 
@@ -478,7 +483,7 @@ class AADSSO_Settings_Page {
 		$this->render_text_field( 'org_domain_hint' );
 		printf(
 			'<p class="description">%s</p>',
-			__( 'Provides a hint to Azure AD about the domain or tenant they will be logging in to. If '
+			esc_html__( 'Provides a hint to Azure AD about the domain or tenant they will be logging in to. If '
 			     . 'the domain is federated, the user will be automatically redirected to federation '
 			     . 'endpoint.', 'aad-sso-wordpress' )
 		);
@@ -491,7 +496,7 @@ class AADSSO_Settings_Page {
 		$this->render_text_field( 'client_id' );
 		printf(
 			'<p class="description">%s</p>',
-			__( 'The client ID of the Azure AD application representing this blog.', 'aad-sso-wordpress' )
+			esc_html__( 'The client ID of the Azure AD application representing this blog.', 'aad-sso-wordpress' )
 		);
 	}
 
@@ -502,7 +507,7 @@ class AADSSO_Settings_Page {
 		$this->render_text_field( 'client_secret' );
 		printf(
 			'<p class="description">%s</p>',
-			__( 'A secret key for the Azure AD application representing this blog.', 'aad-sso-wordpress' )
+			esc_html__( 'A secret key for the Azure AD application representing this blog.', 'aad-sso-wordpress' )
 		);
 	}
 
@@ -514,9 +519,13 @@ class AADSSO_Settings_Page {
 		printf(
 			' <a href="#" onclick="jQuery(\'#redirect_uri\').val(\'%s\'); return false;">%s</a>'
 			. '<p class="description">%s</p>',
-			wp_login_url(),
-			__( 'Set default', 'aad-sso-wordpress' ),
-			__( 'The URL where the user is redirected to after authenticating with Azure AD. '
+			/**
+			 * https://codex.wordpress.org/Data_Validation#Text_Nodes
+			 * Always use esc_url when sanitizing URLs
+			 */
+			esc_url( wp_login_url() ),
+			esc_html__( 'Set default', 'aad-sso-wordpress' ),
+			esc_html__( 'The URL where the user is redirected to after authenticating with Azure AD. '
 			  . 'This URL must be registered in Azure AD as a valid redirect URL, and it must be a '
 			  . 'page that invokes the "authenticate" filter. If you don\'t know what to set, leave '
 			  . 'the default value (which is this blog\'s login page).', 'aad-sso-wordpress' )
@@ -531,9 +540,9 @@ class AADSSO_Settings_Page {
 		printf(
 			' <a href="#" onclick="jQuery(\'#logout_redirect_uri\').val(\'%s\'); return false;">%s</a>'
 			. '<p class="description">%s</p>',
-			wp_login_url(),
-			__( 'Set default', 'aad-sso-wordpress'),
-			__( 'The URL where the user is redirected to after signing out of Azure AD. '
+			esc_url( wp_login_url() ),
+			esc_html__( 'Set default', 'aad-sso-wordpress'),
+			esc_html__( 'The URL where the user is redirected to after signing out of Azure AD. '
 			  . 'This URL must be registered in Azure AD as a valid redirect URL. (This does not affect '
 			  . ' logging out of the blog, it is only used when logging out of Azure AD.)', 'aad-sso-wordpress' )
 		);
@@ -550,16 +559,16 @@ class AADSSO_Settings_Page {
 		?>
 		<select name="aadsso_settings[field_to_match_to_upn]" id="field_to_match_to_upn">
 			<option value="email"<?php echo $selected == 'email' ? ' selected="selected"' : ''; ?>>
-				<?php echo __( 'Email Address', 'aad-sso-wordpress' ); ?>
+				<?php echo esc_html__( 'Email Address', 'aad-sso-wordpress' ); ?>
 			</option>
 			<option value="login"<?php echo $selected == 'login' ? ' selected="selected"' : ''; ?>>
-				<?php echo __( 'Login Name', 'aad-sso-wordpress' ); ?>
+				<?php echo esc_html__( 'Login Name', 'aad-sso-wordpress' ); ?>
 			</option>
 		</select>
 		<?php
 		printf(
 			'<p class="description">%s</p>',
-			__( 'This specifies the WordPress user field which will be used to match to the Azure AD user\'s '
+			esc_html__( 'This specifies the WordPress user field which will be used to match to the Azure AD user\'s '
 			  . 'UserPrincipalName.', 'aad-sso-wordpress' )
 		);
 	}
@@ -570,7 +579,7 @@ class AADSSO_Settings_Page {
 	public function match_on_upn_alias_callback() {
 		$this->render_checkbox_field(
 			'match_on_upn_alias',
-			__( 'Match WordPress users based on the alias of their Azure AD UserPrincipalName. For example, '
+			esc_html__( 'Match WordPress users based on the alias of their Azure AD UserPrincipalName. For example, '
 			  . 'Azure AD username <code>bob@example.com</code> will match WordPress user <code>bob</code>.',
 			    'aad-sso-wordpress' )
 		);
@@ -590,15 +599,19 @@ class AADSSO_Settings_Page {
 		printf( '<option value="%s">%s</option>', '', '(None, deny access)' );
 		foreach( $this->get_editable_roles() as $role_slug => $role ) {
 			$selected = $this->settings['default_wp_role'] === $role_slug ? ' selected="selected"' : '';
+			/**
+			 * Since $elected can return both the attribute with value as well as an empty string
+			 * no escaping has been used.
+			 */
 			printf(
 				'<option value="%s"%s>%s</option>',
-				esc_attr( $role_slug ), $selected, htmlentities( $role['name'] )
+				esc_attr( $role_slug ), $selected, esc_html( $role['name'] )
 			);
 		}
 		echo '</select>';
 		printf(
 			'<p class="description">%s</p>',
-			__('This is the default role that users will be assigned to if matching Azure AD group to '
+			esc_html__('This is the default role that users will be assigned to if matching Azure AD group to '
 			 . 'WordPress roles is enabled, but the signed in user isn\'t a member of any of the '
 			 . 'configured Azure AD groups.', 'aad-sso-wordpress')
 		);
@@ -645,9 +658,13 @@ class AADSSO_Settings_Page {
 		printf(
 			' <a href="#" onclick="jQuery(\'#openid_configuration_endpoint\').val(\'%s\'); return false;">%s</a>'
 			. '<p class="description">%s</p>',
+			/**
+			 * get_defaults can return either an array, a string or null
+			 * no escaping has been used
+			 */
 			AADSSO_Settings::get_defaults( 'openid_configuration_endpoint' ),
-			__( 'Set default', 'aad-sso-wordpress'),
-			__( 'The OpenID Connect configuration endpoint to use. To support Microsoft Accounts and external '
+			esc_html__( 'Set default', 'aad-sso-wordpress'),
+			esc_html__( 'The OpenID Connect configuration endpoint to use. To support Microsoft Accounts and external '
 			  . 'users (users invited in from other Azure AD directories, known sometimes as "B2B users") you '
 			  . 'must use: <code>https://login.microsoftonline.com/{tenant-id}/.well-known/openid-configuration</code>, '
 			  . 'where <code>{tenant-id}</code> is the tenant ID or a verified domain name of your directory.',
@@ -661,7 +678,7 @@ class AADSSO_Settings_Page {
 	public function enable_full_logout_callback() {
 		$this->render_checkbox_field(
 			'enable_full_logout',
-			__( 'Do a full logout of Azure AD when logging out of WordPress.',
+			esc_html__( 'Do a full logout of Azure AD when logging out of WordPress.',
 				'aad-sso-wordpress' )
 		);
 	}
@@ -676,7 +693,7 @@ class AADSSO_Settings_Page {
 		printf(
 			'<input class="regular-text" type="text" '
 			 . 'name="aadsso_settings[%1$s]" id="%1$s" value="%2$s" />',
-			$name, $value
+			esc_html( $name ), esc_html( $value )
 		);
 	}
 
@@ -690,9 +707,9 @@ class AADSSO_Settings_Page {
 		printf(
 			'<input type="checkbox" name="aadsso_settings[%1$s]" id="%1$s" value="%1$s"%2$s />'
 			 . '<label for="%1$s">%3$s</label>',
-			$name,
+			esc_html( $name ),
 			isset( $this->settings[ $name ] ) && $this->settings[ $name ] ? 'checked' : '',
-			$label
+			esc_html( $label )
 		);
 	}
 
