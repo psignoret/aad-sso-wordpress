@@ -12,10 +12,10 @@ Azure Active Directory (Azure AD) and can use this plugin for all of their users
 
 In the typical flow:
 
-1. User attempts to log in to the blog (`wp-admin`). At the sign in page, they are given a link to sign in with their Azure Active Directory organization account (e.g. an Office 365 account).
-2. After signing in, the user is redirected back to the blog with an authorization code, which the plugin exchanges for a ID Token, containing a minimal set of claims about the signed in user, and an Access Token, which can be used to query Azure AD for additional details.
-3. The plugin uses the claims in the ID Token to attempt to find a WordPress user with an email address or login name that matches the Azure AD user.
-4. If one is found, the user is authenticated in WordPress as that user. If one is not found, the WordPress user will (optionally) be auto-provisioned on-the-fly.
+1. User attempts to log in to the blog (`wp-admin`). At the sign in page, they are given a link to sign in with their Azure Active Directory work or school account (e.g. an Office 365 account).
+2. After signing in, the user is redirected back to the blog with an authorization code, which the plugin exchanges for a ID token, containing a minimal set of claims about the signed in user, and an access token, which can be used to query Azure AD for additional details about the user.
+3. The plugin uses the claims in the ID token to attempt to find a WordPress user with an email address or login name that matches the Azure AD user.
+4. If one is found, the user is authenticated in WordPress as that user account. If one is not found, the WordPress user will (optionally) be auto-provisioned on-the-fly.
 5. (Optional) Membership to certain groups in Azure AD can be mapped to roles in WordPress, and group membership can be used to restrict access.
 
 ## Getting Started
@@ -32,7 +32,7 @@ This plugin is not yet registered in the WordPress plugin directory (coming soon
 
 ### 2. Register an Azure Active Directory application
 
-With these steps, you will register an application with Azure AD. This application identifies your WordPress site with Azure AD.
+With these steps, you will create an Azure AD app registration. This will provide your WordPress site with an application identity in your organization's Azure AD tenant.
 
 1. Sign in to the [**Azure portal**](https://portal.azure.com), and ensure you are signed in to the directory which has the users you'd like to allow to sign in. (This will typically be your organization's directory.) You can view which directory you're signed in to (and switch directories if needed) by clicking on your username in the upper right-hand corner.
 
@@ -41,48 +41,62 @@ With these steps, you will register an application with Azure AD. This applicati
     ![Clicking Azure Active Directory](https://user-images.githubusercontent.com/231140/29496874-6cf6f722-85dc-11e7-8898-89db80593ffc.png) <br />
     ![Clicking App registrations](https://user-images.githubusercontent.com/231140/29496884-9b3693ae-85dc-11e7-89a0-77e80979af23.png)
 
-3. Choose **New application registration**, and provide a name for your app. This will be the name displayed to users when signing in. Leave the default application type ("Web app / API"), provide the URL of your site as the "Sign-on URL", and click **Create**. When the app is created, select the newly-registered app from the list.
+3. Choose **New registration**.
 
-    ![Clicking New application registration](https://user-images.githubusercontent.com/231140/29496889-c5096a80-85dc-11e7-92e9-eafc49a2e0c6.png)<br />
-    ![Creating new application](https://user-images.githubusercontent.com/231140/29496901-0d80184a-85dd-11e7-8121-7b0d6f2d5d48.png)<br />
-    ![Selecting the newly-created app](https://user-images.githubusercontent.com/231140/29496910-38792bcc-85dd-11e7-9d01-7bded9a4090e.png)
+    ![Clicking New registration](https://user-images.githubusercontent.com/231140/66044424-cf882b80-e521-11e9-9f76-1e0d83ff8467.png)<br />
 
-4. Under **Reply URLs**, update the existing reply URL with the format: `https://<your blog url>/wp-login.php`, or whichever page your blog uses to sign in users, and click **Save**. (Note: This page must invoke the `authenticate` action.)
+4. Fill out the initial form as follows:
 
-    ![Adding a reply URL](https://user-images.githubusercontent.com/231140/29496951-54b63d74-85de-11e7-848d-d1ed0b7ce105.png)
+    * **Name**: Enter your site's name. This will be displayed to users at the Azure AD sign-in page, in the sign-in logs, and in any consent prompt users may come across.
 
-5. Under **Required permissions**, choose the "Windows Azure Active Directory" API. You will need at minimum delegated permissions to "Sign in and read user profile". If you wish to map Azure AD groups to WordPress roles, you will also need delegated permission to "Read directory data". Once you've selected the permissions, click **Save**.
+    * **Supported account types**: Choose "Accounts in this organizational directory" if you only expect users from one organization to sign in to your app. Otherwise, choose "Accounts in any organizational directory" to allow users from _any_ Azure AD tenant to sign in.
+        
+      > **Note**: This plugin does not yet support the third option, "Accounts in any organizational directory and personal Microsoft accounts".
+
+    * **Redirect URI**: Leave the redirect URI type set to "Web", and provide a URL matching the format `https://<your blog url>/wp-login.php`, or whichever page your blog uses to sign in users.
     
-    **Important**: The "Read directory data" delegated permissions requires a tenant administrator to consent to the application. The tenant administrator can use the **Grant Permissions** option to grant permissions (i.e. consent) on behalf of all users.
+      > **Note**: If you're not sure what to enter here, you can leave it empty for now and come back and update this (under Azure AD > App registrations > Authentication) later. The plugin itself will tell you what URL to use.
 
-    ![Delegated permissions to sign in and read directory data](https://user-images.githubusercontent.com/231140/30487748-a6fe8e5a-9a34-11e7-8730-ce44472817cf.png)
+      > **Note**: The page must invoke the `authenticate` action. (By default, this will be `wp-login.php`.) 
 
-7. Under **Keys**, provide a new secret key description and duration, and click **Save**. After saving, the secret key value will appear. Copy it, as this is the only time it will be available.
+4. After clicking **Register**, enter the **API permissions** section. 
 
-    ![Creating a new secret key](https://user-images.githubusercontent.com/231140/29496984-395c4f36-85df-11e7-9c0c-0ecc912585f3.png)
+    ![API permissions](https://user-images.githubusercontent.com/231140/66045425-03fce700-e524-11e9-82ae-8772fa4e9724.png)
 
-8. Keep a tab open with the app registration page, as you will need to copy some fields when configuring the plugin.
+5. Verify that the delegated permission *User.Read* for Microsoft Graph is already be selected. This permission is all you need if you do not require mapping Azure AD group membership to WordPress roles. 
 
-    ![App settings summary page](https://user-images.githubusercontent.com/231140/29496998-8e1afd92-85df-11e7-96e7-0170b57939d1.png)
+    ![User.Read delegated permission for Microsoft Graph](https://user-images.githubusercontent.com/231140/66046005-23484400-e525-11e9-9712-fed4c5273040.png)
+
+   > **Note**: If you do wish to map Azure AD groups to WordPress roles, you must also select the delegated permission *Directory.Read.All* (click "Add a permission" > Microsoft Graph > Delegated > *Directory.Read.All*).
+    
+   > **Important**: Some permissions *require* administrator consent before it can be used, and in some organizations, administrator consent is required for *any* permission. A tenant administrator can use the **Grant admin consent** option to grant there permissions (i.e. consent) on behalf of all users in the organization.
+
+6. Under **Certificates & secrets**, create a new client secret. Provide a description and choose a duration (I recommend no longer than two years). After clicking **Add**, the secret value will appear. Copy it, as this is the only time it will be available.
+
+    ![Creating a new secret key](https://user-images.githubusercontent.com/231140/66046096-52f74c00-e525-11e9-93ce-62581e097aaa.png)
+
+8. Switch to the **Overview** section and keep the tab open, as you will need to copy some fields when configuring the plugin.
+
+    ![App overview page](https://user-images.githubusercontent.com/231140/66046578-5b9c5200-e526-11e9-810f-027d31d99148.png)
 
 ### 3. Configure the plugin
 
-Once the plugin is activated, update your settings from the WordPress admin console under **Settings** > **Azure AD**. Basic settings to include are:
+Once the plugin is activated in WordPress (step 1), update your settings from the WordPress admin console under **Settings** > **Azure AD**. Basic settings to include are:
 
 <dl>
   <dt>Display name</dt>
   <dd>
-    The display name of the organization, used only in the link in the login page.
+    The display name of the organization, used in the link on the WordPress login page which will start the Azure AD sign-in process.
   </dd>
 
   <dt>Client ID</dt>
   <dd>
-    The Application ID. (Copy this from Azure AD application's configuration page.)
+    The Application ID. (Copy this from the Azure AD app registration's **Overview** page.)
   </dd>
     
   <dt>Client Secret</dt>
   <dd>
-    The secret key. (Copy this from the Azure AD application's configuration page.)
+    The client secret. (You copy this from the Azure AD app registration's **Certificates & secrets** page.)
   </dd>
 
   <dt>Reply URL</dt>
@@ -93,7 +107,7 @@ Once the plugin is activated, update your settings from the WordPress admin cons
 
 ### 4. (Optional) Set WordPress roles based on Azure AD group membership
 
-The Single Sign-on with Azure AD plugin can be configured to set different WordPress roles based on the user's membership to a set of user-defined groups. This is a great way to control who has access to the blog, and under what role.
+The Single Sign-on with Azure AD plugin can be configured to set different WordPress roles based on the user's membership to a set of user-defined groups. This is a great way to control who has access to the site, and under what role.
 
 This is also configured **Settings** > **Azure AD** (from the WordPress admin console). The following fields should be included:
 
@@ -113,6 +127,8 @@ This is also configured **Settings** > **Azure AD** (from the WordPress admin co
     For each of the blog's WordPress roles, there is a field for the ObjectId of the Azure AD group that will be associated with that role.
   </dd>
 </dl>
+
+> **Note**: For the Azure AD group to WordPress role mapping to work, the app in Azure AD needs the delegated permission *Directory.Read.All* for Microsoft Graph. See step 5 of *Register an Azure Active Directory application*, above, for more details.
 
 ## Example settings
 
@@ -195,7 +211,7 @@ As described above, you can map Azure AD groups to WordPress roles. Users who ar
 
 There are several ways Azure AD groups can be created/managed. Some of them require the group owner/creator to be a tenant administrator, others not necessarily (depending on your organization's policy):
 
- * **Azure portal**. The Azure portal ([https://portal.azure.com](https://portal.azure.com)), under [Azure Active Directory](https://portal.azure.com/#blade/Microsoft_AAD_IAM/ActiveDirectoryMenuBlade/Overview) > [Users and groups](https://portal.azure.com/#blade/Microsoft_AAD_IAM/UserManagementMenuBlade/Overview/menuId/) > [All groups](https://portal.azure.com/#blade/Microsoft_AAD_IAM/UserManagementMenuBlade/All%20groups/menuId/) > New group, allows admins and (optionally) users to create and manage groups.
+ * **Azure portal**. The Azure portal ([https://portal.azure.com](https://portal.azure.com)), under [Azure Active Directory](https://portal.azure.com/#blade/Microsoft_AAD_IAM/ActiveDirectoryMenuBlade/Overview) > [Groups](https://portal.azure.com/#blade/Microsoft_AAD_IAM/GroupsManagementMenuBlade/AllGroups) > New group, allows admins and (optionally) users to create and manage groups.
  * **Access Panel**. The Azure AD Access Panel ([https://myapps.microsoft.com](https://myapps.microsoft.com)) provides an interface for users to create and manage [groups](https://account.activedirectory.windowsazure.com/#/groups).
  * **Outlook**. The Outlook web interface ([https://outlook.office.com/](https://outlook.office.com/)) offers users the option to create Office 365 Groups. These groups are stored in Azure AD and can be used with this plugin.
  * **Microsoft Teams**. Creating a team in Microsoft Teams ([https://teams.microsoft.com](https://teams.microsoft.com)) also results in an Office 365 Group getting created.

@@ -137,14 +137,14 @@ class AADSSO_Settings {
 	public $end_session_endpoint = '';
 
 	/**
-	 * @var string The URI of the Azure Active Directory Graph API.
+	 * @var string The URI of the Microsoft Graph API.
 	 */
-	public $graph_endpoint = 'https://graph.windows.net';
+	public $graph_endpoint = 'https://graph.microsoft.com';
 
 	/**
-	 * @var string The version of the AAD Graph API to use.
+	 * @var string The version of the Microsoft Graph API to use.
 	 */
-	public $graph_version = '1.6';
+	public $graph_version = 'v1.0';
 
 	/**
 	 * Returns a sensible set of defaults for the plugin.
