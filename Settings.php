@@ -202,8 +202,8 @@ class AADSSO_Settings {
 
 		$instance = self::get_instance();
 
-		// First, set the settings stored in the WordPress database.
-		$instance->set_settings( get_option( 'aadsso_settings' ) );
+		// First, retrieve the settings stored in the WordPress database.
+		$instance->load_settings( get_option( 'aadsso_settings' ) );
 
 		/*
 		 * Then, add the settings stored in the OpenID Connect configuration endpoint.
@@ -219,7 +219,7 @@ class AADSSO_Settings {
 			);
 			set_transient( 'aadsso_openid_configuration', $openid_configuration, 3600 );
 		}
-		$instance->set_settings( $openid_configuration );
+		$instance->load_settings( $openid_configuration );
 
 		return $instance;
 	}
@@ -246,7 +246,7 @@ class AADSSO_Settings {
 	 *
 	 * @return \AADSSO_Settings The current (only) instance with new configuration.
 	 */
-	function set_settings( $settings ) {
+	function load_settings( $settings ) {
 
 		// Expecting $settings to be an associative array. Do nothing if it isn't.
 		if ( ! is_array( $settings ) || empty( $settings ) ) {
