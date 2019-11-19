@@ -3,9 +3,9 @@
 /*
 Plugin Name: Single Sign-on with Azure Active Directory
 Plugin URI: http://github.com/psignoret/aad-sso-wordpress
-Description: Allows you to use your organization's Azure Active Directory user accounts to log in to WordPress. If your organization is using Office 365, your user accounts are already in Azure Active Directory. This plugin uses OAuth 2.0 to authenticate users, and the Azure Active Directory Graph to get group membership and other details.
+Description: Allows you to use your organization's Azure Active Directory user accounts to log in to WordPress. If your organization is using Office 365, your user accounts are already in Azure Active Directory. This plugin uses OAuth 2.0 to authenticate users, and the Microsoft Graph API to get group membership and other details.
 Author: Philippe Signoret
-Version: 0.6.5
+Version: 0.7.0
 Author URI: https://www.psignoret.com/
 Text Domain: aad-sso-wordpress
 Domain Path: /languages/
@@ -239,7 +239,7 @@ class AADSSO {
 	 * This method, invoked as an 'authenticate' filter, implements the OpenID Connect
 	 * Authorization Code Flow grant to sign the user in to Azure AD (if they aren't already),
 	 * obtain an ID Token to identify the current user, and obtain an Access Token to access
-	 * the Azure AD Graph API.
+	 * the Microsoft Graph API.
 	 *
 	 * @param WP_User|WP_Error $user A WP_User, if the user has already authenticated.
 	 * @param string $username The username provided during form-based signing. Not used.
@@ -302,9 +302,11 @@ class AADSSO {
 				$group_memberships = false;
 				if ( true === $this->settings->enable_aad_group_to_wp_role ) {
 
+					// TODO: Check if scopes from token response include necessary permissions for checking
+					//       group membership and if not, re-do the sign in with prompt=consent.
+
 					// If we're mapping Azure AD groups to WordPress roles, make the Graph API call here
 					AADSSO_GraphHelper::$settings  = $this->settings;
-					AADSSO_GraphHelper::$tenant_id = $jwt->tid;
 
 					// Of the AAD groups defined in the settings, get only those where the user is a member
 					$group_ids         = array_keys( $this->settings->aad_group_to_wp_role_map );
@@ -316,19 +318,23 @@ class AADSSO {
 							'Azure AD user \'%s\' is a member of [%s]',
 							$jwt->oid, implode( ',', $group_memberships->value ) ), 20
 						);
-					} elseif ( isset ( $group_memberships->{'odata.error'} ) ) {
+					} elseif ( isset ( $group_memberships->error ) ) {
 						AADSSO::debug_log( 'Error when checking group membership: ' . json_encode( $group_memberships ) );
 						return new WP_Error(
 							'error_checking_group_membership',
 							sprintf(
-								__( 'ERROR: Unable to check group membership in Azure AD: <b>%s</b>.', 
-									'aad-sso-wordpress' ), $group_memberships->{'odata.error'}->code )
+								__( 'ERROR: Unable to check group membership with Microsoft Graph: '
+									. '<b>%s</b> %s<br />%s', 'aad-sso-wordpress' ),
+								$group_memberships->error->code, 
+								$group_memberships->error->message,
+								json_encode( $group_memberships->error->innerError )
+							)
 						);
 					} else {
 						AADSSO::debug_log( 'Unexpected response to checkMemberGroups: ' . json_encode( $group_memberships ) );
 						return new WP_Error(
 							'unexpected_response_to_checkMemberGroups',
-							__( 'ERROR: Unexpected response when checking group membership in Azure AD.', 
+							__( 'ERROR: Unexpected response when checking group membership with Microsoft Graph.', 
 								'aad-sso-wordpress' )
 						);
 					}
@@ -354,7 +360,7 @@ class AADSSO {
 				return new WP_Error(
 					$token->error,
 					sprintf(
-						__( 'ERROR: Could not get an access token to Azure Active Directory. %s', 'aad-sso-wordpress' ),
+						__( 'ERROR: Could not get an access token to Microsoft Graph. %s', 'aad-sso-wordpress' ),
 						$token->error_description
 					)
 				);
@@ -370,7 +376,7 @@ class AADSSO {
 			return new WP_Error(
 				$_GET['error'],
 				sprintf(
-					__( 'ERROR: Access denied to Azure Active Directory. %s', 'aad-sso-wordpress' ),
+					__( 'ERROR: Access denied to Microsoft Graph. %s', 'aad-sso-wordpress' ),
 					$_GET['error_description']
 				)
 			);
