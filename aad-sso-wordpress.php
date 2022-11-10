@@ -727,7 +727,7 @@ if ( ! function_exists( 'com_create_guid' ) ) {
 	 * @return string A new random globally unique identifier.
 	 */
 	function com_create_guid() {
-		mt_srand( ( double )microtime() * 10000 );
+		mt_srand( (int)( (double)microtime() * 10000 ) );
 		$charid = strtoupper( md5( uniqid( rand(), true ) ) );
 		$hyphen = chr( 45 ); // "-"
 		$uuid = chr( 123 ) // "{"
