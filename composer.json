@@ -1,0 +1,15 @@
+{
+	"name": "psignoret/aad-sso-wordpress",
+	"type": "wordpress-plugin",
+	"description": "A WordPress plugin that allows organizations to use their Azure Active Directory user accounts to sign in to WordPress. Organizations with Office 365 already have Azure Active Directory (Azure AD) and can use this plugin for all of their users.",
+	"homepage": "https://github.com/psignoret/aad-sso-wordpress",
+	"support": {
+		"issues": "https://github.com/psignoret/aad-sso-wordpress/issues"
+	},
+	"license": "MIT",
+	"authors": [
+		{
+			"name": "Philippe Signoret"
+		}
+	]
+}
