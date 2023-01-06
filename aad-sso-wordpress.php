@@ -621,13 +621,14 @@ class AADSSO {
 	 */
 	function print_plugin_not_configured() {
 		echo '<div id="message" class="error"><p>'
-		. __( 'Single Sign-on with Azure Active Directory required settings are not defined. '
+		. esc_html__( 'Single Sign-on with Azure Active Directory required settings are not defined. '
 		      . 'Update them under Settings > Azure AD.', 'aad-sso-wordpress' )
 		      .'</p></div>';
 	}
 
 	/**
 	 * Renders some debugging data.
+	 * var_export returns mixed output hence no escaping is used.
 	 */
 	function print_debug() {
 		echo '<p>SESSION</p><pre>' . var_export( $_SESSION, TRUE ) . '</pre>';
@@ -649,14 +650,14 @@ class AADSSO {
 	function print_login_link() {
 		$html = '<p class="aadsso-login-form-text">';
 		$html .= '<a href="%s">';
-		$html .= sprintf( __( 'Sign in with your %s account', 'aad-sso-wordpress' ),
-		                  htmlentities( $this->settings->org_display_name ) );
+		$html .= sprintf( esc_html__( 'Sign in with your %s account', 'aad-sso-wordpress' ),
+		                  esc_html( $this->settings->org_display_name ) );
 		$html .= '</a><br /><a class="dim" href="%s">'
-		         . __( 'Sign out', 'aad-sso-wordpress' ) . '</a></p>';
+		         . esc_html__( 'Sign out', 'aad-sso-wordpress' ) . '</a></p>';
 		printf(
-			$html,
-			$this->get_login_url(),
-			$this->get_logout_url()
+			wp_kses_post( $html ),
+			esc_url( $this->get_login_url() ),
+			esc_url( $this->get_logout_url() )
 		);
 	}
 
