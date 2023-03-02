@@ -88,6 +88,9 @@ class AADSSO {
 		// If configured, bypass the login form and redirect straight to AAD
 		add_action( 'login_init', array( $this, 'save_redirect_and_maybe_bypass_login' ), 20 );
 
+		// If configured, force all visitors to login via AAD
+		add_action( 'init', array( $this, 'save_redirect_and_force_login' ), 20 );
+
 		// Redirect user back to original location
 		add_filter( 'login_redirect', array( $this, 'redirect_after_login' ), 20, 3 );
 
@@ -145,6 +148,39 @@ class AADSSO {
 			self::$instance = new self( $settings );
 		}
 		return self::$instance;
+	}
+
+	/**
+	 * Based on settings and current page, force visitor to login via AAD.
+	 */
+	public function save_redirect_and_force_login() {
+
+		$this->register_session();
+
+		$current_url = home_url( add_query_arg( null, null ) );
+
+		$bypass = apply_filters(
+			'aad_force_login',
+			$this->settings->enable_force_aad_login
+		);
+
+		/*
+		 * If the user is attempting to log out AND the auto-forward to AAD
+		 * login is set then we need to ensure we do not auto-forward the user and get
+		 * them stuck in an infinite logout loop.
+		 */
+		if( ! is_user_logged_in() ) {
+
+			// Save the requested URL to session
+			if( ! isset( $_SESSION['aadsso_redirect_to'] ) ) {
+				$_SESSION['aadsso_redirect_to'] = $current_url;
+			}
+
+			if ( $bypass && ! isset( $_GET['code'] ) ) {
+				wp_redirect( $this->get_login_url() );
+				die();
+			}
+		}
 	}
 
 	/**

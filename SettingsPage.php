@@ -290,6 +290,14 @@ class AADSSO_Settings_Page {
 		);
 
 		add_settings_field(
+			'enable_force_aad_login', // id
+			__( 'Force all visitors to login via Azure AD', 'aad-sso-wordpress' ), // title
+			array( $this, 'enable_force_aad_login_callback' ), // callback
+			'aadsso_settings_page', // page
+			'aadsso_settings_general' // section
+		);
+
+		add_settings_field(
 			'enable_aad_group_to_wp_role', // id
 			__( 'Enable Azure AD group to WP role association', 'aad-sso-wordpress' ), // title
 			array( $this, 'enable_aad_group_to_wp_role_callback' ), // callback
@@ -380,6 +388,7 @@ class AADSSO_Settings_Page {
 		$boolean_settings = array(
 			'enable_auto_provisioning',
 			'enable_auto_forward_to_aad',
+			'enable_force_aad_login',
 			'enable_aad_group_to_wp_role',
 			'match_on_upn_alias',
 			'enable_full_logout',
@@ -622,6 +631,17 @@ class AADSSO_Settings_Page {
 		$this->render_checkbox_field(
 			'enable_auto_forward_to_aad',
 			__( 'Automatically forward users to the Azure AD to sign in, skipping the WordPress login screen.',
+				'aad-sso-wordpress')
+		);
+	}
+
+	/**
+	 * Renders the `enable_force_aad_login` checkbox control.
+	 */
+	public function enable_force_aad_login_callback() {
+		$this->render_checkbox_field(
+			'enable_force_aad_login',
+			__( 'Force all site visitors to sign in via Azure AD.',
 				'aad-sso-wordpress')
 		);
 	}
