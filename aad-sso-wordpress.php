@@ -555,9 +555,8 @@ class AADSSO {
 	 * Generates the URL for logging out of Azure AD. (Does not log out of WordPress.)
 	 */
 	function get_logout_url() {
-
 		// logout_redirect_uri is not a required setting, use default value if none is set
-		$logout_redirect_uri = $this->settings->logout_redirect_uri;
+		$logout_redirect_uri = apply_filters('aadsso_logout_redirect_uri', $this->settings->logout_redirect_uri);
 		if ( empty( $logout_redirect_uri ) ) {
 			$logout_redirect_uri = AADSSO_Settings::get_defaults('logout_redirect_uri');
 		}
