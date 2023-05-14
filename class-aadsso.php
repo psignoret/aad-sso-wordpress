@@ -261,30 +261,34 @@ class AADSSO {
 				);
 			}
 
-			$state = sanitize_text_field( wp_unslash( $_GET['state'] ) );
+			// Split the state parameter into the four nonces.
+			$passes         = defined( 'AADSSO_NONCE_PASSES' ) ? AADSSO_NONCE_PASSES : 4;
+			$antiforgery_id = sanitize_text_field( wp_unslash( $_GET['state'] ) );
+			$nonces         = explode( '_', $antiforgery_id );
 
-			// validate the aadsso_authenticate nonce
-			$is_nonce_valid = wp_verify_nonce( $state, 'aadsso_authenticate' );
-
-			if ( ! $is_nonce_valid ) {
+			if ( count( $nonces ) !== $passes ) {
 				return new WP_Error(
-					'antiforgery_id_mismatch',
-					sprintf( __( 'Authentication anti-forgery token/nonce failed. Expecting %s', 'aad-sso-wordpress' ), $state )
+					'invalid_state_length',
+					__( 'Invalid state parameter.', 'aad-sso-wordpress' )
 				);
 			}
 
-			// $antiforgery_id     = $_SESSION['aadsso_antiforgery-id'];
+			// Validate all of the nonces in a loop.
+			foreach ( $nonces as $idx => $nonce ) {
+				$action = 'aadsso_authenticate_' . $idx;
+				if ( ! wp_verify_nonce( $nonce, $action ) ) {
+					return new WP_Error(
+						'antiforgery_id_mismatch',
+						sprintf( __( 'Authentication anti-forgery nonce %1$u, %2$s failed.', 'aad-sso-wordpress' ), $idx, $nonce )
+					);
+				}
+			}
 
-			$antiforgery_id   = $state;
-			$state_is_missing = ! isset( $state );
-			// $state_doesnt_match = $_GET['state'] != $antiforgery_id;
-
-			// Looks like we got a valid authorization code, let's try to get an access token with it
+			// Looks like we got a valid authorization code, let's try to get an access token with it.
 			$token = AADSSO_Authorization_Helper::get_access_token( $code, $this->settings );
 
 			// Happy path
 			if ( isset( $token->access_token ) ) {
-
 				try {
 					$jwt = AADSSO_Authorization_Helper::validate_id_token(
 						$token->id_token,
@@ -586,9 +590,17 @@ class AADSSO {
 	 * @return string The authorization URL used to initiate a sign-in to Azure AD.
 	 */
 	public function get_login_url() {
-		// $antiforgery_id                    = com_create_guid();
-		// $_SESSION['aadsso_antiforgery-id'] = $antiforgery_id;
-		$antiforgery_id = wp_create_nonce( 'aadsso_authenticate' );
+		// Generates and concatenates four nonces.
+		// TODO: make this configurable so you can have as many nonces as you like.
+		$passes = defined( 'AADSSO_NONCE_PASSES' ) ? AADSSO_NONCE_PASSES : 4;
+		$nonces = array();
+		for ( $i = 0; $i < $passes; $i++ ) {
+			$nonces[] = wp_create_nonce( 'aadsso_authenticate_' . $i );
+		}
+		$antiforgery_id = implode(
+			'_',
+			$nonces
+		);
 		return AADSSO_Authorization_Helper::get_authorization_url( $this->settings, $antiforgery_id );
 	}
 
