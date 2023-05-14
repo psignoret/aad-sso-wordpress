@@ -29,7 +29,7 @@ if ( ! function_exists( 'str_starts_with' ) ) {
 	 * @param string $needle The substring to search for in $haystack.
 	 */
 	function str_starts_with( $haystack, $needle ) {
-		return (string) $needle !== '' && strncmp( $haystack, $needle, strlen( $needle ) ) === 0;
+		return (string) '' === $needle && strncmp( $haystack, $needle, strlen( $needle ) ) === 0;
 	}
 }
 
@@ -63,6 +63,8 @@ define( 'AADSSO_IS_WPMU_PLUGIN', str_starts_with( AADSSO_PLUGIN_DIR, WPMU_PLUGIN
 
 defined( 'AADSSO_DEBUG' ) or define( 'AADSSO_DEBUG', false );
 defined( 'AADSSO_DEBUG_LEVEL' ) or define( 'AADSSO_DEBUG_LEVEL', 0 );
+
+defined( 'AADSSO_NONCE_PASSES') or define( 'AADSSO_NONCE_PASSES', 3 );
 
 // Proxy to be used for calls, should be useful for tracing with Fiddler
 // BUGBUG: Doesn't actually work, at least not with WP running on WAMP stack
