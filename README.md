@@ -138,72 +138,72 @@ The different fields that can be defined in the settings JSON in **Settings** > 
 
 Users are matched by their email address in WordPress, and whichever role they have in WordPress is maintained.
 
-| Setting | Example value
-| --- | ---
-| Display name | Contoso
-| Client ID | 9054eff5-bfef-4cc5-82fd-8c35534e48f9
-| Client Secret | NTY5MmE5YjMwMGY2MWQ0NjU5MzYxNjdjNzE1OGNiZmY=
-| Reply URL | https://www.example.com/blog/wp-login.php
-| Field to match to UPN | Email Address
+| Setting               | Example value                                |
+| --------------------- | -------------------------------------------- |
+| Display name          | Contoso                                      |
+| Client ID             | 9054eff5-bfef-4cc5-82fd-8c35534e48f9         |
+| Client Secret         | NTY5MmE5YjMwMGY2MWQ0NjU5MzYxNjdjNzE1OGNiZmY= |
+| Redirect URL          | https://www.example.com/blog/wp-login.php    |
+| Field to match to UPN | Email Address                                |
 
 ### Match on username alias
 
 Users are matched by their login names in WordPress and the alias portion of their Azure AD UserPrincipalName. Whichever role they have in WordPress is maintained.
 
-| Setting | Example value
-| --- | ---
-| Display name | Contoso
-| Client ID | 9054eff5-bfef-4cc5-82fd-8c35534e48f9
-| Client Secret | NTY5MmE5YjMwMGY2MWQ0NjU5MzYxNjdjNzE1OGNiZmY=
-| Reply URL | https://www.example.com/blog/wp-login.php
-| Field to match to UPN | Login Name
-| Match on alias of the UPN | Yes
+| Setting                   | Example value                                |
+| ------------------------- | -------------------------------------------- |
+| Display name              | Contoso                                      |
+| Client ID                 | 9054eff5-bfef-4cc5-82fd-8c35534e48f9         |
+| Client Secret             | NTY5MmE5YjMwMGY2MWQ0NjU5MzYxNjdjNzE1OGNiZmY= |
+| Redirect URL              | https://www.example.com/blog/wp-login.php    |
+| Field to match to UPN     | Login Name                                   |
+| Match on alias of the UPN | Yes                                          |
 
 ### Group membership-based roles, no default role
 
 Users are matched by their login names in WordPress, and WordPress roles are dictated by membership to a given Azure AD group. Access is denied if they are not members of any of these groups.
 
-| Setting | Example value
-| --- | ---
-| Display name | Contoso
-| Client ID | 9054eff5-bfef-4cc5-82fd-8c35534e48f9
-| Client Secret | NTY5MmE5YjMwMGY2MWQ0NjU5MzYxNjdjNzE1OGNiZmY=
-| Reply URL | https://www.example.com/blog/wp-login.php
-| Field to match to UPN | Login Name
-| Enable Azure AD group to WP role association | Yes
-| Default WordPress role if not in Azure AD group | (None, deny access)
-| WordPress role to Azure AD group map | <table><tr><td>Administrator</td><td>5d1915c4-2373-42ba-9796-7c092fa1dfc6</td></tr><tr><td>Editor</td><td>21c0f87b-4b65-48c1-9231-2f9295ef601c</td></tr><tr><td>Author</td><td>f5784693-11e5-4812-87db-8c6e51a18ffd</td></tr><tr><td>Contributor</td><td>780e055f-7e64-4e34-9ff3-012910b7e5ad</td></tr><tr><td>Subscriber</td><td>f1be9515-0aeb-458a-8c0a-30a03c1afb67</td></tr></table>
+| Setting                                         | Example value                                                                                                                                                                                                                                                                                                                                                                            |
+| ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Display name                                    | Contoso                                                                                                                                                                                                                                                                                                                                                                                  |
+| Client ID                                       | 9054eff5-bfef-4cc5-82fd-8c35534e48f9                                                                                                                                                                                                                                                                                                                                                     |
+| Client Secret                                   | NTY5MmE5YjMwMGY2MWQ0NjU5MzYxNjdjNzE1OGNiZmY=                                                                                                                                                                                                                                                                                                                                             |
+| Redirect URL                                    | https://www.example.com/blog/wp-login.php                                                                                                                                                                                                                                                                                                                                                |
+| Field to match to UPN                           | Login Name                                                                                                                                                                                                                                                                                                                                                                               |
+| Enable Azure AD group to WP role association    | Yes                                                                                                                                                                                                                                                                                                                                                                                      |
+| Default WordPress role if not in Azure AD group | (None, deny access)                                                                                                                                                                                                                                                                                                                                                                      |
+| WordPress role to Azure AD group map            | <table><tr><td>Administrator</td><td>5d1915c4-2373-42ba-9796-7c092fa1dfc6</td></tr><tr><td>Editor</td><td>21c0f87b-4b65-48c1-9231-2f9295ef601c</td></tr><tr><td>Author</td><td>f5784693-11e5-4812-87db-8c6e51a18ffd</td></tr><tr><td>Contributor</td><td>780e055f-7e64-4e34-9ff3-012910b7e5ad</td></tr><tr><td>Subscriber</td><td>f1be9515-0aeb-458a-8c0a-30a03c1afb67</td></tr></table> |
 
 ### Group membership-based roles with default role
 
 Users are matched by their login names in WordPress, and WordPress roles are dictated by membership to a given Azure AD group. If the user is not a part of any of these groups, they are assigned the *Author* role.
 
-| Setting | Example value
-| --- | ---
-| Display name | Contoso
-| Client ID | 9054eff5-bfef-4cc5-82fd-8c35534e48f9
-| Client Secret | NTY5MmE5YjMwMGY2MWQ0NjU5MzYxNjdjNzE1OGNiZmY=
-| Reply URL | https://www.example.com/blog/wp-login.php
-| Field to match to UPN | Login Name
-| Enable Azure AD group to WordPress role association | Yes
-| Default WordPress role if not in Azure AD group | Author
-| WordPress role to Azure AD group map | <table><tr><td>Administrator</td><td>5d1915c4-2373-42ba-9796-7c092fa1dfc6</td></tr><tr><td>Editor</td><td>21c0f87b-4b65-48c1-9231-2f9295ef601c</td></tr><tr><td>Author</td><td>f5784693-11e5-4812-87db-8c6e51a18ffd</td></tr><tr><td>Contributor</td><td>780e055f-7e64-4e34-9ff3-012910b7e5ad</td></tr><tr><td>Subscriber</td><td>f1be9515-0aeb-458a-8c0a-30a03c1afb67</td></tr></table>
+| Setting                                             | Example value                                                                                                                                                                                                                                                                                                                                                                            |
+| --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Display name                                        | Contoso                                                                                                                                                                                                                                                                                                                                                                                  |
+| Client ID                                           | 9054eff5-bfef-4cc5-82fd-8c35534e48f9                                                                                                                                                                                                                                                                                                                                                     |
+| Client Secret                                       | NTY5MmE5YjMwMGY2MWQ0NjU5MzYxNjdjNzE1OGNiZmY=                                                                                                                                                                                                                                                                                                                                             |
+| Reply URL                                           | https://www.example.com/blog/wp-login.php                                                                                                                                                                                                                                                                                                                                                |
+| Field to match to UPN                               | Login Name                                                                                                                                                                                                                                                                                                                                                                               |
+| Enable Azure AD group to WordPress role association | Yes                                                                                                                                                                                                                                                                                                                                                                                      |
+| Default WordPress role if not in Azure AD group     | Author                                                                                                                                                                                                                                                                                                                                                                                   |
+| WordPress role to Azure AD group map                | <table><tr><td>Administrator</td><td>5d1915c4-2373-42ba-9796-7c092fa1dfc6</td></tr><tr><td>Editor</td><td>21c0f87b-4b65-48c1-9231-2f9295ef601c</td></tr><tr><td>Author</td><td>f5784693-11e5-4812-87db-8c6e51a18ffd</td></tr><tr><td>Contributor</td><td>780e055f-7e64-4e34-9ff3-012910b7e5ad</td></tr><tr><td>Subscriber</td><td>f1be9515-0aeb-458a-8c0a-30a03c1afb67</td></tr></table> |
 
 ### Group membership-based roles, default role, auto-provision
 
 Users are matched by their email in WordPress, and WordPress roles are dictated by membership to a given Azure AD group. If the user doesn't exist in WordPress yet, they will be auto-provisioned. If the user is not a part of any of these groups, they are assigned the *Subscriber* role.
 
-| Setting | Example value
-| --- | ---
-| Display name | Contoso
-| Client ID | 9054eff5-bfef-4cc5-82fd-8c35534e48f9
-| Client Secret | NTY5MmE5YjMwMGY2MWQ0NjU5MzYxNjdjNzE1OGNiZmY=
-| Reply URL | https://www.example.com/blog/wp-login.php
-| Field to match to UPN | Email Address
-| Enable auto-provisioning | Yes
-| Enable Azure AD group to WP role association | Yes
-| Default WordPress role if not in Azure AD group | Subscriber
-| WordPress role to Azure AD group map | <table><tr><td>Administrator</td><td>5d1915c4-2373-42ba-9796-7c092fa1dfc6</td></tr><tr><td>Editor</td><td>21c0f87b-4b65-48c1-9231-2f9295ef601c</td></tr><tr><td>Author</td><td>f5784693-11e5-4812-87db-8c6e51a18ffd</td></tr><tr><td>Contributor</td><td>780e055f-7e64-4e34-9ff3-012910b7e5ad</td></tr><tr><td>Subscriber</td><td>f1be9515-0aeb-458a-8c0a-30a03c1afb67</td></tr></table>
+| Setting                                         | Example value                                                                                                                                                                                                                                                                                                                                                                            |
+| ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Display name                                    | Contoso                                                                                                                                                                                                                                                                                                                                                                                  |
+| Client ID                                       | 9054eff5-bfef-4cc5-82fd-8c35534e48f9                                                                                                                                                                                                                                                                                                                                                     |
+| Client Secret                                   | NTY5MmE5YjMwMGY2MWQ0NjU5MzYxNjdjNzE1OGNiZmY=                                                                                                                                                                                                                                                                                                                                             |
+| Reply URL                                       | https://www.example.com/blog/wp-login.php                                                                                                                                                                                                                                                                                                                                                |
+| Field to match to UPN                           | Email Address                                                                                                                                                                                                                                                                                                                                                                            |
+| Enable auto-provisioning                        | Yes                                                                                                                                                                                                                                                                                                                                                                                      |
+| Enable Azure AD group to WP role association    | Yes                                                                                                                                                                                                                                                                                                                                                                                      |
+| Default WordPress role if not in Azure AD group | Subscriber                                                                                                                                                                                                                                                                                                                                                                               |
+| WordPress role to Azure AD group map            | <table><tr><td>Administrator</td><td>5d1915c4-2373-42ba-9796-7c092fa1dfc6</td></tr><tr><td>Editor</td><td>21c0f87b-4b65-48c1-9231-2f9295ef601c</td></tr><tr><td>Author</td><td>f5784693-11e5-4812-87db-8c6e51a18ffd</td></tr><tr><td>Contributor</td><td>780e055f-7e64-4e34-9ff3-012910b7e5ad</td></tr><tr><td>Subscriber</td><td>f1be9515-0aeb-458a-8c0a-30a03c1afb67</td></tr></table> |
 
 ## Groups
 
@@ -229,3 +229,76 @@ Most of the OpenID Connect endpoints and configuration (e.g. signing keys, etc.)
 If you've configured this plugin to automatically redirect to Azure AD for sign-in, but something is misconfigured, you may find yourself locked out of your site's admin dashboard.
 
 To log in to your site *without* automatically redirecting to Azure AD (thus giving you an opportunity to enter a regular username and password), you can append `?aadsso_no_redirect=please` to the login URL. For example, if your login URL is `https://example.com/wp-login.php`, navigating to `https://example.com/wp-login.php?aadsso_no_redirect=please` will prevent any automatic redirects.
+
+### Constants Support
+
+*since 0.8.0*
+
+The plugin can be configured with defined constants.  This allows for zero-database configuration, suitable for automated deployments, or deployments using environment variables.
+
+Constants must be primitive/scalar values (string, number, bool, int), so if you use `AADSSO_ENABLE_AAD_GROUP_TO_WP_ROLE` and `AADSSO_AAD_GROUP_TO_WP_ROLE_MAP`, the value of `AADSSO_AAD_GROUP_TO_WP_ROLE_MAP` must be a JSON-encoded string.
+
+| Constant Name                          | Type   | Description                                                                          | Default                                                                          |
+| -------------------------------------- | ------ | ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------- |
+| `AADSSO_ORG_DISPLAY_NAME`              | string | Human-friendly name to describe your organization.                                   | `get_bloginfo('name')`                                                           |
+| `AADSSO_ORG_DOMAIN_HINT`               | string | tenant or Azure AD directory id.                                                     |
+| `AADSSO_CLIENT_ID`                     | string | Azure AD-provided GUID identifying your WordPress application.                       |
+| `AADSSO_CLIENT_SECRET`                 | string | Azure AD-provided secret.                                                            |
+| `AADSSO_REDIRECT_URI`                  | string | URL to redirect to when a user authenticates successfully.                           | `wp_login_url()`                                                                 |
+| `AADSSO_LOGOUT_REDIRECT_URI`           | string | URL to redirect to when a user logs out.                                             | `wp_login_url()`                                                                 |
+| `AADSSO_ENABLE_FULL_LOGOUT`            | bool   | When enabled, a WordPress logout will also trigger an Azure AD logout.               | `false`                                                                          |
+| `AADSSO_FIELD_TO_MATCH_TO_UPN`         | string | WordPress field to map to Azure AD UPN                                               | `'email'`                                                                        |
+| `AADSSO_MATCH_ON_UPN_ALIAS`            | type   | Allow `user_login` to be matched on on the user portion of an email address.         | `false`                                                                          |
+| `AADSSO_ENABLE_AUTO_PROVISIONING`      | type   | `true` to allow WordPress to create new users for Azure AD users automatically.      | `false`                                                                          |
+| `AADSSO_ENABLE_AUTO_FORWARD_TO_AAD`    | type   | `true` to skip the WordPress `/wp-login.php` screen entirely.                        | `false`                                                                          |
+| `AADSSO_ENABLE_AAD_GROUP_TO_WP_ROLE`   | type   | `true` to map Azure AD groups to WordPress roles automatically.                      | `false`                                                                          |
+| `AADSSO_DEFAULT_WP_ROLE`               | type   | WordPress role slug for auto-provisioned users. When `null`, access is denied.       | `null`                                                                           |
+| `AADSSO_AAD_GROUP_TO_WP_ROLE_MAP`      | type   | Map of Azure AD Group ID to WordPress role slugs. **Constant value be JSON encoded** | `{}`                                                                             |
+| `AADSSO_GRAPH_ENDPOINT`                | type   | Endpoint for fetching information about users and groups.                            | `https://graph.microsoft.com`                                                    |
+| `AADSSO_GRAPH_VERSION`                 | type   | Version of Microsoft Graph to use.                                                   | `v1.0`                                                                           |
+| `AADSSO_OPENID_CONFIGURATION_ENDPOINT` | type   | `.well-known` endpoint to retrieve automatic OpenID configuration from.              | `https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration` |
+| `AADSSO_AUTHORIZATION_ENDPOINT`        | type   | By default, this is detected automatically.                                          | `null`                                                                           |
+| `AADSSO_END_SESSION_ENDPOINT`          | type   | By default, this is detected automatically.                                          | `null`                                                                           |
+| `AADSSO_JWKS_URI`                      | type   | By default, this is detected automatically.                                          | `null`                                                                           |
+| `AADSSO_TOKEN_ENDPOINT`                | type   | By default, this is detected automatically.                                          | `null`                                                                           |
+
+#### Example `wp-config.php` with Azure AD Group-to-Role Mapping
+
+```php
+<?php // wp-config.php
+define( 'AADSSO_ORG_DISPLAY_NAME', 'Contoso, Inc.' );
+define( 'AADSSO_ORG_DOMAIN_HINT', 'contoso.com' );
+define( 'AADSSO_CLIENT_ID', '98aea86f-fd6b-4f18-9d0c-e6f41966c2ba' );
+define( 'AADSSO_CLIENT_SECRET', '-this-is-an-azure-ad-secret-' );
+
+define( 'AADSSO_ENABLE_AAD_GROUP_TO_WP_ROLE', true);
+define(
+  'AADSSO_AAD_GROUP_TO_WP_ROLE_MAP',
+  json_encode(
+    array(
+      '67526546-a76f-4c3e-a2de-fbb32d967501' => 'administrator',
+      'a0b1c2d3-4e5f-4a7b-ac9d-0e1f2a3b4c5d' => 'editor',
+    )
+  )
+);
+```
+
+#### Reset Constant
+
+The plugin's settings can be reset with the `AADSSO_RESET_SETTINGS` constant.  When `true`, the plugin will delete all of its options from the database.  This has no effect on settings defined with constants.
+
+```php
+
+### Must-Use Plugin Support
+
+*since 0.8.0*
+
+The plugin now supports deployment as a must-use plugin.  Coupled with constants for configuration, you can rapidly provision unattended Azure AD SSO WordPress installations.  To be activated, the plugin should be placed in `wp-content/mu-plugins` and a `wp-content/mu-plugins/load-aad-sso-wordpress.php` file should be created.
+
+```php
+<?php
+
+// load aad-sso-wordpress in mu mode
+require WPMU_PLUGIN_DIR . '/aad-sso-wordpress/aad-sso-wordpress.php';
+
+```
