@@ -279,6 +279,7 @@ class AADSSO {
 				if ( ! wp_verify_nonce( $nonce, $action ) ) {
 					return new WP_Error(
 						'antiforgery_id_mismatch',
+						// translators: 1: pass number, 2: nonce
 						sprintf( __( 'Authentication anti-forgery nonce failed at pass %1$u, %2$s.', 'aad-sso-wordpress' ), $pass, $nonce )
 					);
 				}
@@ -302,6 +303,7 @@ class AADSSO {
 				} catch ( Exception $e ) {
 					return new WP_Error(
 						'invalid_id_token',
+						// translators: 1: error message
 						sprintf( __( 'ERROR: Invalid id_token. %s', 'aad-sso-wordpress' ), $e->getMessage() )
 					);
 				}
@@ -331,22 +333,22 @@ class AADSSO {
 							20
 						);
 					} elseif ( isset( $group_memberships->error ) ) {
-						self::debug_log( 'Error when checking group membership: ' . json_encode( $group_memberships ) );
+						self::debug_log( 'Error when checking group membership: ' . wp_json_encode( $group_memberships ) );
 						return new WP_Error(
 							'error_checking_group_membership',
 							sprintf(
+								// translators: 1: error code, 2: error message, 3: inner error
 								__(
-									'ERROR: Unable to check group membership with Microsoft Graph: '
-									. '<b>%s</b> %s<br />%s',
+									'ERROR: Unable to check group membership with Microsoft Graph: <b>%1$s</b> %2$s<br />%3$s',
 									'aad-sso-wordpress'
 								),
 								$group_memberships->error->code,
 								$group_memberships->error->message,
-								json_encode( $group_memberships->error->innerError )
+								wp_json_encode( $group_memberships->error->innerError )
 							)
 						);
 					} else {
-						self::debug_log( 'Unexpected response to checkMemberGroups: ' . json_encode( $group_memberships ) );
+						self::debug_log( 'Unexpected response to checkMemberGroups: ' . wp_json_encode( $group_memberships ) );
 						return new WP_Error(
 							'unexpected_response_to_checkMemberGroups',
 							__(
@@ -377,6 +379,7 @@ class AADSSO {
 				return new WP_Error(
 					$token->error,
 					sprintf(
+						// translators: %s - error description
 						__( 'ERROR: Could not get an access token to Microsoft Graph. %s', 'aad-sso-wordpress' ),
 						$token->error_description
 					)
@@ -392,6 +395,7 @@ class AADSSO {
 			return new WP_Error(
 				$_GET['error'],
 				sprintf(
+					// translators: %s - error description
 					__( 'ERROR: Access denied to Microsoft Graph. %s', 'aad-sso-wordpress' ),
 					$_GET['error_description']
 				)
@@ -455,9 +459,9 @@ class AADSSO {
 					return new WP_Error(
 						'user_not_assigned_to_group',
 						sprintf(
+							// translators: %s - user's UPN
 							__(
-								'ERROR: Access denied. You\'re not a member of any group granting you '
-								. 'access to this site. You\'re signed in as \'%s\'.',
+								'ERROR: Access denied. You\'re not a member of any group granting you access to this site. You\'re signed in as \'%s\'.',
 								'aad-sso-wordpress'
 							),
 							$unique_name
@@ -483,6 +487,7 @@ class AADSSO {
 					return new WP_Error(
 						'user_not_registered',
 						sprintf(
+							// translators: %s - user's UPN
 							__( 'ERROR: Error creating user \'%s\'.', 'aad-sso-wordpress' ),
 							$unique_name
 						)
@@ -497,6 +502,7 @@ class AADSSO {
 				return new WP_Error(
 					'user_not_registered',
 					sprintf(
+                        // translators: %s - user's UPN
 						__(
 							'ERROR: The authenticated user \'%s\' is not a registered user in this site.',
 							'aad-sso-wordpress'

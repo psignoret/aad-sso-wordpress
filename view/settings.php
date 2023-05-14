@@ -14,12 +14,16 @@
 			<p>
 				<?php echo esc_html__( 'This plugin is installed as a must-use plugin.', 'aad-sso-wordpress' ); ?>
 				<?php echo __( 'Settings should be configured using constants in <code>wp-config.php</code>.', 'aad-sso-wordpress' ); ?>
-				<?php echo sprintf( __( 'For more information, reference <code>%sREADME.md</code>.', 'aad-sso-wordpress' ), esc_html( AADSSO_PLUGIN_DIR ) ); ?>
+				<?php
+				// translators: %s is the plugin directory path.
+				echo sprintf( __( 'For more information, reference <code>%sREADME.md</code>.', 'aad-sso-wordpress' ), esc_html( AADSSO_PLUGIN_DIR ) );
+				?>
 			</p>
 
 			<p>
 			<?php
 			echo sprintf(
+				// translators: %1$s is the plugin directory name, %2$s is the WPMU_PLUGIN_DIR constant.
 				__( 'To deactivate, you must move <code>%1$s</code> out of the <code>%2$s</code> directory and disable any loaders.', 'aad-sso-wordpress' ),
 				esc_html( basename( dirname( dirname( __FILE__ ) ) ) ),
 				esc_html( WPMU_PLUGIN_DIR )
