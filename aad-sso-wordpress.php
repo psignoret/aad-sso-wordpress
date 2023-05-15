@@ -104,5 +104,5 @@ require_once AADSSO_PLUGIN_DIR . '/lib/php-jwt/src/ExpiredException.php';
 require_once AADSSO_PLUGIN_DIR . '/lib/php-jwt/src/SignatureInvalidException.php';
 
 // Load settings JSON contents from DB and initialize the plugin.
-$aadsso_settings_instance = AADSSO_Settings::init();
+$aadsso_settings_instance = AADSSO_Settings::get_instance();
 $aadsso                   = AADSSO::get_instance( $aadsso_settings_instance );

@@ -50,42 +50,7 @@ class AADSSO_Settings {
 	 *
 	 * @var array
 	 */
-	private static $defaults = array(
-		// Cosmetic and directory selection.
-		'org_display_name'              => get_bloginfo( 'name' ),
-		'org_domain_hint'               => '',
-
-		// Client secrets and flow information.
-		'client_id'                     => '',
-		'client_secret'                 => '',
-		'redirect_uri'                  => wp_login_url(),
-
-		// Login/Logout Behaviors.
-		'logout_redirect_uri'           => wp_login_url(),
-		'enable_full_logout'            => false,
-		'enable_auto_forward_to_aad'    => false,
-
-		// User identifiers and mapping.
-		'field_to_match_to_upn'         => 'email',
-		'match_on_upn_alias'            => false,
-
-		// Auto-Provisioning.
-		'enable_auto_provisioning'      => false,
-		'default_wp_role'               => null,
-
-		// Automatic Role Mapping.
-		'enable_aad_group_to_wp_role'   => false,
-		'aad_group_to_wp_role_map'      => array(),
-
-		// Advanced: OpenID/Graph Metadata Endpoints.
-		'openid_configuration_endpoint' => 'https://login.microsoftonline.com/common/.well-known/openid-configuration',
-		'graph_endpoint'                => 'https://graph.microsoft.com',
-		'graph_version'                 => 'v1.0',
-		'authorization_endpoint'        => null,
-		'end_session_endpoint'          => null,
-		'jwks_uri'                      => null,
-		'token_endpoint'                => null,
-	);
+	private static $defaults = null;
 
 	/**
 	 * Returns a sensible set of defaults for the plugin.
@@ -174,28 +139,48 @@ class AADSSO_Settings {
 	}
 
 	/**
-	 * Gets the (only) instance of the plugin.
-	 *
-	 * @return self The (only) instance of the class.
+	 * Constructor for the class.  This is private to enforce the singleton pattern.
 	 */
-	public static function get_instance() {
-		if ( ! self::$instance ) {
-			self::$instance = new self();
-		}
-		return self::$instance;
-	}
+	private function __construct() {
+		self::$defaults = array(
+			// Cosmetic and directory selection.
+			'org_display_name'              => get_bloginfo( 'name' ),
+			'org_domain_hint'               => '',
 
-	/**
-	 * Initializes values for using stored settings and cached Azure AD configuration.
-	 *
-	 * @return \AADSSO_Settings The (only) configured instance of this class.
-	 */
-	public static function init() {
+			// Client secrets and flow information.
+			'client_id'                     => '',
+			'client_secret'                 => '',
+			'redirect_uri'                  => wp_login_url(),
 
-		$instance = self::get_instance();
+			// Login/Logout Behaviors.
+			'logout_redirect_uri'           => wp_login_url(),
+			'enable_full_logout'            => false,
+			'enable_auto_forward_to_aad'    => false,
+
+			// User identifiers and mapping.
+			'field_to_match_to_upn'         => 'email',
+			'match_on_upn_alias'            => false,
+
+			// Auto-Provisioning.
+			'enable_auto_provisioning'      => false,
+			'default_wp_role'               => null,
+
+			// Automatic Role Mapping.
+			'enable_aad_group_to_wp_role'   => false,
+			'aad_group_to_wp_role_map'      => array(),
+
+			// Advanced: OpenID/Graph Metadata Endpoints.
+			'openid_configuration_endpoint' => 'https://login.microsoftonline.com/common/.well-known/openid-configuration',
+			'graph_endpoint'                => 'https://graph.microsoft.com',
+			'graph_version'                 => 'v1.0',
+			'authorization_endpoint'        => null,
+			'end_session_endpoint'          => null,
+			'jwks_uri'                      => null,
+			'token_endpoint'                => null,
+		);
 
 		// First, retrieve the settings stored in the WordPress database.
-		$instance->load_runtime_settings( get_option( 'aadsso_settings' ) );
+		$this->load_runtime_settings( get_option( 'aadsso_settings' ) );
 
 		/*
 		 * Then, add the settings stored in the OpenID Connect configuration endpoint.
@@ -206,17 +191,27 @@ class AADSSO_Settings {
 		$openid_configuration = get_transient( 'aadsso_openid_configuration' );
 
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		if ( false === $openid_configuration || isset( $_GET['aadsso_reload_openid_config'] )
-		) {
+		if ( false === $openid_configuration || isset( $_GET['aadsso_reload_openid_config'] ) ) {
 			$openid_configuration = json_decode(
-				self::get_remote_contents( $instance->openid_configuration_endpoint ),
+				self::get_remote_contents( $this->openid_configuration_endpoint ),
 				true // Returns associative array.
 			);
 			set_transient( 'aadsso_openid_configuration', $openid_configuration, 3600 );
 		}
-		$instance->load_runtime_settings( $openid_configuration );
 
-		return $instance;
+		$this->load_runtime_settings( $openid_configuration );
+	}
+
+	/**
+	 * Gets the (only) instance of the plugin.
+	 *
+	 * @return self The (only) instance of the class.
+	 */
+	public static function get_instance() {
+		if ( ! self::$instance ) {
+			self::$instance = new self();
+		}
+		return self::$instance;
 	}
 
 	/**

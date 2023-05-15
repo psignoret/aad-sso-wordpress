@@ -43,7 +43,7 @@ class AADSSO {
 
 		// These can be uncommented to help with debugging during development.
 		// Either raise DEBUG_LEVEL or use something lower than LOG_SILLY to see.
-		if ( AADSSO_DEBUG && AADSSO_DEBUG_LEVEL >= AADSSO_LOG_SILLY ) {
+		if ( AADSSO_DEBUG && AADSSO_LOG_LEVEL >= AADSSO_LOG_SILLY ) {
 			add_action( 'admin_notices', array( $this, 'print_debug' ) );
 			add_action( 'login_footer', array( $this, 'print_debug' ) );}
 
