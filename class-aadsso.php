@@ -718,7 +718,8 @@ class AADSSO {
 			' ',
 			array(
 				esc_html__( 'Single Sign-on with Azure Active Directory has been reset.', 'aad-sso-wordpress' ),
-				esc_html__( 'Please unset the <code>AADSSO_RESET_SETTINGS</code> constant to reconfigure.', 'aad-sso-wordpress' ),
+				// phpcs:ignore
+				__( 'Please unset the <code>AADSSO_RESET_SETTINGS</code> constant to reconfigure.', 'aad-sso-wordpress' ),
 			)
 		)
 			. '</p></div>';
