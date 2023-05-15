@@ -2,14 +2,14 @@
 # This file is distributed under the same license as the Azure Active Directory Single Sign-on for WordPress plugin.
 msgid ""
 msgstr ""
-"Project-Id-Version: Azure Active Directory Single Sign-on for WordPress 0.8.0\n"
+"Project-Id-Version: Azure Active Directory Single Sign-on for WordPress 1.0.0\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/aad-sso-wordpress\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2023-05-15T20:12:06+00:00\n"
+"POT-Creation-Date: 2023-05-15T20:39:42+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.7.1\n"
 "X-Domain: aad-sso-wordpress\n"
@@ -304,24 +304,24 @@ msgstr ""
 msgid "Single Sign-on with Azure Active Directory has been reset."
 msgstr ""
 
-#: class-aadsso.php:721
+#: class-aadsso.php:722
 msgid "Please unset the <code>AADSSO_RESET_SETTINGS</code> constant to reconfigure."
 msgstr ""
 
-#: class-aadsso.php:732
+#: class-aadsso.php:733
 msgid "Single Sign-on with Azure Active Directory is not configured."
 msgstr ""
 
-#: class-aadsso.php:734
+#: class-aadsso.php:735
 msgid "Please configure the plugin under Settings > Azure AD."
 msgstr ""
 
 #. translators: %s is the name of the organization the user expects to sign into.
-#: class-aadsso.php:823
+#: class-aadsso.php:824
 msgid "Sign in with your %s account"
 msgstr ""
 
-#: class-aadsso.php:833
+#: class-aadsso.php:834
 msgid "Sign out"
 msgstr ""
 
