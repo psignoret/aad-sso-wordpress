@@ -1,8 +1,13 @@
 <?php
+/**
+ * File uninstall.php
+ *
+ * @package aad-sso-wordpress
+ */
 
-// If uninstall is not called from WordPress, exit
+// If uninstall is not called from WordPress, exit.
 if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
-    exit();
+	exit();
 }
 
 // The only uninstall work needed is to remove any stored settings.

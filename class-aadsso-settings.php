@@ -41,9 +41,51 @@ class AADSSO_Settings {
 	/**
 	 * The single instance of the class used for each request.
 	 *
-	 * @var \AADSSO_Settings $instance The settings instance.
+	 * @var \AADSSO_Settings
 	 */
 	private static $instance = null;
+
+	/**
+	 * The immutable list of settings that can be set, and the default values.
+	 *
+	 * @var array
+	 */
+	private static $defaults = array(
+		// Cosmetic and directory selection.
+		'org_display_name'              => get_bloginfo( 'name' ),
+		'org_domain_hint'               => '',
+
+		// Client secrets and flow information.
+		'client_id'                     => '',
+		'client_secret'                 => '',
+		'redirect_uri'                  => wp_login_url(),
+
+		// Login/Logout Behaviors.
+		'logout_redirect_uri'           => wp_login_url(),
+		'enable_full_logout'            => false,
+		'enable_auto_forward_to_aad'    => false,
+
+		// User identifiers and mapping.
+		'field_to_match_to_upn'         => 'email',
+		'match_on_upn_alias'            => false,
+
+		// Auto-Provisioning.
+		'enable_auto_provisioning'      => false,
+		'default_wp_role'               => null,
+
+		// Automatic Role Mapping.
+		'enable_aad_group_to_wp_role'   => false,
+		'aad_group_to_wp_role_map'      => array(),
+
+		// Advanced: OpenID/Graph Metadata Endpoints.
+		'openid_configuration_endpoint' => 'https://login.microsoftonline.com/common/.well-known/openid-configuration',
+		'graph_endpoint'                => 'https://graph.microsoft.com',
+		'graph_version'                 => 'v1.0',
+		'authorization_endpoint'        => null,
+		'end_session_endpoint'          => null,
+		'jwks_uri'                      => null,
+		'token_endpoint'                => null,
+	);
 
 	/**
 	 * Returns a sensible set of defaults for the plugin.
@@ -55,53 +97,35 @@ class AADSSO_Settings {
 	 * @return mixed Sensible default settings for the plugin.
 	 */
 	public static function get_defaults( $key = null ) {
-		$defaults = array(
-			// Cosmetic and directory selection.
-			'org_display_name'              => get_bloginfo( 'name' ),
-			'org_domain_hint'               => '',
-
-			// Client secrets and flow information.
-			'client_id'                     => '',
-			'client_secret'                 => '',
-			'redirect_uri'                  => wp_login_url(),
-
-			// Login/Logout Behaviors.
-			'logout_redirect_uri'           => wp_login_url(),
-			'enable_full_logout'            => false,
-			'enable_auto_forward_to_aad'    => false,
-
-			// User identifiers and mapping.
-			'field_to_match_to_upn'         => 'email',
-			'match_on_upn_alias'            => false,
-
-			// Auto-Provisioning.
-			'enable_auto_provisioning'      => false,
-			'default_wp_role'               => null,
-
-			// Automatic Role Mapping.
-			'enable_aad_group_to_wp_role'   => false,
-			'aad_group_to_wp_role_map'      => array(),
-
-			// Advanced: OpenID/Graph Metadata Endpoints.
-			'openid_configuration_endpoint' => 'https://login.microsoftonline.com/common/.well-known/openid-configuration',
-			'graph_endpoint'                => 'https://graph.microsoft.com',
-			'graph_version'                 => 'v1.0',
-			'authorization_endpoint'        => null,
-			'end_session_endpoint'          => null,
-			'jwks_uri'                      => null,
-			'token_endpoint'                => null,
-		);
-
 		if ( null === $key ) {
-			return $defaults;
+			return self::$defaults;
 		} else {
-			if ( isset( $defaults[ $key ] ) ) {
-				return $defaults[ $key ];
+			if ( isset( self::$defaults[ $key ] ) ) {
+				return self::$defaults[ $key ];
 			} else {
 				return null;
 			}
 		}
 	}
+
+	/**
+	 * Lookup a validator for a setting id.  These are only applied to values taken from constants.
+	 *
+	 * @var array Map of setting id => FILTER_* constant.
+	 */
+	private static $setting_filters = array(
+		'match_on_upn_alias'            => FILTER_VALIDATE_BOOL,
+		'enable_auto_provisioning'      => FILTER_VALIDATE_BOOL,
+		'enable_auto_forward_to_aad'    => FILTER_VALIDATE_BOOL,
+		'enable_aad_group_to_wp_role'   => FILTER_VALIDATE_BOOL,
+		'enable_full_logout'            => FILTER_VALIDATE_BOOL,
+		'openid_configuration_endpoint' => FILTER_VALIDATE_URL,
+		'graph_endpoint'                => FILTER_VALIDATE_URL | FILTER_NULL_ON_FAILURE,
+		'authorization_endpoint'        => FILTER_VALIDATE_URL | FILTER_NULL_ON_FAILURE,
+		'end_session_endpoint'          => FILTER_VALIDATE_URL | FILTER_NULL_ON_FAILURE,
+		'jwks_uri'                      => FILTER_VALIDATE_URL | FILTER_NULL_ON_FAILURE,
+		'token_endpoint'                => FILTER_VALIDATE_URL | FILTER_NULL_ON_FAILURE,
+	);
 
 	/**
 	 * Magic getter for the properties in this class. Resolves configuration values in the following order:
@@ -113,30 +137,35 @@ class AADSSO_Settings {
 	 * @param mixed $key The configuration property to resolve and return.
 	 */
 	public function __get( $key ) {
-		AADSSO::debug_log( 'AADSSO_Settings::__get( ' . $key . ' )', 50 );
+		AADSSO::debug_log( 'AADSSO_Settings::__get( ' . $key . ' )', AADSSO_LOG_SILLY );
 
-		$defaults = $this->get_defaults();
+		$defaults = self::get_defaults();
 
 		if ( ! array_key_exists( $key, $defaults ) ) {
 			return null;
 		}
 
-		$prefixed = 'AADSSO_' . strtoupper( $key );
+		$constant_name = 'AADSSO_' . strtoupper( $key );
 
 		if ( 'aad_group_to_wp_role_map' === $key ) {
-			if ( defined( $prefixed ) ) {
-				return json_decode( constant( $prefixed ), true );
-			} elseif ( isset( $this->settings[ $key ] ) ) {
-				return $this->settings[ $key ];
+			if ( defined( $constant_name ) ) {
+				return json_decode( constant( $constant_name ), true );
+			} elseif ( isset( $this->runtime_settings[ $key ] ) ) {
+				return $this->runtime_settings[ $key ];
 			} elseif ( isset( $defaults[ $key ] ) ) {
 				return $defaults[ $key ];
 			}
 		}
 
-		if ( defined( $prefixed ) ) {
-			return constant( $prefixed );
-		} elseif ( isset( $this->settings[ $key ] ) ) {
-			return $this->settings[ $key ];
+		if ( defined( $constant_name ) ) {
+			return filter_var(
+				constant( $constant_name ),
+				array_key_exists( $key, self::$setting_filters )
+					? self::$setting_filters[ $key ]
+					: FILTER_UNSAFE_RAW
+			);
+		} elseif ( isset( $this->runtime_settings[ $key ] ) ) {
+			return $this->runtime_settings[ $key ];
 		} elseif ( isset( $defaults[ $key ] ) ) {
 			return $defaults[ $key ];
 		} else {
@@ -166,7 +195,7 @@ class AADSSO_Settings {
 		$instance = self::get_instance();
 
 		// First, retrieve the settings stored in the WordPress database.
-		$instance->load_settings( get_option( 'aadsso_settings' ) );
+		$instance->load_runtime_settings( get_option( 'aadsso_settings' ) );
 
 		/*
 		 * Then, add the settings stored in the OpenID Connect configuration endpoint.
@@ -185,7 +214,7 @@ class AADSSO_Settings {
 			);
 			set_transient( 'aadsso_openid_configuration', $openid_configuration, 3600 );
 		}
-		$instance->load_settings( $openid_configuration );
+		$instance->load_runtime_settings( $openid_configuration );
 
 		return $instance;
 	}
@@ -212,7 +241,7 @@ class AADSSO_Settings {
 	 *
 	 * @return \AADSSO_Settings The current (only) instance with new configuration.
 	 */
-	public function load_settings( $settings ) {
+	public function load_runtime_settings( $settings ) {
 
 		// Expecting $settings to be an associative array. Do nothing if it isn't.
 		if ( ! is_array( $settings ) || empty( $settings ) ) {
@@ -238,8 +267,8 @@ class AADSSO_Settings {
 			}
 		}
 
-		// Merge the new settings into $this->settings.
-		$this->settings = array_merge( $this->settings, $settings );
+		// Merge the new settings into $this->runtime_settings.
+		$this->runtime_settings = array_merge( $this->runtime_settings, $settings );
 
 		return $this;
 	}
@@ -249,5 +278,5 @@ class AADSSO_Settings {
 	 *
 	 * @var array $settings The current configuration.
 	 */
-	private $settings = array();
+	private $runtime_settings = array();
 }

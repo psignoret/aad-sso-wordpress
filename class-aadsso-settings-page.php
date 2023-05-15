@@ -47,9 +47,6 @@ class AADSSO_Settings_Page {
 		// If settings were reset, show confirmation.
 		add_action( 'all_admin_notices', array( $this, 'notify_if_reset_successful' ) );
 
-		// If settings were migrated, show confirmation.
-		add_action( 'all_admin_notices', array( $this, 'notify_json_migrate_status' ) );
-
 		// Load stored configuration values, with defaults if there's nothing set.
 		$default_settings = AADSSO_Settings::get_defaults();
 		$this->settings   = get_option( 'aadsso_settings', $default_settings );
@@ -73,8 +70,6 @@ class AADSSO_Settings_Page {
 
 		if ( wp_verify_nonce( $nonce, 'aadsso_reset_settings' ) ) {
 			$this->reset_settings();
-		} elseif ( wp_verify_nonce( $nonce, 'aadsso_migrate_legacy_settings' ) ) {
-			$this->maybe_migrate_legacy_settings();
 		}
 	}
 
@@ -88,7 +83,7 @@ class AADSSO_Settings_Page {
 		$url = admin_url( 'options-general.php?page=aadsso_settings' );
 
 		// During debugging, add the action to the url to make tracing easier.
-		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+		if ( defined( 'AADSSO_DEBUG' ) && AADSSO_DEBUG ) {
 			$url = add_query_arg( 'aadsso_nonce_hint', $action, $url );
 		}
 
@@ -113,87 +108,6 @@ class AADSSO_Settings_Page {
 	}
 
 	/**
-	 * Migrates old settings (Settings.json) to the database and attempts to delete the old settings file.
-	 */
-	private function migrate_legacy_settings() {
-
-		// This is used to get back here again, if necessary, during the filesystem stuff.
-		$url = $this->aadsso_action_url(
-			'aadsso_migrate_legacy_settings'
-		);
-
-		$method = '';
-		$fields = array();
-
-		// phpcs:disable WordPress.CodeAnalysis.AssignmentInCondition.Found
-		// phpcs:disable Squiz.PHP.DisallowMultipleAssignments.FoundInControlStructure
-		if ( false === ( $creds = request_filesystem_credentials( $url, $method, false, false, $fields ) ) ) {
-			/** A form has just been output asking the user to verify file ownership */
-			return true;
-		}
-
-		/** If the user enters the credentials but the credentials can't be verified to setup WP_Filesystem, output the form again */
-		if ( ! WP_Filesystem( $creds ) ) {
-			/** This time produce the error that tells the user there was an error connecting */
-			request_filesystem_credentials( $url, $method, true, false, $fields );
-			return true;
-		}
-
-		global $wp_filesystem;
-
-		/**
-		 * Settings should only be migrated if
-		 * - There is a legacy settings path defined
-		 * - There is something at that legacy settings path
-		 * - The thing at that legacy settings path is a file
-		 */
-		$should_migrate_settings = defined( 'AADSSO_SETTINGS_PATH' )
-			&& $wp_filesystem->exists( AADSSO_SETTINGS_PATH )
-			&& $wp_filesystem->is_file( AADSSO_SETTINGS_PATH );
-
-		if ( $should_migrate_settings ) {
-
-			$legacy_settings = json_decode( $wp_filesystem->get_contents( AADSSO_SETTINGS_PATH ), true );
-
-			if ( null === $legacy_settings ) {
-				wp_safe_redirect(
-					$this->aadsso_action_url( 'aadsso_migrate_legacy_settings_invalid_json' )
-				);
-			}
-
-			// If aad_group_to_wp_role_map is set in the legacy settings, build the inverted role_map array,
-			// which is what is ultimately saved in the database.
-			if ( isset( $legacy_settings['aad_group_to_wp_role_map'] ) ) {
-				$legacy_settings['role_map'] = array();
-				foreach ( $legacy_settings['aad_group_to_wp_role_map'] as $group_id => $role_slug ) {
-					if ( ! isset( $legacy_settings['role_map'][ $role_slug ] ) ) {
-						$legacy_settings['role_map'][ $role_slug ] = $group_id;
-					} else {
-						$legacy_settings['role_map'][ $role_slug ] .= ',' . $group_id;
-					}
-				}
-			}
-
-			$sanitized_settings = $this->sanitize_settings( $legacy_settings );
-
-			update_option( 'aadsso_settings', $sanitized_settings );
-
-			if ( $wp_filesystem->is_writable( AADSSO_SETTINGS_PATH )
-				&& $wp_filesystem->is_writable( dirname( AADSSO_SETTINGS_PATH ) )
-				&& $wp_filesystem->delete( AADSSO_SETTINGS_PATH )
-			) {
-				wp_safe_redirect(
-					$this->aadsso_action_url( 'aadsso_migrate_legacy_settings_success' )
-				);
-			} else {
-				wp_safe_redirect(
-					$this->aadsso_action_url( 'aadsso_migrate_legacy_settings_manual' )
-				);
-			}
-		}
-	}
-
-	/**
 	 * Verifies a query string nonce with some defaults.
 	 *
 	 * @param string $action The action to verify.
@@ -206,44 +120,9 @@ class AADSSO_Settings_Page {
 			return false;
 		}
 
-		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
-		$unslashed_nonce = wp_unslash( $_GET[ $param ] );
+		$unslashed_nonce = sanitize_text_field( wp_unslash( $_GET[ $param ] ) );
 
 		return wp_verify_nonce( $unslashed_nonce, $action );
-	}
-
-	/**
-	 * Shows messages about the state of the migration operation
-	 */
-	public function notify_json_migrate_status() {
-		// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped
-		if ( $this->is_aadsso_action( 'aadsso_migrate_legacy_settings_success' ) ) {
-			echo '<div id="message" class="notice notice-success"><p>'
-			. esc_html__( 'Legacy settings have been migrated and the old configuration file has been deleted.', 'aad-sso-wordpress' )
-			. __( 'To finish migration, unset <code>AADSSO_SETTINGS_PATH</code> from <code>wp-config.php</code>. ', 'aad-sso-wordpress' )
-			. '</p></div>';
-		} elseif ( $this->is_aadsso_action( 'aadsso_migrate_legacy_settings_invalid_json' ) ) {
-			echo '<div id="message" class="notice notice-error"><p>'
-			. sprintf(
-				// translators: %s is the path to the legacy settings file on disk.
-				__( 'Legacy settings could not be migrated from <code>%s</code>. ', 'aad-sso-wordpress' ),
-				esc_html( AADSSO_SETTINGS_PATH )
-			)
-			. esc_html__( 'File could not be parsed as JSON. ', 'aad-sso-wordpress' )
-			. esc_html__( 'Delete the file, or check its syntax.', 'aad-sso-wordpress' )
-			. '</p></div>';
-		} elseif ( $this->is_aadsso_action( 'aadsso_migrate_legacy_settings_manual' ) ) {
-			echo '<div id="message" class="notice notice-warning"><p>'
-			. esc_html__( 'Legacy settings have been migrated successfully. ', 'aad-sso-wordpress' )
-			. sprintf(
-				// translators: %s is the path to the legacy settings file on disk.
-				__( 'To finish migration, delete the file at the path <code>%s</code>. ', 'aad-sso-wordpress' ),
-				esc_html( AADSSO_SETTINGS_PATH )
-			)
-			. __( 'Then, unset <code>AADSSO_SETTINGS_PATH</code> from <code>wp-config.php</code>. ', 'aad-sso-wordpress' )
-			. '</p></div>';
-		}
-		// phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped
 	}
 
 	/**
@@ -513,10 +392,13 @@ class AADSSO_Settings_Page {
 
 		// If the OpenID Connect configuration endpoint is changed, clear the cached values.
 		$stored_oidc_config_endpoint = isset( $this->settings['openid_configuration_endpoint'] )
-			? $this->settings['openid_configuration_endpoint'] : null;
+			? $this->settings['openid_configuration_endpoint']
+			: null;
+
+		// If the OID config endpoint changed, clear the cached values.
 		if ( $stored_oidc_config_endpoint !== $sanitary_values['openid_configuration_endpoint'] ) {
 			delete_transient( 'aadsso_openid_configuration' );
-			AADSSO::debug_log( 'Setting \'openid_configuration_endpoint\' changed, cleared cached OpenID Connect values.' );
+			AADSSO::debug_log( 'Setting \'openid_configuration_endpoint\' changed, cleared cached OpenID Connect values.', AADSSO_LOG_INFO );
 		}
 
 		return $sanitary_values;
@@ -569,8 +451,10 @@ class AADSSO_Settings_Page {
 
 			// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped
 			echo defined( $defined_name )
-				? empty( $role_map[ $role_slug ] ) ? $this->render_tag( 'em', array(), 'not mapped' ) : $this->render_tag( 'code', array(), $role_map[ $role_slug ] )
-				: $this->render_tag(
+				? ( empty( $role_map[ $role_slug ] )
+					? AADSSO_Html_Helper::get_tag( 'em', array(), 'not mapped' )
+					: AADSSO_Html_Helper::get_tag( 'code', array(), $role_map[ $role_slug ] ) )
+				: AADSSO_Html_Helper::get_tag(
 					'input',
 					array(
 						'type'     => 'text',
@@ -857,7 +741,7 @@ class AADSSO_Settings_Page {
 		$is_defined  = defined( $define_name );
 
 		// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped
-		echo $this->render_tag(
+		echo AADSSO_Html_Helper::get_tag(
 			'input',
 			array(
 				'type'     => 'text',
@@ -933,50 +817,18 @@ class AADSSO_Settings_Page {
 	}
 
 	/**
-	 * Generate an HTML tag with optional content.
-	 *
-	 * @param mixed  $tag name of the tag to output, such as a, div, or span.
-	 * @param mixed  $attrs associative array of attributes to put on the tag. If a value is boolean true, the attribute is output without a value, i.e. "disabled".
-	 * @param string $content optional pre-escaped content to be wrapped by the tag.
-	 *
-	 * @return string
-	 */
-	public static function render_tag( $tag, $attrs, $content = '' ) {
-		$attr_strs   = array();
-		$attr_sprint = '%1$s="%2$s"';
-		foreach ( $attrs as $att => $val ) {
-			$valtype = gettype( $val );
-
-			if ( 'boolean' === $valtype ) {
-				// This is a valueless attribute like [disabled] or [autofocus].
-				if ( true === $val ) {
-					$attr_strs[] = esc_attr( $att );
-				}
-			} elseif ( 'string' === $valtype ) {
-				$attr_strs[] = sprintf( $attr_sprint, esc_attr( $att ), esc_attr( $val ) );
-			}
-		}
-
-		$tag_sprint = null === $content
-			? '<%1$s %2$s>' // self-closing/no-content tag.
-			: '<%1$s %2$s>%3$s</%1$s>'; // tag with content.
-
-		return sprintf( $tag_sprint, $tag, implode( ' ', $attr_strs ), $content );
-	}
-
-	/**
 	 * Renders a checkbox field.
 	 *
 	 * @param string $name The setting name for the checkbox input field.
 	 * @param string $selected_value The label for the checkbox input field.
 	 * @param bool   $disabled Whether the checkbox input field is disabled.
-	 * @param bool   $options A $value => $label array to render as <option> tags.
+	 * @param array  $options A $value => $label array to render as <option> tags.
 	 */
 	public function render_select_field( $name, $selected_value, $disabled, $options ) {
 		$option_values = array_keys( $options );
 		$options       = array_map(
 			function ( $value, $label ) use ( $selected_value ) {
-				return $this->render_tag(
+				return AADSSO_Html_Helper::get_tag(
 					'option',
 					array(
 						'value'    => $value,
@@ -990,7 +842,7 @@ class AADSSO_Settings_Page {
 		);
 
 		// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped
-		echo $this->render_tag(
+		echo AADSSO_Html_Helper::get_tag(
 			'select',
 			array(
 				'name'     => sprintf( 'aadsso_settings[%s]', $name ),
@@ -1016,7 +868,7 @@ class AADSSO_Settings_Page {
 		$is_defined = defined( $defined_name );
 
 		// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped
-		echo $this->render_tag(
+		echo AADSSO_Html_Helper::get_tag(
 			'input',
 			array(
 				'type'  => 'hidden',
@@ -1032,17 +884,17 @@ class AADSSO_Settings_Page {
 					'name'           => $name,
 					'constant isset' => $is_defined,
 					'constant name'  => $defined_name,
-					'constant value' => constant( $defined_name ),
+					'constant value' => $is_defined ? constant( $defined_name ) : null,
 					'settings isset' => isset( $this->settings[ $name ] ),
 					'settings value' => $this->settings[ $name ],
 				),
 				JSON_PRETTY_PRINT
 			),
-			50
+			AADSSO_LOG_VERBOSE
 		);
 
 		// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped
-		echo $this->render_tag(
+		echo AADSSO_Html_Helper::get_tag(
 			'input',
 			array(
 				'type'     => 'checkbox',
@@ -1050,14 +902,14 @@ class AADSSO_Settings_Page {
 				'id'       => $name,
 				'value'    => $name,
 				'checked'  => $is_defined
-					? true === constant( $defined_name )
+					? true === filter_var( constant( $defined_name ), FILTER_VALIDATE_BOOLEAN )
 					: isset( $this->settings[ $name ] ) && true === $this->settings[ $name ],
 				'disabled' => $is_defined,
 			),
 			null
 		);
 
-		echo $this->render_tag(
+		echo AADSSO_Html_Helper::get_tag(
 			'label',
 			array(
 				'for' => $name,
@@ -1071,6 +923,8 @@ class AADSSO_Settings_Page {
 
 	/**
 	 * Indicates if user is currently on this settings page.
+	 *
+	 * @return bool True if user is on this settings page, false otherwise.
 	 */
 	public function is_on_options_page() {
 		$screen = get_current_screen();

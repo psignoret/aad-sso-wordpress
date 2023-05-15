@@ -67,7 +67,7 @@ class AADSSO_Graph_Helper {
 			'url'    => $url,
 		);
 
-		AADSSO::debug_log( 'GET ' . $url, 50 );
+		AADSSO::debug_log( 'GET ' . $url, AADSSO_LOG_INFO );
 
 		// Make the GET request.
 		$response = wp_remote_get(
@@ -95,8 +95,8 @@ class AADSSO_Graph_Helper {
 		$url          = $url . '?' . $query_params;
 		$payload      = wp_json_encode( $data );
 
-		AADSSO::debug_log( 'POST ' . $url, 50 );
-		AADSSO::debug_log( $payload, 99 );
+		AADSSO::debug_log( 'POST ' . $url, AADSSO_LOG_INFO );
+		AADSSO::debug_log( $payload, AADSSO_LOG_VERBOSE );
 
 		// Make the POST request.
 		$response = wp_remote_post(
@@ -121,8 +121,8 @@ class AADSSO_Graph_Helper {
 		$response_headers = wp_remote_retrieve_headers( $response );
 		$response_body    = wp_remote_retrieve_body( $response );
 
-		AADSSO::debug_log( 'Response headers: ' . wp_json_encode( $response_headers ), 99 );
-		AADSSO::debug_log( 'Response body: ' . wp_json_encode( $response_body ), 50 );
+		AADSSO::debug_log( 'Response headers: ' . wp_json_encode( $response_headers ), AADSSO_LOG_VERBOSE );
+		AADSSO::debug_log( 'Response body: ' . wp_json_encode( $response_body ), AADSSO_LOG_VERBOSE );
 
 		return json_decode( $response_body );
 	}

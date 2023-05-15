@@ -13,7 +13,7 @@
 			<h3><?php echo esc_html__( 'Single Sign-on with Azure Active Directory is in Must-Use/Network Mode', 'aad-sso-wordpress' ); ?></h3>
 			<p>
 				<?php echo esc_html__( 'This plugin is installed as a must-use plugin.', 'aad-sso-wordpress' ); ?>
-				<?php echo __( 'Settings should be configured using constants in <code>wp-config.php</code>.', 'aad-sso-wordpress' ); ?>
+				<?php echo __( 'In this mode, settings should be configured using constants in <code>wp-config.php</code>.', 'aad-sso-wordpress' ); ?>
 				<?php
 				// translators: %s is the plugin directory path.
 				echo sprintf( __( 'For more information, reference <code>%sREADME.md</code>.', 'aad-sso-wordpress' ), esc_html( AADSSO_PLUGIN_DIR ) );
@@ -71,73 +71,17 @@
 	</p>
 	<p>
 		<?php
-		printf(
-			'<a href="%s" class="button button-secondary">%s</a> <span class="description">%s</span>',
+		echo sprintf(
+			'<a href="%1$s" class="button button-secondary" onclick="return confirm(\'%4$s\')">%2$s</a> <span class="description">%3$s</span>',
 			esc_attr(
 				$this->aadsso_action_url(
 					'aadsso_reset_settings'
 				)
 			),
 			esc_html__( 'Reset Settings', 'aad-sso-wordpress' ),
-			esc_html__( 'Reset the plugin to default settings. Careful, there is no undo for this.', 'aad-sso-wordpress' )
+			esc_html__( 'Reset the plugin to default settings. Careful, there is no undo for this.', 'aad-sso-wordpress' ),
+			esc_attr__( 'Are you sure you want to reset all settings?', 'aad-sso-wordpress' )
 		)
 		?>
 	</p>
-	<?php if ( defined( 'AADSSO_SETTINGS_PATH' ) && file_exists( AADSSO_SETTINGS_PATH ) ) : ?>
-		<h3><?php echo esc_html__( 'Migrate Legacy Settings', 'aad-sso-wordpress' ); ?></h3>
-		<p>
-		<?php
-		printf(
-			// translators: %s is the path to the settings file containing configuration data.
-			esc_html__( 'Old configuration data was found at %s.', 'aad-sso-wordpress' ),
-			sprintf( '<code>%s</code>', esc_html( AADSSO_SETTINGS_PATH ) )
-		);
-		?>
-		<?php echo esc_html__( 'This configuration data can be migrated automatically.', 'aad-sso-wordpress' ); ?></p>
-		<p>
-		<?php
-		printf(
-			// translators: %s is the path to the settings file that needs deleted.
-			esc_html__( 'Delete the file at %s to hide this migration utility.', 'aad-sso-wordpress' ),
-			sprintf( '<code>%s</code>', esc_html( AADSSO_SETTINGS_PATH ) )
-		);
-		?>
-			</p>
-
-		<?php // The web server must have write permission on the parent directory for this to succeed. ?>
-		<?php if ( is_writable( AADSSO_SETTINGS_PATH ) && is_writable( dirname( AADSSO_SETTINGS_PATH ) ) ) : ?>
-		<p>
-			<?php
-			printf(
-				// translators: %s is the path to the settings file.
-				esc_html__( 'If migration is successful, migration will delete this configuration file, %s.', 'aad-sso-wordpress' ),
-				sprintf( '<code>%s</code>', esc_html( AADSSO_SETTINGS_PATH ) )
-			);
-			?>
-			</p>
-		<?php else : ?>
-			<p>
-			<?php
-			printf(
-				// translators: %s is the path to the settings file.
-				esc_html__( 'If migration is successful, migration will be unable to delete the configuration file at %s.  It is recommended to delete the file after migration.', 'aad-sso-wordpress' ),
-				sprintf( '<code>%s</code>', esc_html( AADSSO_SETTINGS_PATH ) )
-			);
-			?>
-				</p>
-		<?php endif; ?>
-
-		<p>
-		<?php
-		printf(
-			'<a href="%s" class="button button-secondary">%s</a> <span class="description">%s</span>',
-			esc_attr(
-				$this->aadsso_action_url( 'aadsso_migrate_legacy_settings' )
-			),
-			esc_html__( 'Migrate Settings', 'aad-sso-wordpress' ),
-			esc_html__( 'Migrate settings from old plugin versions to new configuration. This will overwrite existing settings! Careful, there is no undo for this.', 'aad-sso-wordpress' )
-		)
-		?>
-		</p>
-	<?php endif; ?>
 </div>

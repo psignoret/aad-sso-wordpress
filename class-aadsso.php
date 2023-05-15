@@ -24,21 +24,28 @@ class AADSSO {
 	 */
 	private $settings = null;
 
+	/**
+	 * Construct the plugin.
+	 *
+	 * @param \AADSSO_Settings $settings The settings instance to use.
+	 */
 	public function __construct( AADSSO_Settings $settings ) {
 		$this->settings = $settings;
 
-		// Setup the admin settings page
+		// Setup the admin settings page.
 		$this->setup_admin_settings();
 
 		// Reset plugin settings if AADSSO_RESET_SETTINGS is set and equals true.
-		if ( defined( 'AADSSO_RESET_SETTINGS' ) && AADSSO_RESET_SETTINGS ) {
+		if ( defined( 'AADSSO_RESET_SETTINGS' ) && true === AADSSO_RESET_SETTINGS ) {
 			delete_option( 'aadsso_settings' );
 			add_action( 'all_admin_notices', array( $this, 'print_settings_reset_notice' ) );
 		}
 
 		// These can be uncommented to help with debugging during development.
-		// add_action( 'admin_notices', array( $this, 'print_debug' ) );
-		// add_action( 'login_footer', array( $this, 'print_debug' ) );
+		// Either raise DEBUG_LEVEL or use something lower than LOG_SILLY to see.
+		if ( AADSSO_DEBUG && AADSSO_DEBUG_LEVEL >= AADSSO_LOG_SILLY ) {
+			add_action( 'admin_notices', array( $this, 'print_debug' ) );
+			add_action( 'login_footer', array( $this, 'print_debug' ) );}
 
 		// Add a link to the Settings page in the list of plugins.
 		add_filter(
@@ -56,28 +63,28 @@ class AADSSO {
 			return;
 		}
 
-		// Add the hook that starts the SESSION
+		// Add the hook that starts the SESSION.
 		add_action( 'login_init', array( $this, 'register_session' ), 10 );
 
-		// The authenticate filter
+		// The authenticate filter.
 		add_filter( 'authenticate', array( $this, 'authenticate' ), 1, 3 );
 
-		// Add the <style> element to the login page
+		// Add the <style> element to the login page.
 		add_action( 'login_enqueue_scripts', array( $this, 'print_login_css' ) );
 
-		// Add the link to the organization's sign-in page
+		// Add the link to the organization's sign-in page.
 		add_action( 'login_form', array( $this, 'print_login_link' ) );
 
-		// Clear session variables when logging out
+		// Clear session variables when logging out.
 		add_action( 'wp_logout', array( $this, 'logout' ) );
 
-		// If configured, bypass the login form and redirect straight to AAD
+		// If configured, bypass the login form and redirect straight to AAD.
 		add_action( 'login_init', array( $this, 'save_redirect_and_maybe_bypass_login' ), 20 );
 
-		// Redirect user back to original location
+		// Redirect user back to original location.
 		add_filter( 'login_redirect', array( $this, 'redirect_after_login' ), 20, 3 );
 
-		// Register the textdomain for localization after all plugins are loaded
+		// Register the textdomain for localization after all plugins are loaded.
 		add_action( 'plugins_loaded', array( $this, 'load_textdomain' ) );
 	}
 
@@ -103,7 +110,7 @@ class AADSSO {
 	public function load_textdomain() {
 		load_plugin_textdomain(
 			'aad-sso-wordpress',
-			false, // deprecated
+			false, // deprecated, but required for backwards compatibility.
 			dirname( plugin_basename( __FILE__ ) ) . '/languages/'
 		);
 	}
@@ -148,8 +155,9 @@ class AADSSO {
 		 * done after the 'aad_auto_forward_login' filter is applied, to ensure it also overrides
 		 * any filters.
 		 */
+		// phpcs:disable WordPress.Security.NonceVerification
 		if ( isset( $_GET['aadsso_no_redirect'] ) ) {
-			self::debug_log( 'Skipping automatic redirects to Azure AD.' );
+			self::debug_log( 'Skipping automatic redirects to Azure AD.', AADSSO_LOG_INFO );
 			$auto_redirect = false;
 		}
 
@@ -159,10 +167,11 @@ class AADSSO {
 		 * them stuck in an infinite logout loop.
 		 */
 		if ( $this->wants_to_login() ) {
+			// phpcs:disable WordPress.Security.NonceVerification
 
-			// Save the redirect_to query param ( if present ) to session
+			// Save the redirect_to query param ( if present ) to session.
 			if ( isset( $_GET['redirect_to'] ) ) {
-				$_SESSION['aadsso_redirect_to'] = $_GET['redirect_to'];
+				$_SESSION['aadsso_redirect_to'] = filter_var( wp_unslash( $_GET['redirect_to'] ), FILTER_SANITIZE_URL );
 			}
 
 			/*
@@ -174,6 +183,8 @@ class AADSSO {
 				wp_safe_redirect( $this->get_login_url() );
 				die();
 			}
+
+			// phpcs:enable WordPress.Security.NonceVerification
 		}
 	}
 
@@ -181,9 +192,11 @@ class AADSSO {
 	 * Restores the session variable that stored the original 'redirect_to' so that after
 	 * authenticating with AAD, the user is returned to the right place.
 	 *
-	 * @param string           $redirect_to
-	 * @param string           $requested_redirect_to
-	 * @param WP_User|WP_Error $user
+	 * This is a WordPress filter that is called after the user is authenticated.
+	 *
+	 * @param string           $redirect_to Current WP redirect.
+	 * @param string           $requested_redirect_to Unused.
+	 * @param WP_User|WP_Error $user current WP User.
 	 *
 	 * @return string
 	 */
@@ -207,15 +220,17 @@ class AADSSO {
 	 * @return boolean Whether or not the user is trying to log in to wp-login.
 	 */
 	private function wants_to_login() {
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended
 		$wants_to_login = false;
-		// Cover default WordPress behavior
-		$action = isset( $_REQUEST['action'] ) ? $_REQUEST['action'] : 'login';
-		// And now the exceptions
+		// Cover default WordPress behavior...
+		$action = isset( $_REQUEST['action'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['action'] ) ) : 'login';
+		// And now the exceptions...
 		$action = isset( $_GET['loggedout'] ) ? 'loggedout' : $action;
-		if ( 'login' == $action ) {
+		if ( 'login' === $action ) {
 			$wants_to_login = true;
 		}
 		return $wants_to_login;
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 	}
 
 	/**
@@ -234,25 +249,18 @@ class AADSSO {
 	 */
 	public function authenticate( $user, $username, $password ) {
 
-		// Don't re-authenticate if already authenticated
+		// Don't re-authenticate if already authenticated.
 		if ( is_a( $user, 'WP_User' ) ) {
 			return $user;
 		}
 
 		/*
-		 If 'code' is present, this is the Authorization Response from Azure AD, and 'code' has
+		 * If 'code' is present, this is the Authorization Response from Azure AD, and 'code' has
 		 * the Authorization Code, which will be exchanged for an ID Token and an Access Token.
 		 */
 		if ( isset( $_GET['code'] ) ) {
 
 			$code = sanitize_text_field( wp_unslash( $_GET['code'] ) );
-
-			// if ( ! isset( $_SESSION['aadsso_antiforgery-id'] ) ) {
-			// return new WP_Error(
-			// 'missing_antiforgery_id',
-			// __( 'Session does not contain antiforgery ID.', 'aad-sso-wordpress' )
-			// );
-			// }
 
 			if ( ! isset( $_GET['state'] ) ) {
 				return new WP_Error(
@@ -261,10 +269,17 @@ class AADSSO {
 				);
 			}
 
-			// Split the state parameter into the many nonces.
-			$passes         = defined( 'AADSSO_NONCE_PASSES' ) ? AADSSO_NONCE_PASSES : 4;
+			// Get the config for how many nonces we are expecting.
+			$passes = defined( 'AADSSO_NONCE_PASSES' )
+				? filter_var( AADSSO_NONCE_PASSES, FILTER_VALIDATE_INT )
+				: 4;
+
+			// At least one pass will be performed.
+			$passes = max( $passes, 1 );
+
 			$antiforgery_id = sanitize_text_field( wp_unslash( $_GET['state'] ) );
 
+			// Each nonce is 10 chars long, so the total length should be 10 * passes.
 			if ( strlen( $antiforgery_id ) !== ( $passes * 10 ) ) {
 				return new WP_Error(
 					'invalid_state_length',
@@ -279,7 +294,7 @@ class AADSSO {
 				if ( ! wp_verify_nonce( $nonce, $action ) ) {
 					return new WP_Error(
 						'antiforgery_id_mismatch',
-						// translators: 1: pass number, 2: nonce
+						// translators: 1: pass number, 2: nonce string.
 						sprintf( __( 'Authentication anti-forgery nonce failed at pass %1$u, %2$s.', 'aad-sso-wordpress' ), $pass, $nonce )
 					);
 				}
@@ -297,28 +312,28 @@ class AADSSO {
 						$antiforgery_id
 					);
 
-					self::debug_log( 'ID Token: iss: \'' . $jwt->iss . '\', oid: \'' . $jwt->oid, 10 );
-					self::debug_log( wp_json_encode( $jwt, JSON_PRETTY_PRINT ), 50 );
+					self::debug_log( 'ID Token: iss: \'' . $jwt->iss . '\', oid: \'' . $jwt->oid, AADSSO_LOG_VERBOSE );
+					self::debug_log( wp_json_encode( $jwt, JSON_PRETTY_PRINT ), AADSSO_LOG_SILLY );
 
 				} catch ( Exception $e ) {
 					return new WP_Error(
 						'invalid_id_token',
-						// translators: 1: error message
+						// translators: 1: error message.
 						sprintf( __( 'ERROR: Invalid id_token. %s', 'aad-sso-wordpress' ), $e->getMessage() )
 					);
 				}
 
-				// Retrieve group membership details, if needed
+				// Retrieve group membership details, if needed.
 				$group_memberships = false;
 				if ( true === $this->settings->enable_aad_group_to_wp_role ) {
 
 					// TODO: Check if scopes from token response include necessary permissions for checking
 					// group membership and if not, re-do the sign in with prompt=consent.
 
-					// If we're mapping Azure AD groups to WordPress roles, make the Graph API call here
+					// If we're mapping Azure AD groups to WordPress roles, make the Graph API call here.
 					AADSSO_Graph_Helper::$settings = $this->settings;
 
-					// Of the AAD groups defined in the settings, get only those where the user is a member
+					// Of the AAD groups defined in the settings, get only those where the user is a member.
 					$group_ids         = array_keys( $this->settings->aad_group_to_wp_role_map );
 					$group_memberships = AADSSO_Graph_Helper::user_check_member_groups( $jwt->oid, $group_ids );
 
@@ -330,14 +345,14 @@ class AADSSO {
 								$jwt->oid,
 								implode( ',', $group_memberships->value )
 							),
-							20
+							AADSSO_LOG_INFO
 						);
 					} elseif ( isset( $group_memberships->error ) ) {
 						self::debug_log( 'Error when checking group membership: ' . wp_json_encode( $group_memberships ) );
 						return new WP_Error(
 							'error_checking_group_membership',
 							sprintf(
-								// translators: 1: error code, 2: error message, 3: inner error
+								// translators: Fields are as follows... 1: error code, 2: error message, 3: inner error.
 								__(
 									'ERROR: Unable to check group membership with Microsoft Graph: <b>%1$s</b> %2$s<br />%3$s',
 									'aad-sso-wordpress'
@@ -364,22 +379,23 @@ class AADSSO {
 				$user = $this->get_wp_user_from_aad_user( $jwt, $group_memberships );
 
 				if ( is_a( $user, 'WP_User' ) ) {
-
-					// At this point, we have an authorization code, an access token and the user
-					// exists in WordPress (either because it already existed, or we created it
-					// on-the-fly). All that's left is to set the roles based on group membership.
-					// 4. If a user was created or found above, we can pass the groups here to have them assigned normally
+					/*
+						At this point, we have an authorization code, an access token and the user
+						exists in WordPress (either because it already existed, or we created it
+						on-the-fly). All that's left is to set the roles based on group membership.
+						4. If a user was created or found above, we can pass the groups here to have them assigned normally
+					*/
 					if ( true === $this->settings->enable_aad_group_to_wp_role ) {
 						$user = $this->update_wp_user_roles( $user, $group_memberships );
 					}
 				}
 			} elseif ( isset( $token->error ) ) {
 
-				// Unable to get an access token ( although we did get an authorization code )
+				// Unable to get an access token ( although we did get an authorization code ).
 				return new WP_Error(
 					$token->error,
 					sprintf(
-						// translators: %s - error description
+						// translators: %s - error description.
 						__( 'ERROR: Could not get an access token to Microsoft Graph. %s', 'aad-sso-wordpress' ),
 						$token->error_description
 					)
@@ -393,11 +409,11 @@ class AADSSO {
 
 			// The attempt to get an authorization code failed.
 			return new WP_Error(
-				$_GET['error'],
+				sanitize_text_field( wp_unslash( $_GET['error'] ) ),
 				sprintf(
-					// translators: %s - error description
+					// translators: %s - error description, or no error description in redirect.
 					__( 'ERROR: Access denied to Microsoft Graph. %s', 'aad-sso-wordpress' ),
-					$_GET['error_description']
+					sanitize_text_field( wp_unslash( isset( $_GET['error_description'] ) ? $_GET['error_description'] : 'no error description in redirect!' ) )
 				)
 			);
 		}
@@ -409,10 +425,19 @@ class AADSSO {
 		return $user;
 	}
 
+	/**
+	 * Get a WordPress user from an Azure AD user.
+	 *
+	 * @param object $jwt               The decoded JWT.
+	 * @param object $group_memberships The group memberships of the Azure AD user.
+	 *
+	 * @return WP_User|WP_Error
+	 */
 	public function get_wp_user_from_aad_user( $jwt, $group_memberships ) {
-
-		// Try to find an existing user in WP where the upn or unique_name of the current Azure AD user is
-		// (depending on config) the 'login' or 'email' field in WordPress
+		/*
+			Try to find an existing user in WP where the upn or unique_name of the current Azure AD user is
+			(depending on config) the 'login' or 'email' field in WordPress
+		*/
 		$unique_name = isset( $jwt->upn ) ? $jwt->upn : ( isset( $jwt->unique_name ) ? $jwt->unique_name : null );
 		if ( null === $unique_name ) {
 			return new WP_Error(
@@ -440,7 +465,7 @@ class AADSSO {
 					$unique_name,
 					$user->ID
 				),
-				10
+				AADSSO_LOG_INFO
 			);
 		} else {
 
@@ -459,7 +484,7 @@ class AADSSO {
 					return new WP_Error(
 						'user_not_assigned_to_group',
 						sprintf(
-							// translators: %s - user's UPN
+							// translators: %s - user's UPN; typically an email address.
 							__(
 								'ERROR: Access denied. You\'re not a member of any group granting you access to this site. You\'re signed in as \'%s\'.',
 								'aad-sso-wordpress'
@@ -469,40 +494,46 @@ class AADSSO {
 					);
 				}
 
-				// Setup the minimum required user data
-				// TODO: Is null better than a random password?
-				// TODO: Look for otherMail, or proxyAddresses before UPN for email
+				/**
+				 * Set up the required minimum user profile.  `user_pass` is set to a random password.
+				 * The WordPress behavior for a null password is undocumented, so a new random password
+				 * is recommended, per https://wordpress.stackexchange.com/questions/218350/user-password-field-is-empty
+				 *
+				 * TODO: use otherMail or proxyAddresses to set the user's email address.
+				 *
+				 * @see https://developer.wordpress.org/reference/functions/wp_insert_user/
+				 */
 				$userdata = array(
 					'user_email' => $unique_name,
 					'user_login' => $unique_name,
 					'first_name' => ! empty( $jwt->given_name ) ? $jwt->given_name : '',
 					'last_name'  => ! empty( $jwt->family_name ) ? $jwt->family_name : '',
-					'user_pass'  => null,
+					'user_pass'  => wp_generate_password(),
 				);
 
 				$new_user_id = wp_insert_user( $userdata );
 
 				if ( is_wp_error( $new_user_id ) ) {
-					// The user was authenticated, but not found in WP and auto-provisioning is disabled
+					// The user was authenticated, but not found in WP and auto-provisioning is disabled.
 					return new WP_Error(
 						'user_not_registered',
 						sprintf(
-							// translators: %s - user's UPN
+							// translators: %s - user's UPN, typically an email address.
 							__( 'ERROR: Error creating user \'%s\'.', 'aad-sso-wordpress' ),
 							$unique_name
 						)
 					);
 				} else {
-					self::debug_log( 'Created new user: \'' . $unique_name . '\', user id ' . $new_user_id . '.' );
+					self::debug_log( 'Created new user: \'' . $unique_name . '\', user id ' . $new_user_id . '.', AADSSO_LOG_INFO );
 					$user = new WP_User( $new_user_id );
 				}
 			} else {
 
-				// The user was authenticated, but not found in WP and auto-provisioning is disabled
+				// The user was authenticated, but not found in WP and auto-provisioning is disabled.
 				return new WP_Error(
 					'user_not_registered',
 					sprintf(
-                        // translators: %s - user's UPN
+						// translators: %s - user's UPN, typically an email address.
 						__(
 							'ERROR: The authenticated user \'%s\' is not a registered user in this site.',
 							'aad-sso-wordpress'
@@ -531,7 +562,7 @@ class AADSSO {
 
 		if ( ! empty( $group_memberships->value ) ) {
 			foreach ( $this->settings->aad_group_to_wp_role_map as $aad_group => $wp_role ) {
-				if ( in_array( $aad_group, $group_memberships->value ) ) {
+				if ( in_array( $aad_group, $group_memberships->value, true ) ) {
 					array_push( $roles_to_set, $wp_role );
 				}
 			}
@@ -548,7 +579,7 @@ class AADSSO {
 					implode( ', ', $roles_to_set ),
 					$user->ID
 				),
-				10
+				AADSSO_LOG_INFO
 			);
 		} elseif ( ! empty( $this->settings->default_wp_role ) ) {
 			$user->set_role( $this->settings->default_wp_role );
@@ -558,7 +589,7 @@ class AADSSO {
 					$this->settings->default_wp_role,
 					$user->ID
 				),
-				10
+				AADSSO_LOG_INFO
 			);
 		} else {
 			$error_message = sprintf(
@@ -566,7 +597,7 @@ class AADSSO {
 				__( 'ERROR: Azure AD user %s is not a member of any group granting a role.', 'aad-sso-wordpress' ),
 				$user->user_login
 			);
-			self::debug_log( $error_message, 10 );
+			self::debug_log( $error_message, AADSSO_LOG_ERROR );
 			return new WP_Error( 'user_not_member_of_required_group', $error_message );
 		}
 
@@ -597,7 +628,13 @@ class AADSSO {
 	 */
 	public function get_login_url() {
 		// Generate several nonces to be used as antiforgery_id.
-		$passes = defined( 'AADSSO_NONCE_PASSES' ) ? AADSSO_NONCE_PASSES : 4;
+		$passes = defined( 'AADSSO_NONCE_PASSES' )
+			? filter_var( AADSSO_NONCE_PASSES, FILTER_VALIDATE_INT )
+			: 3;
+
+		// Generate at least one nonce.
+		$passes = max( $passes, 1 );
+
 		$nonces = array();
 		for ( $i = 0; $i < $passes; $i++ ) {
 			$nonces[] = wp_create_nonce( 'aadsso_authenticate_' . $i );
@@ -673,9 +710,9 @@ class AADSSO {
 		}
 	}
 
-
-	/*** View ***/
-
+	/**
+	 * Renders the an admin notice when settings have been reset.
+	 */
 	public function print_settings_reset_notice() {
 		echo '<div id="message" class="updated"><p>' . implode(
 			' ',
@@ -702,38 +739,45 @@ class AADSSO {
 	 * Renders some debugging data.
 	 */
 	public function print_debug() {
-		$current   = array();
-		$constants = array();
+		// phpcs:disable
+		$current         = array();
+		$constant_values = array();
 		foreach ( AADSSO_Settings::get_defaults() as $key => $value ) {
 			$current[ $key ] = $this->settings->{$key};
-			$constants[]     = 'AADSSO_' . strtoupper( $key );
+			$constant_key    = 'AADSSO_' . strtoupper( $key );
+			if ( defined( $constant_key ) ) {
+				$constant_values[ $constant_key ] = constant( $constant_key );
+			}
 		}
+
 		$debugs = array(
-			'SESSION'               => $_SESSION,
-			'GET'                   => $_GET,
-			'DB settings'           => get_option( 'aadsso_settings' ),
-			'DEFAULT settings'      => AADSSO_Settings::get_defaults(),
-			'CURRENT settings'      => $current,
+			'SESSION'               => isset( $_SESSION ) ? $_SESSION : null,
+			'GET'                   => isset( $_GET ) ? $_GET : null,
+			'POST'                  => isset( $_POST ) ? $_POST : null,
 			'plugin_dir_path'       => plugin_dir_path( __FILE__ ),
 			'WP_PLUGIN_DIR'         => WP_PLUGIN_DIR,
 			'WPMU_PLUGIN_DIR'       => WPMU_PLUGIN_DIR,
 			'AADSSO_IS_WP_PLUGIN'   => AADSSO_IS_WP_PLUGIN,
 			'AADSSO_IS_WPMU_PLUGIN' => AADSSO_IS_WPMU_PLUGIN,
-			'CONSTANT names'        => implode( "\n", $constants ),
+			'CONSTANT settings'     => $constant_values,
+			'DB settings'           => get_option( 'aadsso_settings' ),
+			'DEFAULT settings'      => AADSSO_Settings::get_defaults(),
+			'CURRENT settings'      => $current,
+			'CURRENT json'          => wp_json_encode( $current ),
 		);
 
 		$debugs_string = array_map(
 			function ( $key, $value ) {
-				return AADSSO_Html_Helper::tag(
+				return AADSSO_Html_Helper::get_tag(
 					'dt',
 					array(),
 					$key
-				) . AADSSO_Html_Helper::tag(
+				) . AADSSO_Html_Helper::get_tag(
 					'dd',
 					array(),
 					// phpcs:disable WordPress.PHP.DevelopmentFunctions.error_log_var_export
 					isset( $value )
-						? AADSSO_Html_Helper::tag( 'pre', array(), esc_html( var_export( $value, true ) ) )
+						? AADSSO_Html_Helper::get_tag( 'pre', array(), esc_html( var_export( $value, true ) ) )
 						: '<em>not set</em>'
 				);
 			},
@@ -741,7 +785,8 @@ class AADSSO {
 			$debugs
 		);
 
-		AADSSO_Html_Helper::tag( 'dl', array(), $debugs_string );
+		AADSSO_Html_Helper::tag( 'dl', array(), implode( '', $debugs_string ) );
+		// phpcs:enable
 	}
 
 	/**
@@ -796,7 +841,7 @@ class AADSSO {
 	 * @param string $message The message to log.
 	 * @param int    $level The level of the message. 0 is the default, and the higher the number the more verbose.
 	 */
-	public static function debug_log( $message, $level = 0 ) {
+	public static function debug_log( $message, $level = AADSSO_LOG_FATAL ) {
 		/**
 		 * Fire an action when logging.
 		 *
@@ -822,10 +867,11 @@ class AADSSO {
 		 * @since 0.6.3
 		 * @param int
 		 */
-		$debug_level = apply_filters( 'aadsso_debug_level', AADSSO_DEBUG_LEVEL );
+		$debug_level = apply_filters( 'aadsso_debug_level', AADSSO_LOG_LEVEL );
 
 		if ( true === $debug_enabled && $debug_level >= $level ) {
 			if ( false === strpos( $message, "\n" ) ) {
+				// phpcs:ignore WordPress.PHP.DevelopmentFunctions
 				error_log( 'AADSSO: ' . $message );
 			} else {
 				$lines = explode( "\n", str_replace( "\r\n", "\n", $message ) );
@@ -841,8 +887,9 @@ class AADSSO {
 	 *
 	 * @param int $level The level of the message. 0 is the default, and the higher the number the more verbose.
 	 */
-	public static function debug_print_backtrace( $level = 10 ) {
+	public static function debug_print_backtrace( $level = AADSSO_LOG_ERROR ) {
 		ob_start();
+		// phpcs:ignore WordPress.PHP.DevelopmentFunctions
 		debug_print_backtrace();
 		$trace = ob_get_contents();
 		ob_end_clean();

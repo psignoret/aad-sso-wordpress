@@ -32,11 +32,33 @@ class AADSSO_Html_Helper {
 			}
 		}
 
+		// If the content is not a string or null, warn.
+		if ( ! is_string( $content ) && null !== $content ) {
+			AADSSO::debug_log( 'AADSSO_Html_Helper::get_tag() called with non-string content.', AADSSO_LOG_WARNING );
+			AADSSO::debug_log(
+				'AADSSO_Html_Helper::get_tag($tag, $attrs, $content): ' . wp_json_encode(
+					array(
+						'tag'     => $tag,
+						'attrs'   => $attrs,
+						'content' => $content,
+					),
+					JSON_PRETTY_PRINT
+				),
+				AADSSO_LOG_VERBOSE
+			);
+			AADSSO::debug_print_backtrace( AADSSO_LOG_VERBOSE );
+		}
+
 		$tag_sprint = null === $content
 			? '<%1$s %2$s>' // self-closing/no-content tag.
 			: '<%1$s %2$s>%3$s</%1$s>'; // tag with content.
 
-		return sprintf( $tag_sprint, $tag, implode( ' ', $attr_strs ), $content );
+		return sprintf(
+			$tag_sprint,
+			$tag,
+			implode( ' ', $attr_strs ),
+			$content
+		);
 	}
 
 	/**
