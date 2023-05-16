@@ -1,413 +1,384 @@
-#, fuzzy
+# Copyright (C) 2023 Philippe Signoret
+# This file is distributed under the same license as the Azure Active Directory Single Sign-on for WordPress plugin.
 msgid ""
 msgstr ""
-"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
-"Project-Id-Version: Single Sign-on with Azure Active Directory\n"
-"POT-Creation-Date: 2019-10-02 17:33+0200\n"
-"PO-Revision-Date: 2016-04-06 13:57+0200\n"
-"Last-Translator: \n"
-"Language-Team: \n"
+"Project-Id-Version: Azure Active Directory Single Sign-on for WordPress 1.0.0\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/aad-sso-wordpress\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Generator: Poedit 2.2.4\n"
-"X-Poedit-Basepath: ..\n"
-"X-Poedit-WPHeader: aad-sso-wordpress.php\n"
-"X-Poedit-SourceCharset: UTF-8\n"
-"X-Poedit-KeywordsList: __;_e;_n:1,2;_x:1,2c;_ex:1,2c;_nx:4c,1,2;esc_attr__;"
-"esc_attr_e;esc_attr_x:1,2c;esc_html__;esc_html_e;esc_html_x:1,2c;_n_noop:1,2;"
-"_nx_noop:3c,1,2;__ngettext_noop:1,2\n"
-"X-Poedit-SearchPath-0: .\n"
-"X-Poedit-SearchPathExcluded-0: *.js\n"
+"POT-Creation-Date: 2023-05-15T20:39:42+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.7.1\n"
+"X-Domain: aad-sso-wordpress\n"
 
-#: SettingsPage.php:127
-msgid ""
-"Legacy settings have been migrated and the old configuration file has been "
-"deleted."
+#. Plugin Name of the plugin
+#: class-aadsso-settings-page.php:147
+msgid "Azure Active Directory Single Sign-on for WordPress"
 msgstr ""
 
-#: SettingsPage.php:128
-msgid ""
-"To finish migration, unset <code>AADSSO_SETTINGS_PATH</code> from <code>wp-"
-"config.php</code>. "
-msgstr ""
-
-#: SettingsPage.php:132
-msgid "Legacy settings have been migrated successfully. "
-msgstr ""
-
-#: SettingsPage.php:133
-#, php-format
-msgid "To finish migration, delete the file at the path <code>%s</code>. "
-msgstr ""
-
-#: SettingsPage.php:134
-msgid ""
-"Then, unset <code>AADSSO_SETTINGS_PATH</code> from <code>wp-config.php</"
-"code>. "
-msgstr ""
-
-#: SettingsPage.php:138
-#, php-format
-msgid "Legacy settings could not be migrated from <code>%s</code>. "
-msgstr ""
-
-#: SettingsPage.php:153
-msgid ""
-"Single Sign-on with Azure Active Directory settings have been reset to "
-"default."
-msgstr ""
-
-#: SettingsPage.php:164
-msgid "Azure Active Directory Settings"
-msgstr ""
-
-#: SettingsPage.php:192
-msgid "General"
-msgstr ""
-
-#: SettingsPage.php:199
-msgid "Advanced"
-msgstr ""
-
-#: SettingsPage.php:206
-msgid "Display name"
-msgstr ""
-
-#: SettingsPage.php:214
-msgid "Domain hint"
-msgstr ""
-
-#: SettingsPage.php:222
-msgid "Client ID"
-msgstr ""
-
-#: SettingsPage.php:230
-msgid "Client secret"
-msgstr ""
-
-#: SettingsPage.php:238
-msgid "Redirect URL"
-msgstr ""
-
-#: SettingsPage.php:246
-msgid "Logout redirect URL"
-msgstr ""
-
-#: SettingsPage.php:254
-msgid "Enable full logout"
-msgstr ""
-
-#: SettingsPage.php:262
-msgid "Field to match to UPN"
-msgstr ""
-
-#: SettingsPage.php:270
-msgid "Match on alias of the UPN"
-msgstr ""
-
-#: SettingsPage.php:278
-msgid "Enable auto-provisioning"
-msgstr ""
-
-#: SettingsPage.php:286
-msgid "Enable auto-forward to Azure AD"
-msgstr ""
-
-#: SettingsPage.php:294
-msgid "Enable Azure AD group to WP role association"
-msgstr ""
-
-#: SettingsPage.php:302
-msgid "Default WordPress role if not in Azure AD group"
-msgstr ""
-
-#: SettingsPage.php:310
-msgid "WordPress role to Azure AD group map"
-msgstr ""
-
-#: SettingsPage.php:318
-msgid "OpenID Connect configuration endpoint"
-msgstr ""
-
-#: SettingsPage.php:435
-msgid "Map WordPress roles to Azure Active Directory groups."
-msgstr ""
-
-#: SettingsPage.php:440
-msgid "WordPress Role"
-msgstr ""
-
-#: SettingsPage.php:441
-msgid "Azure AD Group Object ID"
-msgstr ""
-
-#: SettingsPage.php:470
-msgid "Display Name will be shown on the WordPress login screen."
-msgstr ""
-
-#: SettingsPage.php:481
-msgid ""
-"Provides a hint to Azure AD about the domain or tenant they will be logging "
-"in to. If the domain is federated, the user will be automatically redirected "
-"to federation endpoint."
-msgstr ""
-
-#: SettingsPage.php:494
-msgid "The client ID of the Azure AD application representing this blog."
-msgstr ""
-
-#: SettingsPage.php:505
-msgid "A secret key for the Azure AD application representing this blog."
-msgstr ""
-
-#: SettingsPage.php:518 SettingsPage.php:535 SettingsPage.php:649
-msgid "Set default"
-msgstr ""
-
-#: SettingsPage.php:519
-msgid ""
-"The URL where the user is redirected to after authenticating with Azure AD. "
-"This URL must be registered in Azure AD as a valid redirect URL, and it must "
-"be a page that invokes the \"authenticate\" filter. If you don't know what "
-"to set, leave the default value (which is this blog's login page)."
-msgstr ""
-
-#: SettingsPage.php:536
-msgid ""
-"The URL where the user is redirected to after signing out of Azure AD. This "
-"URL must be registered in Azure AD as a valid redirect URL. (This does not "
-"affect  logging out of the blog, it is only used when logging out of Azure "
-"AD.)"
-msgstr ""
-
-#: SettingsPage.php:553
-msgid "Email Address"
-msgstr ""
-
-#: SettingsPage.php:556
-msgid "Login Name"
-msgstr ""
-
-#: SettingsPage.php:562
-msgid ""
-"This specifies the WordPress user field which will be used to match to the "
-"Azure AD user's UserPrincipalName."
-msgstr ""
-
-#: SettingsPage.php:573
-msgid ""
-"Match WordPress users based on the alias of their Azure AD "
-"UserPrincipalName. For example, Azure AD username <code>bob@example.com</"
-"code> will match WordPress user <code>bob</code>."
-msgstr ""
-
-#: SettingsPage.php:601
-msgid ""
-"This is the default role that users will be assigned to if matching Azure AD "
-"group to WordPress roles is enabled, but the signed in user isn't a member "
-"of any of the configured Azure AD groups."
-msgstr ""
-
-#: SettingsPage.php:613
-msgid ""
-"Automatically create WordPress users, if needed, for authenticated Azure AD "
-"users."
-msgstr ""
-
-#: SettingsPage.php:624
-msgid ""
-"Automatically forward users to the Azure AD to sign in, skipping the "
-"WordPress login screen."
-msgstr ""
-
-#: SettingsPage.php:635
-msgid ""
-"Automatically assign WordPress user roles based on Azure AD group membership."
-msgstr ""
-
-#: SettingsPage.php:650
-msgid ""
-"The OpenID Connect configuration endpoint to use. To support Microsoft "
-"Accounts and external users (users invited in from other Azure AD "
-"directories, known sometimes as \"B2B users\") you must use: <code>https://"
-"login.microsoftonline.com/{tenant-id}/.well-known/openid-configuration</"
-"code>, where <code>{tenant-id}</code> is the tenant ID or a verified domain "
-"name of your directory."
-msgstr ""
-
-#: SettingsPage.php:664
-msgid "Do a full logout of Azure AD when logging out of WordPress."
-msgstr ""
-
-#: aad-sso-wordpress.php:263
-msgid "Session does not contain antiforgery ID."
-msgstr ""
-
-#: aad-sso-wordpress.php:274
-#, php-format
-msgid "ANTIFORGERY_ID mismatch. Expecting %s"
-msgstr ""
-
-#: aad-sso-wordpress.php:297
-#, php-format
-msgid "ERROR: Invalid id_token. %s"
-msgstr ""
-
-#: aad-sso-wordpress.php:326
-#, php-format
-msgid ""
-"ERROR: Unable to check group membership in Azure AD: <b>%s</b> %s<br />%s"
-msgstr ""
-
-#: aad-sso-wordpress.php:337
-msgid "ERROR: Unexpected response when checking group membership in Azure AD."
-msgstr ""
-
-#: aad-sso-wordpress.php:363
-#, php-format
-msgid "ERROR: Could not get an access token to Microsoft Graph. %s"
-msgstr ""
-
-#: aad-sso-wordpress.php:370
-msgid "ERROR: An unknown error occured."
-msgstr ""
-
-#: aad-sso-wordpress.php:379
-#, php-format
-msgid "ERROR: Access denied to Microsoft Graph. %s"
-msgstr ""
-
-#: aad-sso-wordpress.php:400
-msgid "ERROR: Neither 'upn' nor 'unique_name' claims not found in ID Token."
-msgstr ""
-
-#: aad-sso-wordpress.php:434
-#, php-format
-msgid ""
-"ERROR: Access denied. You're not a member of any group granting you access "
-"to this site. You're signed in as '%s'."
-msgstr ""
-
-#: aad-sso-wordpress.php:460
-#, php-format
-msgid "ERROR: Error creating user '%s'."
-msgstr ""
-
-#: aad-sso-wordpress.php:474
-#, php-format
-msgid ""
-"ERROR: The authenticated user '%s' is not a registered user in this site."
-msgstr ""
-
-#: aad-sso-wordpress.php:519
-#, php-format
-msgid "ERROR: Azure AD user %s is not a member of any group granting a role."
-msgstr ""
-
-#: aad-sso-wordpress.php:624
-msgid ""
-"Single Sign-on with Azure Active Directory required settings are not "
-"defined. Update them under Settings > Azure AD."
-msgstr ""
-
-#: aad-sso-wordpress.php:652
-#, php-format
-msgid "Sign in with your %s account"
-msgstr ""
-
-#: aad-sso-wordpress.php:655
-msgid "Sign out"
-msgstr ""
-
-#. Plugin Name of the plugin/theme
-#: view/settings.php:3
-msgid "Single Sign-on with Azure Active Directory"
-msgstr ""
-
-#: view/settings.php:4
-msgid ""
-"Settings for configuring single sign-on with Azure Active Directory can be "
-"configured here."
-msgstr ""
-
-#: view/settings.php:14
-msgid "Reset Plugin"
-msgstr ""
-
-#: view/settings.php:15
-msgid "Resetting the plugin will completely remove all settings."
-msgstr ""
-
-#: view/settings.php:25
-msgid "Reset Settings"
-msgstr ""
-
-#: view/settings.php:26
-msgid ""
-"Reset the plugin to default settings. Careful, there is no undo for this."
-msgstr ""
-
-#: view/settings.php:31
-msgid "Migrate Legacy Settings"
-msgstr ""
-
-#: view/settings.php:33
-#, php-format
-msgid "Old configuration data was found at %s."
-msgstr ""
-
-#: view/settings.php:36
-msgid "This configuration data can be migrated automatically."
-msgstr ""
-
-#: view/settings.php:38
-#, php-format
-msgid "Delete the file at %s to hide this migration utility."
-msgstr ""
-
-#: view/settings.php:45
-#, php-format
-msgid ""
-"If migration is successful, migration will delete this configuration file, "
-"%s."
-msgstr ""
-
-#: view/settings.php:50
-#, php-format
-msgid ""
-"If migration is successful, migration will be unable to delete the "
-"configuration file at %s.  It is recommended to delete the file after "
-"migration."
-msgstr ""
-
-#: view/settings.php:63
-msgid "Migrate Settings"
-msgstr ""
-
-#: view/settings.php:64
-msgid ""
-"Migrate settings from old plugin versions to new configuration. This will "
-"overwrite existing settings! Careful, there is no undo for this."
-msgstr ""
-
-#. Plugin URI of the plugin/theme
+#. Plugin URI of the plugin
 msgid "http://github.com/psignoret/aad-sso-wordpress"
 msgstr ""
 
-#. Description of the plugin/theme
-msgid ""
-"Allows you to use your organization's Azure Active Directory user accounts "
-"to log in to WordPress. If your organization is using Office 365, your user "
-"accounts are already in Azure Active Directory. This plugin uses OAuth 2.0 "
-"to authenticate users, and the Microsoft Graph API to get group membership "
-"and other details."
+#. Description of the plugin
+msgid "Allows you to use your organization's Azure Active Directory user accounts to log in to WordPress. If your organization is using Office 365, your user accounts are already in Azure Active Directory. This plugin uses OAuth 2.0 to authenticate users, and the Microsoft Graph API to get group membership and other details."
 msgstr ""
 
-#. Author of the plugin/theme
+#. Author of the plugin
 msgid "Philippe Signoret"
 msgstr ""
 
-#. Author URI of the plugin/theme
+#. Author URI of the plugin
 msgid "https://www.psignoret.com/"
+msgstr ""
+
+#: class-aadsso-settings-page.php:134
+msgid "Single Sign-on with Azure Active Directory settings have been reset to default."
+msgstr ""
+
+#: class-aadsso-settings-page.php:175
+msgid "General"
+msgstr ""
+
+#: class-aadsso-settings-page.php:182
+msgid "Advanced"
+msgstr ""
+
+#: class-aadsso-settings-page.php:189
+msgid "Display name"
+msgstr ""
+
+#: class-aadsso-settings-page.php:197
+msgid "Domain hint"
+msgstr ""
+
+#: class-aadsso-settings-page.php:205
+msgid "Client ID"
+msgstr ""
+
+#: class-aadsso-settings-page.php:213
+msgid "Client secret"
+msgstr ""
+
+#: class-aadsso-settings-page.php:221
+msgid "Redirect URL"
+msgstr ""
+
+#: class-aadsso-settings-page.php:229
+msgid "Logout redirect URL"
+msgstr ""
+
+#: class-aadsso-settings-page.php:237
+msgid "Enable full logout"
+msgstr ""
+
+#: class-aadsso-settings-page.php:245
+msgid "Field to match to UPN"
+msgstr ""
+
+#: class-aadsso-settings-page.php:253
+msgid "Match on alias of the UPN"
+msgstr ""
+
+#: class-aadsso-settings-page.php:261
+msgid "Enable auto-provisioning"
+msgstr ""
+
+#: class-aadsso-settings-page.php:269
+msgid "Enable auto-forward to Azure AD"
+msgstr ""
+
+#: class-aadsso-settings-page.php:277
+msgid "Enable Azure AD group to WP role association"
+msgstr ""
+
+#: class-aadsso-settings-page.php:285
+msgid "Default WordPress role if not in Azure AD group"
+msgstr ""
+
+#: class-aadsso-settings-page.php:293
+msgid "WordPress role to Azure AD group map"
+msgstr ""
+
+#: class-aadsso-settings-page.php:301
+msgid "OpenID Connect configuration endpoint"
+msgstr ""
+
+#: class-aadsso-settings-page.php:437
+msgid "Map WordPress roles to Azure Active Directory groups."
+msgstr ""
+
+#: class-aadsso-settings-page.php:443
+msgid "WordPress Role"
+msgstr ""
+
+#: class-aadsso-settings-page.php:444
+msgid "Azure AD Group Object ID"
+msgstr ""
+
+#: class-aadsso-settings-page.php:483
+msgid "Display Name will be shown on the WordPress login screen."
+msgstr ""
+
+#: class-aadsso-settings-page.php:495
+msgid "Provides a hint to Azure AD about the tenant or domain that the user should use to sign in."
+msgstr ""
+
+#: class-aadsso-settings-page.php:496
+msgid "If the domain is federated, the user will be automatically redirected to federation endpoint."
+msgstr ""
+
+#: class-aadsso-settings-page.php:511
+msgid "The client ID of the Azure AD application representing this blog."
+msgstr ""
+
+#: class-aadsso-settings-page.php:523
+msgid "A secret key for the Azure AD application representing this blog."
+msgstr ""
+
+#: class-aadsso-settings-page.php:535
+msgid "The URL where the user is redirected to after authenticating with Azure AD."
+msgstr ""
+
+#: class-aadsso-settings-page.php:536
+msgid "This URL must be registered in Azure AD as a valid redirect URL, and it must be a page that invokes the \"authenticate\" filter."
+msgstr ""
+
+#: class-aadsso-settings-page.php:540
+#: class-aadsso-settings-page.php:559
+msgid "If you don't know what to set, leave the default value (which is this blog's login page)."
+msgstr ""
+
+#: class-aadsso-settings-page.php:557
+msgid "The URL where the user is redirected to after signing out of Azure AD."
+msgstr ""
+
+#: class-aadsso-settings-page.php:558
+msgid "This URL must be registered in Azure AD as a valid redirect URL."
+msgstr ""
+
+#: class-aadsso-settings-page.php:590
+msgid "Email Address"
+msgstr ""
+
+#: class-aadsso-settings-page.php:591
+msgid "Login Name"
+msgstr ""
+
+#: class-aadsso-settings-page.php:595
+msgid "This specifies the WordPress user field which will be used to match to the Azure AD user's UserPrincipalName."
+msgstr ""
+
+#: class-aadsso-settings-page.php:610
+msgid "Match WordPress users based on the alias of their Azure AD UserPrincipalName."
+msgstr ""
+
+#: class-aadsso-settings-page.php:611
+msgid "For example, Azure AD username <code>bob@example.com</code> will match WordPress user <code>bob</code>."
+msgstr ""
+
+#: class-aadsso-settings-page.php:632
+msgid "(None, deny access)"
+msgstr ""
+
+#: class-aadsso-settings-page.php:650
+msgid "This is the default role that users will be assigned to if matching Azure AD group to WordPress roles is enabled, but the signed in user isn't a member of any of the configured Azure AD groups."
+msgstr ""
+
+#: class-aadsso-settings-page.php:651
+msgid "By default, this will not provision any WordPress users, and will deny access to the site."
+msgstr ""
+
+#: class-aadsso-settings-page.php:667
+msgid "Automatically create WordPress users, if needed, for authenticated Azure AD users."
+msgstr ""
+
+#: class-aadsso-settings-page.php:680
+msgid "Automatically forward users to the Azure AD to sign in, skipping the WordPress login screen."
+msgstr ""
+
+#: class-aadsso-settings-page.php:694
+msgid "Automatically assign WordPress user roles based on Azure AD group membership."
+msgstr ""
+
+#: class-aadsso-settings-page.php:708
+msgid "The OpenID Connect configuration endpoint to use."
+msgstr ""
+
+#: class-aadsso-settings-page.php:709
+msgid "To support Microsoft Accounts and external users (users invited in from other Azure AD directories, known sometimes as \"B2B users\" or \"B2C users\") you must use: <code>https://login.microsoftonline.com/{tenant-id}/.well-known/openid-configuration</code>, where <code>{tenant-id}</code> is the tenant ID or a verified domain name of your directory."
+msgstr ""
+
+#: class-aadsso-settings-page.php:725
+msgid "Do a full logout of Azure AD when logging out of WordPress."
+msgstr ""
+
+#: class-aadsso-settings-page.php:765
+msgid "Set default"
+msgstr ""
+
+#. translators: %s is the name of the constant.
+#: class-aadsso-settings-page.php:801
+msgid "This value is set using the constant <code>%s</code>."
+msgstr ""
+
+#. translators: %s is the name of the constant.
+#: class-aadsso-settings-page.php:809
+msgid "This value can be set using the constant <code>%s</code>."
+msgstr ""
+
+#: class-aadsso.php:268
+msgid "Missing state parameter."
+msgstr ""
+
+#: class-aadsso.php:286
+msgid "Authentication anti-forgery nonce was not expected length."
+msgstr ""
+
+#. translators: 1: pass number, 2: nonce string.
+#: class-aadsso.php:298
+msgid "Authentication anti-forgery nonce failed at pass %1$u, %2$s."
+msgstr ""
+
+#. translators: 1: error message.
+#: class-aadsso.php:322
+msgid "ERROR: Invalid id_token. %s"
+msgstr ""
+
+#. translators: Fields are as follows... 1: error code, 2: error message, 3: inner error.
+#: class-aadsso.php:356
+msgid "ERROR: Unable to check group membership with Microsoft Graph: <b>%1$s</b> %2$s<br />%3$s"
+msgstr ""
+
+#: class-aadsso.php:369
+msgid "ERROR: Unexpected response when checking group membership with Microsoft Graph."
+msgstr ""
+
+#. translators: %s - error description.
+#: class-aadsso.php:399
+msgid "ERROR: Could not get an access token to Microsoft Graph. %s"
+msgstr ""
+
+#: class-aadsso.php:406
+msgid "ERROR: An unknown error occured."
+msgstr ""
+
+#. translators: %s - error description, or no error description in redirect.
+#: class-aadsso.php:415
+msgid "ERROR: Access denied to Microsoft Graph. %s"
+msgstr ""
+
+#: class-aadsso.php:445
+msgid "ERROR: Neither 'upn' nor 'unique_name' claims not found in ID Token."
+msgstr ""
+
+#. translators: %s - user's UPN; typically an email address.
+#: class-aadsso.php:488
+msgid "ERROR: Access denied. You're not a member of any group granting you access to this site. You're signed in as '%s'."
+msgstr ""
+
+#. translators: %s - user's UPN, typically an email address.
+#: class-aadsso.php:522
+msgid "ERROR: Error creating user '%s'."
+msgstr ""
+
+#. translators: %s - user's UPN, typically an email address.
+#: class-aadsso.php:537
+msgid "ERROR: The authenticated user '%s' is not a registered user in this site."
+msgstr ""
+
+#. translators: %s is the user's login id, such as bob or bob@contoso.com.
+#: class-aadsso.php:597
+msgid "ERROR: Azure AD user %s is not a member of any group granting a role."
+msgstr ""
+
+#: class-aadsso.php:618
+msgctxt "shortcut to settings page"
+msgid "Settings"
+msgstr ""
+
+#: class-aadsso.php:720
+msgid "Single Sign-on with Azure Active Directory has been reset."
+msgstr ""
+
+#: class-aadsso.php:722
+msgid "Please unset the <code>AADSSO_RESET_SETTINGS</code> constant to reconfigure."
+msgstr ""
+
+#: class-aadsso.php:733
+msgid "Single Sign-on with Azure Active Directory is not configured."
+msgstr ""
+
+#: class-aadsso.php:735
+msgid "Please configure the plugin under Settings > Azure AD."
+msgstr ""
+
+#. translators: %s is the name of the organization the user expects to sign into.
+#: class-aadsso.php:824
+msgid "Sign in with your %s account"
+msgstr ""
+
+#: class-aadsso.php:834
+msgid "Sign out"
+msgstr ""
+
+#: view/settings.php:13
+msgid "Single Sign-on with Azure Active Directory is in Must-Use/Network Mode"
+msgstr ""
+
+#: view/settings.php:15
+msgid "This plugin is installed as a must-use plugin."
+msgstr ""
+
+#: view/settings.php:16
+msgid "In this mode, settings should be configured using constants in <code>wp-config.php</code>."
+msgstr ""
+
+#. translators: %s is the plugin directory path.
+#: view/settings.php:19
+msgid "For more information, reference <code>%sREADME.md</code>."
+msgstr ""
+
+#. translators: %1$s is the plugin directory name, %2$s is the WPMU_PLUGIN_DIR constant.
+#: view/settings.php:27
+msgid "To deactivate, you must move <code>%1$s</code> out of the <code>%2$s</code> directory and disable any loaders."
+msgstr ""
+
+#: view/settings.php:34
+msgid "Current MU Plugin Loaders"
+msgstr ""
+
+#: view/settings.php:52
+msgid "Single Sign-on with Azure Active Directory"
+msgstr ""
+
+#: view/settings.php:53
+msgid "Settings for configuring single sign-on with Azure Active Directory can be configured here."
+msgstr ""
+
+#: view/settings.php:64
+msgid "Reset Plugin"
+msgstr ""
+
+#: view/settings.php:65
+msgid "Resetting the plugin will completely remove all settings."
+msgstr ""
+
+#: view/settings.php:69
+msgid "You can also reset the plugin by defining the <code>AADSSO_RESET_SETTINGS</code> constant."
+msgstr ""
+
+#: view/settings.php:81
+msgid "Reset Settings"
+msgstr ""
+
+#: view/settings.php:82
+msgid "Reset the plugin to default settings. Careful, there is no undo for this."
+msgstr ""
+
+#: view/settings.php:83
+msgid "Are you sure you want to reset all settings?"
 msgstr ""
