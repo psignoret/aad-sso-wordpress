@@ -218,6 +218,12 @@ There are several ways Azure AD groups can be created/managed. Some of them requ
  * **Azure AD PowerShell**. The [Azure AD PowerShell module](https://docs.microsoft.com/en-us/powershell/azure/active-directory/install-adv2?view=azureadps-2.0) allows admins and (optionally) users to create and manage groups. (e.g. [New-AzureADGroup](https://docs.microsoft.com/en-us/powershell/module/azuread/new-azureadgroup?view=azureadps-2.0), and [Add-AzureADGroupMember](https://docs.microsoft.com/en-us/powershell/module/azuread/add-azureadgroupmember?view=azureadps-2.0) cmdlets.)
  * **On-premises**. Many large organizations use Azure AD Connect to sync their on-premises AD to Azure AD. This usually includes all on-premises AD groups and memberships. Once these groups are synced to Azrue AD, they can be used with this plugin.
 
+## Action Reference
+
+| Action | Arguments | Description
+| --- | --- | ---
+| aadsso_after_authenticate_success | $jwt, $user | Fires after sucessfull authentication. Usefull for storing aditional data from azure as usermeta
+
 ## Advanced
 
 ### Refreshing the OpenID Connect configuration cache

@@ -353,6 +353,8 @@ class AADSSO {
 					if ( true === $this->settings->enable_aad_group_to_wp_role ) {
 						$user = $this->update_wp_user_roles( $user, $group_memberships );
 					}
+
+					do_action('aadsso_after_authenticate_success', $jwt, $user);
 				}
 			} elseif ( isset( $token->error ) ) {
 
