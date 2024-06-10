@@ -1,0 +1,8 @@
+{
+  "name": "psignoret/aad-sso-wordpress",
+  "description": "Single Sign-on with Azure Active Directory (for WordPress)",
+  "type": "wordpress-plugin",
+  "require": {
+    "composer/installers": "~1.0"
+  }
+}
