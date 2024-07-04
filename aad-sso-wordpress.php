@@ -5,7 +5,7 @@ Plugin Name: Single Sign-on with Microsoft Entra ID
 Plugin URI: http://github.com/psignoret/aad-sso-wordpress
 Description: Allows you to use your organization's Microsoft Entra ID (formerly known as Azure Active Directory) user accounts to log in to WordPress. If your organization is using Office 365, your user accounts are already in Microsoft Entra ID. This plugin uses OAuth 2.0 to authenticate users, and the Microsoft Graph API to get group membership and other details.
 Author: Philippe Signoret
-Version: 0.7.1
+Version: 0.7.2	
 Author URI: https://www.psignoret.com/
 Text Domain: aad-sso-wordpress
 Domain Path: /languages/
@@ -130,7 +130,13 @@ class AADSSO {
 	public function plugin_is_configured() {
 		return
 			   ! empty( $this->settings->client_id )
-			&& ! empty( $this->settings->client_secret )
+			&& (
+				   ( $this->settings->use_managed_identity_as_fic === true )
+			    || ( 
+						$this->settings->use_managed_identity_as_fic === false 
+				     && ! ( empty( $this->settings->client_secret ) )
+				   )
+			   )
 			&& ! empty( $this->settings->redirect_uri )
 		;
 	}
@@ -364,6 +370,10 @@ class AADSSO {
 						$token->error_description
 					)
 				);
+			} elseif ( is_wp_error( $token ) ) {
+
+				return $token;
+				
 			} else {
 
 				// None of the above, I have no idea what happened.

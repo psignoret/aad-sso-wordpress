@@ -225,6 +225,27 @@ class AADSSO_Settings_Page {
 			'aadsso_settings_general' // section
 		);
 
+		if ( AADSSO_Settings::is_managed_identity_available() ) {
+
+			add_settings_field(
+				'use_managed_identity_as_fic', // id
+				__( 'Use a managed identity as a federated identity credential',
+					'aad-sso-wordpress' ), // title
+				array( $this, 'use_managed_identity_as_fic_callback' ), // callback
+				'aadsso_settings_page', // page
+				'aadsso_settings_general' // section
+			);
+
+			add_settings_field(
+				'managed_identity_client_id', // id
+				__( 'Managed identity client ID', 'aad-sso-wordpress' ), // title
+				array( $this, 'managed_identity_client_id_callback' ), // callback
+				'aadsso_settings_page', // page
+				'aadsso_settings_general' // section
+			);
+
+		}
+
 		add_settings_field(
 			'client_secret', // id
 			__( 'Client secret', 'aad-sso-wordpress' ), // title
@@ -350,6 +371,7 @@ class AADSSO_Settings_Page {
 			'org_display_name',
 			'org_domain_hint',
 			'client_id',
+			'managed_identity_client_id',
 			'client_secret',
 			'redirect_uri',
 			'logout_redirect_uri',
@@ -378,6 +400,7 @@ class AADSSO_Settings_Page {
 
 		// Booleans: when key == value, this is considered true, otherwise false.
 		$boolean_settings = array(
+			'use_managed_identity_as_fic',
 			'enable_auto_provisioning',
 			'enable_auto_forward_to_aad',
 			'enable_aad_group_to_wp_role',
@@ -492,6 +515,30 @@ class AADSSO_Settings_Page {
 		printf(
 			'<p class="description">%s</p>',
 			__( 'The client ID of the Microsoft Entra ID application representing this blog.', 'aad-sso-wordpress' )
+		);
+	}
+
+	/**
+	 * Renders the `use_managed_identity_as_fic` form control
+	 **/
+	public function use_managed_identity_as_fic_callback() {
+		$this->render_checkbox_field(
+			'use_managed_identity_as_fic',
+			__( 'Use a managed identity as a federated identity credential.',
+				'aad-sso-wordpress' )
+		);
+	}
+
+	
+	/**
+	 * Renders the `managed_identity_client_id` form control
+	 **/
+	public function managed_identity_client_id_callback() {
+		$this->render_text_field( 'managed_identity_client_id' );
+		printf(
+			'<p class="description">%s</p>',
+			__( 'The client ID of the managed identity to use as a federated identity credential.',
+				'aad-sso-wordpress' )
 		);
 	}
 

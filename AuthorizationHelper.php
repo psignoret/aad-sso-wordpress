@@ -44,17 +44,32 @@ class AADSSO_AuthorizationHelper
 	 */
 	public static function get_access_token( $code, $settings ) {
 
-		// Construct the body for the access token request
-		$authentication_request_body = http_build_query(
-			array(
-				'grant_type'    => 'authorization_code',
-				'code'          => $code,
-				'redirect_uri'  => $settings->redirect_uri,
-				'resource'      => $settings->graph_endpoint,
-				'client_id'     => $settings->client_id,
-				'client_secret' => $settings->client_secret
-			)
+		$params = array(
+			'grant_type'    => 'authorization_code',
+			'code'          => $code,
+			'redirect_uri'  => $settings->redirect_uri,
+			'resource'      => $settings->graph_endpoint,
+			'client_id'     => $settings->client_id,
 		);
+
+		// Depending on configuration, use a client secret, or an access token obtained using a
+		// managed identity as a client assertion, to authenticate.
+		if ( $settings->use_managed_identity_as_fic ) {
+			$mi_token_response = self::get_token_with_managed_identity(
+				'api://AzureADTokenExchange',
+				$settings 
+			);
+			if( is_wp_error( $mi_token_response ) ) {
+				return $mi_token_response;
+			}
+			$params['client_assertion'] = $mi_token_response->access_token;
+			$params['client_assertion_type'] = 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer';
+		} else {
+			$params['client_secret'] = $settings->client_secret;
+		}
+
+		// Construct the body for the access token request
+		$authentication_request_body = http_build_query( $params );
 
 		return self::get_and_process_access_token( $authentication_request_body, $settings );
 	}
@@ -91,6 +106,93 @@ class AADSSO_AuthorizationHelper
 		}
 
 		return $result;
+	}
+
+	/**
+	 * Requests an access token using a managed identity.
+	 *
+	 * @param string $resource The body to use in the Authentication Request.
+	 * @param \AADSSO_Settings $settings The settings to use.
+	 * 
+	 * @return mixed The response from the managed identity endpoint.
+	 */
+	public static function get_token_with_managed_identity( $resource, $settings ) {
+
+		if ( AADSSO_Settings::is_managed_identity_available() ) {
+
+			$params = array(
+				'resource'    => $resource,
+				'api-version' => '2019-08-01',
+			);
+
+			if ( ! empty( $settings->managed_identity_client_id ) ) {
+				$params['client_id'] = $settings->managed_identity_client_id;
+			}
+
+			$managed_identity_request = $_SERVER['IDENTITY_ENDPOINT'] . '?' . http_build_query( $params );
+			AADSSO::debug_log( 'Managed identity token request: ' . $managed_identity_request, 50 );
+
+			// Make a request to the managed identity endpoint
+			$response = wp_remote_get(
+				$managed_identity_request,
+				array(
+					'headers' => array(
+						'X-IDENTITY-HEADER' => $_SERVER['IDENTITY_HEADER'],
+					),
+				)
+			);
+
+			if( is_wp_error( $response ) ) {
+				$error_message =  sprintf(
+					__( 'ERROR: Unable to query managed identity endpoint: %s. '
+					  . '(Code: %s, Message: %s)' ),
+					$_SERVER['IDENTITY_ENDPOINT'],
+					$response->get_error_code(),
+					$response->get_error_message()
+				);
+				AADSSO::debug_log( $error_message, 10 );
+				return new WP_Error( 'error_querying_managed_identity', $error_message );
+			}
+
+			$response_code = wp_remote_retrieve_response_code( $response );
+			$response_body = wp_remote_retrieve_body( $response );
+
+			$result = json_decode( $response_body );
+
+			if ( ! ( $response_code >= 200 && $response_code < 300 ) ) {
+				$error_message = sprintf(
+					__( 'ERROR: The managed identity endpoint returned a %s error response.' ),
+					$response_code
+				);
+				if ( $result !== null && isset( $result->statusCode ) ) {
+					$error_message .= $response_body;
+				}
+				AADSSO::debug_log( $error_message, 10 );
+				return new WP_Error( 'error_response_from_managed_identity', $error_message );
+			}
+
+			if ( $result == null ) {
+				AADSSO::debug_log(
+					'ERROR: Decoding the response from the managed identity endpoint as JSON yielded null. '
+					. 'Response body: ' . $response_body, 10
+				);
+				return new WP_Error( 
+					'unexpected_response_from_managed_identity', 
+					'ERROR: The managed identity endpoint returned a response in an unexpected format.'
+				);
+			}
+
+			return $result;
+
+		} else {
+
+			return new WP_Error(
+				'managed_identity_not_available', 
+				__( 'ERROR: A managed identity on Azure App Service was not available. '
+				  . 'Make sure this site is running on Azure App Service, and has at least '
+				  . 'one managed identity configured.' )
+			);
+		}
 	}
 
 	/**

@@ -19,12 +19,22 @@ class AADSSO_Settings {
 	public $client_id = '';
 
 	/**
-	 * @var string The client secret key, which is generated on the app configuration page in AAD.
+	 * @var bool Whether to use a managed identity as a federated identity credential.
+	 */
+	public $use_managed_identity_as_fic = false;
+
+	/**
+	 * @var string The client ID of the managed identity to use as a federated identity credential.
+	 */
+	public $managed_identity_client_id = '';
+
+	/**
+	 * @var string The client secret key, which is generated on the app configuration page in Entra ID.
 	 */
 	public $client_secret = '';
 
 	/**
-	 * @var string The URL to redirect to after signing in. Must also be configured in AAD.
+	 * @var string The URL to redirect to after signing in. Must also be configured in Entra ID.
 	 */
 	public $redirect_uri = '';
 
@@ -159,6 +169,7 @@ class AADSSO_Settings {
 
 		$defaults = array(
 			'org_display_name' => get_bloginfo( 'name' ),
+			'use_managed_identity_as_fic' => false,
 			'field_to_match_to_upn' => 'email',
 			'default_wp_role' => null,
 			'enable_auto_provisioning' => false,
@@ -182,7 +193,7 @@ class AADSSO_Settings {
 	}
 
 	/**
-	 * Gets the (only) instance of the plugin.
+	 * Gets the (only) instance of the class
 	 *
 	 * @return self The (only) instance of the class.
 	 */
@@ -279,5 +290,19 @@ class AADSSO_Settings {
 			}
 		}
 		return $this;
+	}
+
+	
+	/**
+	 * Indicates if the blog is running on an Azure service that has a managed identity available.
+	 * 
+	 * Currently only supports Azure App Service.
+	 */	
+	public static function is_managed_identity_available() {
+		// https://learn.microsoft.com/en-us/azure/app-service/overview-managed-identity#rest-endpoint-reference
+		if ( isset( $_SERVER['IDENTITY_ENDPOINT'] ) && isset( $_SERVER['IDENTITY_HEADER'] ) ) {
+			return TRUE;
+		}
+		return FALSE;
 	}
 }
