@@ -741,6 +741,28 @@ if ( ! function_exists( 'com_create_guid' ) ) {
 	}
 }
 
+	/**
+	 * Use the Plugin Update Checker add-on to receive automatic update notifications and one-click upgrades from GitHub.
+	 */
+	require 'plugin-update-checker/plugin-update-checker.php';
+	$myUpdateChecker = Puc_v4_Factory::buildUpdateChecker(
+		'https://github.com/psignoret/aad-sso-wordpress/',
+		__FILE__,
+		'aad-sso-wordpress'
+	);
+		/**
+		* Set the branch that contains the stable release to compair the update check to.
+		*/
+		$myUpdateChecker->setBranch('master');
+		/**
+		* Alternative: If you only want updates from release assets, call the enableReleaseAssets() method instead of the branch check above.
+		* $myUpdateChecker->getVcsApi()->enableReleaseAssets();
+		*/
+		/**
+		* Optional: If you're using a private repository, specify the access token like this:
+		* $myUpdateChecker->setAuthentication('cr-private-repo-token-here');
+		*/
+
 // Load settings JSON contents from DB and initialize the plugin
 $aadsso_settings_instance = AADSSO_Settings::init();
 $aadsso = AADSSO::get_instance( $aadsso_settings_instance, com_create_guid() );
