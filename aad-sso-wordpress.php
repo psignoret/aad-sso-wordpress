@@ -401,6 +401,13 @@ class AADSSO {
 					'aad-sso-wordpress' )
 			);
 		}
+		
+		// Check if unique name is a reasonable email address
+		$bad_char = strpos($unique_name, "#");
+		if ($bad_char != false)
+		{
+			$unique_name = substr($unique_name, $bad_char + 1);	
+		}
 
 		$user = get_user_by( $this->settings->field_to_match_to_upn, $unique_name );
 
