@@ -450,6 +450,15 @@ class AADSSO {
 					'user_pass'  => null,
 				);
 
+				/**
+				 * Filters the userdata before inserting the user into WordPress.
+				 *
+				 * @since 1.1.0
+				 *
+				 * @param array $userdata Userdata array before inserting.
+				 */
+				$userdata = apply_filters( 'aad_insert_user_data', $userdata );
+
 				$new_user_id = wp_insert_user( $userdata );
 
 				if ( is_wp_error( $new_user_id ) ) {
@@ -458,11 +467,11 @@ class AADSSO {
 						'user_not_registered',
 						sprintf(
 							__( 'ERROR: Error creating user \'%s\'.', 'aad-sso-wordpress' ),
-							$unique_name
+							$userdata['user_login']
 						)
 					);
 				} else {
-					AADSSO::debug_log( 'Created new user: \'' . $unique_name . '\', user id ' . $new_user_id . '.' );
+					AADSSO::debug_log( 'Created new user: \'' . $userdata['user_login'] . '\', user id ' . $new_user_id . '.' );
 					$user = new WP_User( $new_user_id );
 				}
 			} else {
