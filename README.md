@@ -216,6 +216,12 @@ There are several ways Microsoft Entra ID groups can be created/managed. Some of
  * **Microsoft Graph PowerShell**. The [Microsoft Graph PowerShell module](https://learn.microsoft.com/en-us/powershell/microsoftgraph/get-started?view=graph-powershell-1.0) allows admins and (optionally) users to create and manage groups. (e.g. [New-MgGroup](https://learn.microsoft.com/en-us/powershell/module/microsoft.graph.groups/new-mggroup?view=graph-powershell-1.0), and [New-MgGroupMember](https://learn.microsoft.com/en-us/powershell/module/microsoft.graph.groups/new-mggroupmember?view=graph-powershell-1.0) cmdlets.)
  * **On-premises**. Many large organizations use Microsoft Entra Connect (formerly known as Azure AD Connect) to sync their on-premises AD to Microsoft Entra ID. This usually includes all on-premises AD groups and memberships. Once these groups are synced to Azrue AD, they can be used with this plugin.
 
+## Action Reference
+
+| Action | Arguments | Description
+| --- | --- | ---
+| aadsso_after_authenticate_success | $jwt, $user | Fires after sucessfull authentication. Usefull for storing aditional data from azure as usermeta
+
 ## Advanced
 
 ### Refreshing the OpenID Connect configuration cache
