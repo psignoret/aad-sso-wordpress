@@ -5,7 +5,8 @@ Plugin Name: Single Sign-on with Microsoft Entra ID
 Plugin URI: http://github.com/psignoret/aad-sso-wordpress
 Description: Allows you to use your organization's Microsoft Entra ID (formerly known as Azure Active Directory) user accounts to log in to WordPress. If your organization is using Office 365, your user accounts are already in Microsoft Entra ID. This plugin uses OAuth 2.0 to authenticate users, and the Microsoft Graph API to get group membership and other details.
 Author: Philippe Signoret
-Version: 0.7.2
+Version: 0.11.5
+Requires PHP: 5.6
 Author URI: https://www.psignoret.com/
 Text Domain: aad-sso-wordpress
 Domain Path: /languages/
@@ -26,9 +27,11 @@ defined( 'AADSSO_DEBUG_LEVEL' ) or define( 'AADSSO_DEBUG_LEVEL', 0 );
 //define( 'WP_PROXY_PORT', '8888' );
 
 require_once AADSSO_PLUGIN_DIR . '/Settings.php';
+require_once AADSSO_PLUGIN_DIR . '/CredentialHelper.php';
 require_once AADSSO_PLUGIN_DIR . '/SettingsPage.php';
 require_once AADSSO_PLUGIN_DIR . '/AuthorizationHelper.php';
 require_once AADSSO_PLUGIN_DIR . '/GraphHelper.php';
+require_once AADSSO_PLUGIN_DIR . '/PhotoHelper.php';
 
 // TODO: Auto-load the ( the exceptions at least )
 require_once AADSSO_PLUGIN_DIR . '/lib/php-jwt/src/JWT.php';
@@ -93,6 +96,20 @@ class AADSSO {
 
 		// Register the textdomain for localization after all plugins are loaded
 		add_action( 'plugins_loaded', array( $this, 'load_textdomain' ) );
+
+		// Allow users to refresh their own Microsoft Graph profile photo.
+		add_action( 'admin_post_aadsso_sync_my_photo', array( $this, 'start_manual_photo_sync' ) );
+		add_action( 'show_user_profile', array( $this, 'render_core_profile_photo_sync' ) );
+		add_filter( 'um_profile_tabs', array( $this, 'add_um_photo_sync_tab' ), 1000 );
+		add_action(
+			'um_profile_content_aadsso_photo_sync',
+			array( $this, 'render_um_profile_photo_sync' )
+		);
+
+		// Continue displaying already synchronized local avatars even if future sync is disabled.
+		add_filter( 'pre_get_avatar_data', array( 'AADSSO_PhotoHelper', 'filter_avatar_data' ), 999, 2 );
+		add_filter( 'get_avatar_url', array( 'AADSSO_PhotoHelper', 'filter_avatar_url' ), 999, 3 );
+		add_filter( 'get_avatar', array( 'AADSSO_PhotoHelper', 'filter_avatar_html' ), 999, 5 );
 	}
 
 	/**
@@ -101,7 +118,13 @@ class AADSSO {
 	public static function activate() {
 		$stored_settings = get_option( 'aadsso_settings', null );
 		if ( null === $stored_settings ) {
-			update_option( 'aadsso_settings', AADSSO_Settings::get_defaults() );
+			$backup_settings = get_option( 'aadsso_settings_backup', null );
+			$stored_settings = is_array( $backup_settings ) && ! empty( $backup_settings )
+				? $backup_settings : AADSSO_Settings::get_defaults();
+			update_option( 'aadsso_settings', $stored_settings );
+		}
+		if ( is_array( $stored_settings ) && ! empty( $stored_settings ) ) {
+			update_option( 'aadsso_settings_backup', $stored_settings );
 		}
 	}
 
@@ -128,9 +151,16 @@ class AADSSO {
 	 * @return bool Whether plugin is configured
 	 */
 	public function plugin_is_configured() {
+		$has_client_credential =
+			( 'certificate' === $this->settings->client_auth_method
+				&& ! empty( $this->settings->client_certificate )
+				&& ! empty( $this->settings->client_private_key_encrypted ) )
+			|| ( 'secret' === $this->settings->client_auth_method
+				&& ! empty( $this->settings->client_secret ) );
+
 		return
 			   ! empty( $this->settings->client_id )
-			&& ! empty( $this->settings->client_secret )
+			&& $has_client_credential
 			&& ! empty( $this->settings->redirect_uri )
 		;
 	}
@@ -258,6 +288,7 @@ class AADSSO {
 		if ( isset( $_GET['code'] ) ) {
 
 			if ( ! isset( $_SESSION['aadsso_antiforgery-id'] ) ) {
+				$this->clear_pending_photo_sync_request();
 				return new WP_Error(
 					'missing_antiforgery_id',
 					__( 'Session does not contain antiforgery ID.', 'aad-sso-wordpress')
@@ -269,6 +300,7 @@ class AADSSO {
 			$state_doesnt_match = $_GET['state'] != $antiforgery_id;
 
 			if ( $state_is_missing || $state_doesnt_match ) {
+				$this->clear_pending_photo_sync_request();
 				return new WP_Error(
 					'antiforgery_id_mismatch',
 					sprintf( __( 'ANTIFORGERY_ID mismatch. Expecting %s', 'aad-sso-wordpress' ), $antiforgery_id )
@@ -276,7 +308,14 @@ class AADSSO {
 			}
 
 			// Looks like we got a valid authorization code, let's try to get an access token with it
-			$token = AADSSO_AuthorizationHelper::get_access_token( $_GET['code'], $this->settings );
+			$code_verifier = isset( $_SESSION['aadsso_pkce_verifier'] )
+				? $_SESSION['aadsso_pkce_verifier'] : '';
+			unset( $_SESSION['aadsso_pkce_verifier'] );
+			$token = AADSSO_AuthorizationHelper::get_access_token(
+				$_GET['code'],
+				$this->settings,
+				$code_verifier
+			);
 
 			// Happy path
 			if ( isset( $token->access_token ) ) {
@@ -288,10 +327,12 @@ class AADSSO {
 						$antiforgery_id
 					);
 
-					AADSSO::debug_log( 'ID Token: iss: \'' . $jwt->iss . '\', oid: \'' . $jwt->oid, 10 );
+					$object_id = isset( $jwt->oid ) ? $jwt->oid : '';
+					AADSSO::debug_log( 'ID Token: iss: \'' . $jwt->iss . '\', oid: \'' . $object_id, 10 );
 					AADSSO::debug_log( json_encode( $jwt ), 50 );
 
 				} catch ( Exception $e ) {
+					$this->clear_pending_photo_sync_request();
 					return new WP_Error(
 						'invalid_id_token',
 						sprintf( __( 'ERROR: Invalid id_token. %s', 'aad-sso-wordpress' ), $e->getMessage() )
@@ -302,24 +343,22 @@ class AADSSO {
 				$group_memberships = false;
 				if ( true === $this->settings->enable_aad_group_to_wp_role ) {
 
-					// TODO: Check if scopes from token response include necessary permissions for checking
-					//       group membership and if not, re-do the sign in with prompt=consent.
-
 					// If we're mapping Microsoft Entra ID groups to WordPress roles, make the Graph API call here
 					AADSSO_GraphHelper::$settings  = $this->settings;
 
 					// Of the AAD groups defined in the settings, get only those where the user is a member
 					$group_ids         = array_keys( $this->settings->aad_group_to_wp_role_map );
-					$group_memberships = AADSSO_GraphHelper::user_check_member_groups( $jwt->oid, $group_ids );
+					$group_memberships = AADSSO_GraphHelper::user_check_member_groups( 'me', $group_ids );
 					
 					// Validate response to throw an early error if unable to check group membership.
 					if ( isset( $group_memberships->value ) ) {
 						AADSSO::debug_log( sprintf(
 							'Microsoft Entra ID user \'%s\' is a member of [%s]',
-							$jwt->oid, implode( ',', $group_memberships->value ) ), 20
+							$object_id, implode( ',', $group_memberships->value ) ), 20
 						);
 					} elseif ( isset ( $group_memberships->error ) ) {
 						AADSSO::debug_log( 'Error when checking group membership: ' . json_encode( $group_memberships ) );
+						$this->clear_pending_photo_sync_request();
 						return new WP_Error(
 							'error_checking_group_membership',
 							sprintf(
@@ -332,6 +371,7 @@ class AADSSO {
 						);
 					} else {
 						AADSSO::debug_log( 'Unexpected response to checkMemberGroups: ' . json_encode( $group_memberships ) );
+						$this->clear_pending_photo_sync_request();
 						return new WP_Error(
 							'unexpected_response_to_checkMemberGroups',
 							__( 'ERROR: Unexpected response when checking group membership with Microsoft Graph.', 
@@ -353,10 +393,14 @@ class AADSSO {
 					if ( true === $this->settings->enable_aad_group_to_wp_role ) {
 						$user = $this->update_wp_user_roles( $user, $group_memberships );
 					}
+					if ( is_a( $user, 'WP_User' ) ) {
+						$user = $this->maybe_sync_profile_photo_after_authentication( $user );
+					}
 				}
 			} elseif ( isset( $token->error ) ) {
 
 				// Unable to get an access token ( although we did get an authorization code )
+				$this->clear_pending_photo_sync_request();
 				return new WP_Error(
 					$token->error,
 					sprintf(
@@ -367,12 +411,14 @@ class AADSSO {
 			} else {
 
 				// None of the above, I have no idea what happened.
+				$this->clear_pending_photo_sync_request();
 				return new WP_Error( 'unknown', __( 'ERROR: An unknown error occured.', 'aad-sso-wordpress' ) );
 			}
 
 		} elseif ( isset( $_GET['error'] ) ) {
 
 			// The attempt to get an authorization code failed.
+			$this->clear_pending_photo_sync_request();
 			return new WP_Error(
 				$_GET['error'],
 				sprintf(
@@ -389,15 +435,102 @@ class AADSSO {
 		return $user;
 	}
 
+	/**
+	 * Clears a queued manual photo refresh when the Entra round trip cannot complete.
+	 */
+	private function clear_pending_photo_sync_request() {
+		unset( $_SESSION['aadsso_force_photo_sync'], $_SESSION['aadsso_photo_sync_user_id'] );
+	}
+
+	/**
+	 * Synchronizes a missing photo during login, or force-refreshes one after a profile request.
+	 *
+	 * Photo failures never block a normal login. A manual request is rejected if the Entra
+	 * identity maps to a different WordPress account than the user who requested the refresh.
+	 *
+	 * @param WP_User $user Authenticated WordPress user.
+	 *
+	 * @return WP_User|WP_Error User, or an identity mismatch error.
+	 */
+	private function maybe_sync_profile_photo_after_authentication( $user ) {
+		$is_manual_sync = ! empty( $_SESSION['aadsso_force_photo_sync'] );
+		$requested_user_id = isset( $_SESSION['aadsso_photo_sync_user_id'] )
+			? (int) $_SESSION['aadsso_photo_sync_user_id'] : 0;
+		$this->clear_pending_photo_sync_request();
+
+		if ( $is_manual_sync && $requested_user_id !== (int) $user->ID ) {
+			return new WP_Error(
+				'photo_sync_identity_mismatch',
+				__( 'Photo sync was cancelled because the Microsoft account does not match the current WordPress user.', 'aad-sso-wordpress' )
+			);
+		}
+
+		if ( true !== $this->settings->enable_profile_photo_sync ) {
+			if ( $is_manual_sync ) {
+				$this->store_photo_sync_result(
+					$user->ID,
+					'warning',
+					__( 'Microsoft Graph profile photo sync is disabled for this site.', 'aad-sso-wordpress' )
+				);
+			}
+			return $user;
+		}
+
+		AADSSO_GraphHelper::$settings = $this->settings;
+		$result = AADSSO_PhotoHelper::sync_current_user_photo( $user->ID, $is_manual_sync );
+		if ( $is_manual_sync ) {
+			if ( true === $result ) {
+				$this->store_photo_sync_result(
+					$user->ID,
+					'success',
+					__( 'Your profile photo was synchronized from Microsoft.', 'aad-sso-wordpress' )
+				);
+			} else {
+				$this->store_photo_sync_result(
+					$user->ID,
+					'warning',
+					$result->get_error_message()
+				);
+			}
+		} elseif ( is_wp_error( $result )
+			&& ! in_array( $result->get_error_code(), array( 'photo_exists', 'graph_photo_not_found' ), true )
+		) {
+			AADSSO::debug_log(
+				'Automatic profile photo sync failed for user ' . (int) $user->ID
+				. ': ' . $result->get_error_message()
+			);
+		}
+
+		return $user;
+	}
+
+	/**
+	 * Stores a short-lived result for display after the SSO round trip.
+	 */
+	private function store_photo_sync_result( $user_id, $type, $message ) {
+		set_transient(
+			'aadsso_photo_sync_result_' . (int) $user_id,
+			array(
+				'type' => $type,
+				'message' => $message,
+			),
+			120
+		);
+	}
+
 	function get_wp_user_from_aad_user( $jwt, $group_memberships ) {
 
 		// Try to find an existing user in WP where the upn or unique_name of the current Microsoft Entra ID user is
 		// (depending on config) the 'login' or 'email' field in WordPress
-		$unique_name = isset( $jwt->upn ) ? $jwt->upn : ( isset( $jwt->unique_name ) ? $jwt->unique_name : null );
+		$unique_name = isset( $jwt->preferred_username )
+			? $jwt->preferred_username
+			: ( isset( $jwt->upn )
+				? $jwt->upn
+				: ( isset( $jwt->unique_name ) ? $jwt->unique_name : null ) );
 		if ( null === $unique_name ) {
 			return new WP_Error(
 				'unique_name_not_found',
-				__( 'ERROR: Neither \'upn\' nor \'unique_name\' claims not found in ID Token.',
+				__( 'ERROR: None of \'preferred_username\', \'upn\', or \'unique_name\' were found in the ID Token.',
 					'aad-sso-wordpress' )
 			);
 		}
@@ -546,9 +679,149 @@ class AADSSO {
 	 * @return string The authorization URL used to initiate a sign-in to Microsoft Entra ID.
 	 */
 	function get_login_url() {
-		$antiforgery_id = com_create_guid();
+		$antiforgery_id = AADSSO_AuthorizationHelper::generate_pkce_verifier();
 		$_SESSION['aadsso_antiforgery-id'] = $antiforgery_id;
-		return AADSSO_AuthorizationHelper::get_authorization_url( $this->settings, $antiforgery_id );
+		$code_verifier = AADSSO_AuthorizationHelper::generate_pkce_verifier();
+		$_SESSION['aadsso_pkce_verifier'] = $code_verifier;
+		$code_challenge = AADSSO_AuthorizationHelper::get_pkce_challenge( $code_verifier );
+		return AADSSO_AuthorizationHelper::get_authorization_url(
+			$this->settings,
+			$antiforgery_id,
+			$code_challenge
+		);
+	}
+
+	/**
+	 * Starts an Entra authorization round trip to force-refresh the current user's photo.
+	 */
+	public function start_manual_photo_sync() {
+		if ( ! is_user_logged_in() ) {
+			auth_redirect();
+		}
+		check_admin_referer( 'aadsso_sync_my_photo' );
+
+		if ( true !== $this->settings->enable_profile_photo_sync ) {
+			wp_die(
+				esc_html__( 'Microsoft Graph profile photo sync is disabled for this site.', 'aad-sso-wordpress' )
+			);
+		}
+
+		$user_id = get_current_user_id();
+		$this->register_session();
+		$_SESSION['aadsso_force_photo_sync'] = true;
+		$_SESSION['aadsso_photo_sync_user_id'] = $user_id;
+
+		$fallback_url = admin_url( 'profile.php' );
+		$return_url = wp_get_referer();
+		$return_url = wp_validate_redirect( $return_url, $fallback_url );
+		$_SESSION['aadsso_redirect_to'] = $return_url;
+
+		wp_safe_redirect( $this->get_login_url() );
+		exit;
+	}
+
+	/**
+	 * Adds the manual synchronization control to the current user's WordPress profile.
+	 *
+	 * @param WP_User $profile_user User whose profile is being rendered.
+	 */
+	public function render_core_profile_photo_sync( $profile_user ) {
+		if ( true !== $this->settings->enable_profile_photo_sync
+			|| get_current_user_id() !== (int) $profile_user->ID
+		) {
+			return;
+		}
+
+		echo '<h2>' . esc_html__( 'Microsoft profile photo', 'aad-sso-wordpress' ) . '</h2>';
+		echo '<table class="form-table" role="presentation"><tr><th>'
+			. esc_html__( 'Profile photo sync', 'aad-sso-wordpress' )
+			. '</th><td>';
+		$this->render_photo_sync_result( $profile_user->ID );
+		$this->render_photo_sync_button( $profile_user->ID );
+		echo '</td></tr></table>';
+	}
+
+	/**
+	 * Adds an owner-only Ultimate Member profile tab.
+	 *
+	 * @param array $tabs Ultimate Member profile tabs.
+	 *
+	 * @return array Updated tabs.
+	 */
+	public function add_um_photo_sync_tab( $tabs ) {
+		if ( true !== $this->settings->enable_profile_photo_sync || ! is_user_logged_in() ) {
+			return $tabs;
+		}
+		$tabs['aadsso_photo_sync'] = array(
+			'name' => __( 'Microsoft Photo', 'aad-sso-wordpress' ),
+			'icon' => 'um-faicon-camera',
+			'custom' => true,
+			'default_privacy' => 3,
+		);
+		return $tabs;
+	}
+
+	/**
+	 * Renders the owner-only Ultimate Member photo synchronization tab.
+	 */
+	public function render_um_profile_photo_sync() {
+		$profile_user_id = function_exists( 'um_profile_id' )
+			? (int) um_profile_id() : get_current_user_id();
+		if ( true !== $this->settings->enable_profile_photo_sync
+			|| get_current_user_id() !== $profile_user_id
+		) {
+			return;
+		}
+
+		echo '<div class="aadsso-photo-sync-profile">';
+		echo '<h3>' . esc_html__( 'Microsoft profile photo', 'aad-sso-wordpress' ) . '</h3>';
+		$this->render_photo_sync_result( $profile_user_id );
+		$this->render_photo_sync_button( $profile_user_id );
+		echo '</div>';
+	}
+
+	/**
+	 * Renders a nonce-protected manual synchronization link and status.
+	 */
+	private function render_photo_sync_button( $user_id ) {
+		$sync_url = wp_nonce_url(
+			admin_url( 'admin-post.php?action=aadsso_sync_my_photo' ),
+			'aadsso_sync_my_photo'
+		);
+		echo '<p><a class="button" href="' . esc_url( $sync_url ) . '">'
+			. esc_html__( 'Sync latest photo from Microsoft', 'aad-sso-wordpress' )
+			. '</a></p>';
+		echo '<p class="description">'
+			. esc_html__( 'This reconnects to Microsoft and replaces your local profile photo with the latest available image.', 'aad-sso-wordpress' )
+			. '</p>';
+
+		$synced_at = get_user_meta( $user_id, AADSSO_PhotoHelper::SYNCED_AT_META_KEY, true );
+		if ( $synced_at ) {
+			echo '<p class="description">'
+				. esc_html__( 'Last synchronized:', 'aad-sso-wordpress' ) . ' '
+				. esc_html( $synced_at )
+				. '</p>';
+		}
+	}
+
+	/**
+	 * Displays and consumes a short-lived photo synchronization result.
+	 */
+	private function render_photo_sync_result( $user_id ) {
+		$transient_key = 'aadsso_photo_sync_result_' . (int) $user_id;
+		$result = get_transient( $transient_key );
+		if ( ! is_array( $result ) || empty( $result['message'] ) ) {
+			return;
+		}
+		delete_transient( $transient_key );
+		$type = isset( $result['type'] )
+			&& in_array( $result['type'], array( 'success', 'warning', 'error', 'info' ), true )
+				? $result['type'] : 'info';
+		printf(
+			'<div class="notice notice-%1$s inline"><p>%2$s</p></div>',
+			esc_attr( $type ),
+			esc_html( $result['message'] )
+		);
 	}
 
 	/**
@@ -727,7 +1000,7 @@ if ( ! function_exists( 'com_create_guid' ) ) {
 	 * @return string A new random globally unique identifier.
 	 */
 	function com_create_guid() {
-		mt_srand( (int)( (double)microtime() * 10000 ) );
+		mt_srand( (int)( (float) microtime() * 10000 ) );
 		$charid = strtoupper( md5( uniqid( rand(), true ) ) );
 		$hyphen = chr( 45 ); // "-"
 		$uuid = chr( 123 ) // "{"

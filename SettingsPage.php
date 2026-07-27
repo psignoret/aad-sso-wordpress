@@ -41,6 +41,26 @@ class AADSSO_Settings_Page {
 		// If settings were migrated, show confirmation
 		add_action( 'all_admin_notices', array( $this, 'notify_json_migrate_status' ) );
 
+		// Generate and download locally managed certificate credentials.
+		add_action(
+			'admin_post_aadsso_generate_certificate',
+			array( $this, 'generate_self_signed_certificate' )
+		);
+		// The settings-page route avoids hosts that do not dispatch custom admin-post actions.
+		add_action(
+			'admin_init',
+			array( $this, 'maybe_generate_self_signed_certificate' )
+		);
+		add_action(
+			'admin_post_aadsso_download_certificate',
+			array( $this, 'download_public_certificate' )
+		);
+		add_action(
+			'admin_init',
+			array( $this, 'maybe_download_public_certificate' )
+		);
+		add_action( 'all_admin_notices', array( $this, 'notify_certificate_action_status' ) );
+
 		// Remove query arguments from the REQUEST_URI (leaves $_GET untouched).  Resolves issue #58
 		$_SERVER['REQUEST_URI'] = remove_query_arg( 'aadsso_reset', $_SERVER['REQUEST_URI'] );
 		$_SERVER['REQUEST_URI'] = remove_query_arg( 'aadsso_migrate_from_json_status', $_SERVER['REQUEST_URI'] );
@@ -64,6 +84,7 @@ class AADSSO_Settings_Page {
 		                          && wp_verify_nonce( $_GET['aadsso_nonce'], 'aadsso_reset_settings' );
 		if ( $should_reset_settings ) {
 			delete_option( 'aadsso_settings' );
+			delete_option( 'aadsso_settings_backup' );
 			wp_redirect( admin_url( 'options-general.php?page=aadsso_settings&aadsso_reset=success' ) );
 		}
 	}
@@ -157,6 +178,230 @@ class AADSSO_Settings_Page {
 	}
 
 	/**
+	 * Handles certificate generation directly from the plugin settings page.
+	 */
+	public function maybe_generate_self_signed_certificate() {
+		$is_generation_request = isset( $_GET['page'], $_GET['aadsso_action'] )
+			&& 'aadsso_settings' === $_GET['page']
+			&& 'generate_certificate' === $_GET['aadsso_action']
+			&& isset( $_SERVER['REQUEST_METHOD'] )
+			&& 'POST' === strtoupper( $_SERVER['REQUEST_METHOD'] );
+		if ( $is_generation_request ) {
+			$this->generate_self_signed_certificate();
+		}
+	}
+
+	/**
+	 * Generates and stores a self-signed certificate credential.
+	 */
+	public function generate_self_signed_certificate() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You are not allowed to manage these settings.', 'aad-sso-wordpress' ) );
+		}
+		check_admin_referer( 'aadsso_generate_certificate', 'aadsso_generate_nonce' );
+
+		$settings = get_option( 'aadsso_settings', AADSSO_Settings::get_defaults() );
+		$has_existing_certificate = ! empty( $settings['client_certificate'] )
+			|| ! empty( $settings['client_private_key_encrypted'] );
+		$replace_confirmed = isset( $_POST['aadsso_replace_certificate'] )
+			&& '1' === $_POST['aadsso_replace_certificate'];
+
+		if ( $has_existing_certificate && ! $replace_confirmed ) {
+			$this->redirect_after_certificate_action( 'replace_not_confirmed' );
+		}
+
+		$valid_days = isset( $_POST['aadsso_certificate_valid_days'] )
+			? absint( $_POST['aadsso_certificate_valid_days'] ) : 730;
+		$valid_days = max( 30, min( 3650, $valid_days ) );
+		$site_host = parse_url( home_url(), PHP_URL_HOST );
+		$common_name = ! empty( $site_host ) ? $site_host : get_bloginfo( 'name' );
+
+		try {
+			$credentials = AADSSO_CredentialHelper::generate_self_signed_credentials(
+				$common_name,
+				$valid_days,
+				3072
+			);
+			$settings['client_certificate'] = $credentials['certificate'];
+			$settings['client_private_key_encrypted'] =
+				AADSSO_CredentialHelper::encrypt_private_key( $credentials['private_key'] );
+			$settings['client_auth_method'] = 'certificate';
+
+			/*
+			 * register_setting() attaches sanitize_settings() to every update_option() call.
+			 * Generated credentials are already validated and the private key is already
+			 * encrypted, so temporarily bypass the form sanitizer that expects a plaintext
+			 * private key alongside a pasted public certificate.
+			 */
+			remove_filter(
+				'sanitize_option_aadsso_settings',
+				array( $this, 'sanitize_settings' )
+			);
+			try {
+				update_option( 'aadsso_settings', $settings );
+			} finally {
+				add_filter(
+					'sanitize_option_aadsso_settings',
+					array( $this, 'sanitize_settings' )
+				);
+			}
+
+			$saved_settings = get_option( 'aadsso_settings', array() );
+			if ( empty( $saved_settings['client_certificate'] )
+				|| empty( $saved_settings['client_private_key_encrypted'] )
+				|| 'certificate' !== $saved_settings['client_auth_method']
+			) {
+				throw new RuntimeException(
+					'WordPress did not persist the generated certificate credentials.'
+				);
+			}
+		} catch ( Exception $exception ) {
+			$this->handle_certificate_generation_failure( $exception );
+		} catch ( Error $error ) {
+			// PHP 7+ OpenSSL calls can throw Error/ValueError instead of returning false.
+			$this->handle_certificate_generation_failure( $error );
+		}
+
+		$this->redirect_after_certificate_action( 'generated' );
+	}
+
+	/**
+	 * Records a safe diagnostic for the administrator and returns to the settings page.
+	 *
+	 * @param Exception|Error $error Certificate generation failure.
+	 */
+	private function handle_certificate_generation_failure( $error ) {
+		$message = is_object( $error ) && method_exists( $error, 'getMessage' )
+			? $error->getMessage()
+			: __( 'Unknown certificate generation error.', 'aad-sso-wordpress' );
+		AADSSO::debug_log( 'Unable to generate self-signed certificate: ' . $message );
+		set_transient(
+			'aadsso_certificate_generation_error_' . get_current_user_id(),
+			sanitize_text_field( $message ),
+			120
+		);
+		$this->redirect_after_certificate_action( 'generation_failed' );
+	}
+
+	/**
+	 * Handles the certificate download directly from the plugin settings page.
+	 */
+	public function maybe_download_public_certificate() {
+		$is_download_request = isset( $_GET['page'], $_GET['aadsso_action'] )
+			&& 'aadsso_settings' === $_GET['page']
+			&& 'download_certificate' === $_GET['aadsso_action']
+			&& ( ! isset( $_SERVER['REQUEST_METHOD'] )
+				|| 'GET' === strtoupper( $_SERVER['REQUEST_METHOD'] ) );
+		if ( $is_download_request ) {
+			$this->download_public_certificate();
+		}
+	}
+
+	/**
+	 * Downloads the stored public certificate. The private key is never included.
+	 */
+	public function download_public_certificate() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You are not allowed to manage these settings.', 'aad-sso-wordpress' ) );
+		}
+		check_admin_referer( 'aadsso_download_certificate' );
+
+		$settings = get_option( 'aadsso_settings', array() );
+		if ( empty( $settings['client_certificate'] ) ) {
+			wp_die( esc_html__( 'No public certificate is stored.', 'aad-sso-wordpress' ) );
+		}
+
+		$site_host = parse_url( home_url(), PHP_URL_HOST );
+		$file_name = sanitize_file_name(
+			( ! empty( $site_host ) ? $site_host : 'wordpress' ) . '-entra-sso.cer'
+		);
+
+		nocache_headers();
+		header( 'Content-Type: application/pkix-cert' );
+		header( 'Content-Disposition: attachment; filename="' . $file_name . '"' );
+		header( 'Content-Length: ' . strlen( $settings['client_certificate'] ) );
+		echo $settings['client_certificate'];
+		exit;
+	}
+
+	/**
+	 * Returns a nonce-protected URL for downloading the stored public certificate.
+	 */
+	private function get_certificate_download_url() {
+		return wp_nonce_url(
+			admin_url(
+				'options-general.php?page=aadsso_settings&aadsso_action=download_certificate'
+			),
+			'aadsso_download_certificate'
+		);
+	}
+
+	/**
+	 * Shows the result of certificate generation.
+	 */
+	public function notify_certificate_action_status() {
+		if ( ! isset( $_GET['aadsso_certificate_status'] ) ) {
+			return;
+		}
+
+		$status = sanitize_key( $_GET['aadsso_certificate_status'] );
+		$messages = array(
+			'generated' => array(
+				'success',
+				__( 'A self-signed certificate was generated and Certificate authentication was selected. Download the public certificate and upload it to the Entra app registration before the next sign-in.', 'aad-sso-wordpress' ),
+			),
+			'replace_not_confirmed' => array(
+				'warning',
+				__( 'The existing certificate was not replaced because replacement was not confirmed.', 'aad-sso-wordpress' ),
+			),
+			'generation_failed' => array(
+				'error',
+				__( 'The server could not generate the certificate. Confirm that the PHP OpenSSL extension and its configuration are available.', 'aad-sso-wordpress' ),
+			),
+		);
+
+		if ( isset( $messages[ $status ] ) ) {
+			$message = $messages[ $status ][1];
+			if ( 'generation_failed' === $status ) {
+				$error_key = 'aadsso_certificate_generation_error_' . get_current_user_id();
+				$error_detail = get_transient( $error_key );
+				delete_transient( $error_key );
+				if ( $error_detail ) {
+					$message .= ' ' . sprintf(
+						__( 'Server detail: %s', 'aad-sso-wordpress' ),
+						$error_detail
+					);
+				}
+			}
+			echo '<div class="notice notice-' . esc_attr( $messages[ $status ][0] )
+				. ' is-dismissible"><p>' . esc_html( $message ) . '</p>';
+			if ( 'generated' === $status ) {
+				echo '<p><a class="button button-primary" href="'
+					. esc_url( $this->get_certificate_download_url() ) . '">'
+					. esc_html__( 'Download public certificate (.cer)', 'aad-sso-wordpress' )
+					. '</a></p>';
+			}
+			echo '</div>';
+		}
+	}
+
+	/**
+	 * Redirects to the settings page after a certificate action.
+	 *
+	 * @param string $status Fixed action status.
+	 */
+	private function redirect_after_certificate_action( $status ) {
+		wp_safe_redirect(
+			add_query_arg(
+				'aadsso_certificate_status',
+				$status,
+				admin_url( 'options-general.php?page=aadsso_settings' )
+			)
+		);
+		exit;
+	}
+
+	/**
 	 * Adds the 'Microsoft Entra ID' options page.
 	 */
 	public function add_options_page() {
@@ -226,9 +471,33 @@ class AADSSO_Settings_Page {
 		);
 
 		add_settings_field(
+			'client_auth_method', // id
+			__( 'Client authentication', 'aad-sso-wordpress' ), // title
+			array( $this, 'client_auth_method_callback' ), // callback
+			'aadsso_settings_page', // page
+			'aadsso_settings_general' // section
+		);
+
+		add_settings_field(
 			'client_secret', // id
 			__( 'Client secret', 'aad-sso-wordpress' ), // title
 			array( $this, 'client_secret_callback' ), // callback
+			'aadsso_settings_page', // page
+			'aadsso_settings_general' // section
+		);
+
+		add_settings_field(
+			'client_certificate', // id
+			__( 'Client certificate', 'aad-sso-wordpress' ), // title
+			array( $this, 'client_certificate_callback' ), // callback
+			'aadsso_settings_page', // page
+			'aadsso_settings_general' // section
+		);
+
+		add_settings_field(
+			'client_private_key', // id
+			__( 'Certificate private key', 'aad-sso-wordpress' ), // title
+			array( $this, 'client_private_key_callback' ), // callback
 			'aadsso_settings_page', // page
 			'aadsso_settings_general' // section
 		);
@@ -285,6 +554,14 @@ class AADSSO_Settings_Page {
 			'enable_auto_provisioning', // id
 			__( 'Enable auto-provisioning', 'aad-sso-wordpress' ), // title
 			array( $this, 'enable_auto_provisioning_callback' ), // callback
+			'aadsso_settings_page', // page
+			'aadsso_settings_general' // section
+		);
+
+		add_settings_field(
+			'enable_profile_photo_sync', // id
+			__( 'Enable Microsoft Graph profile photo sync', 'aad-sso-wordpress' ), // title
+			array( $this, 'enable_profile_photo_sync_callback' ), // callback
 			'aadsso_settings_page', // page
 			'aadsso_settings_general' // section
 		);
@@ -358,7 +635,6 @@ class AADSSO_Settings_Page {
 			'org_display_name',
 			'org_domain_hint',
 			'client_id',
-			'client_secret',
 			'redirect_uri',
 			'logout_redirect_uri',
 			'openid_configuration_endpoint',
@@ -368,6 +644,110 @@ class AADSSO_Settings_Page {
 			if ( isset( $input[ $text_field ] ) ) {
 				$sanitary_values[ $text_field ] = sanitize_text_field( $input[ $text_field ] );
 			}
+		}
+
+		$stored_auth_method = isset( $this->settings['client_auth_method'] )
+			? $this->settings['client_auth_method'] : 'secret';
+		$sanitary_values['client_auth_method'] =
+			isset( $input['client_auth_method'] )
+			&& in_array( $input['client_auth_method'], array( 'secret', 'certificate' ), true )
+				? $input['client_auth_method'] : 'secret';
+
+		// Client secrets and private keys are write-only fields. Blank input preserves the stored value.
+		$sanitary_values['client_secret'] = isset( $this->settings['client_secret'] )
+			? $this->settings['client_secret'] : '';
+		if ( ! empty( $input['remove_client_secret'] ) ) {
+			$sanitary_values['client_secret'] = '';
+		} elseif ( isset( $input['client_secret'] ) && '' !== trim( $input['client_secret'] ) ) {
+			$sanitary_values['client_secret'] = sanitize_text_field( $input['client_secret'] );
+		}
+
+		$sanitary_values['client_certificate'] = isset( $this->settings['client_certificate'] )
+			? $this->settings['client_certificate'] : '';
+		$sanitary_values['client_private_key_encrypted'] =
+			isset( $this->settings['client_private_key_encrypted'] )
+				? $this->settings['client_private_key_encrypted'] : '';
+
+		if ( ! empty( $input['remove_certificate_credentials'] ) ) {
+			$sanitary_values['client_certificate'] = '';
+			$sanitary_values['client_private_key_encrypted'] = '';
+			if ( 'certificate' === $sanitary_values['client_auth_method'] ) {
+				$sanitary_values['client_auth_method'] = 'secret';
+			}
+		} else {
+			$certificate_input = isset( $input['client_certificate'] )
+				? trim( wp_unslash( $input['client_certificate'] ) ) : '';
+			$private_key_input = isset( $input['client_private_key'] )
+				? trim( wp_unslash( $input['client_private_key'] ) ) : '';
+			$private_key_passphrase = isset( $input['client_private_key_passphrase'] )
+				? wp_unslash( $input['client_private_key_passphrase'] ) : '';
+			$stored_certificate = isset( $this->settings['client_certificate'] )
+				? trim( $this->settings['client_certificate'] ) : '';
+			$comparable_certificate_input = str_replace(
+				array( "\r\n", "\r" ),
+				"\n",
+				$certificate_input
+			);
+			$comparable_stored_certificate = str_replace(
+				array( "\r\n", "\r" ),
+				"\n",
+				$stored_certificate
+			);
+			$certificate_is_unchanged = '' !== $certificate_input
+				&& '' === $private_key_input
+				&& $comparable_certificate_input === $comparable_stored_certificate;
+
+			if ( ! $certificate_is_unchanged
+				&& ( '' !== $certificate_input || '' !== $private_key_input )
+			) {
+				try {
+					if ( '' === $certificate_input || '' === $private_key_input ) {
+						throw new InvalidArgumentException(
+							'Provide both the public certificate and its matching private key.'
+						);
+					}
+
+					$credentials = AADSSO_CredentialHelper::validate_and_normalize_credentials(
+						$certificate_input,
+						$private_key_input,
+						$private_key_passphrase
+					);
+					$sanitary_values['client_certificate'] = $credentials['certificate'];
+					$sanitary_values['client_private_key_encrypted'] =
+						AADSSO_CredentialHelper::encrypt_private_key( $credentials['private_key'] );
+					add_settings_error(
+						'aadsso_settings',
+						'aadsso_certificate_saved',
+						__( 'The certificate credentials were validated and the private key was encrypted.', 'aad-sso-wordpress' ),
+						'updated'
+					);
+				} catch ( Exception $exception ) {
+					$sanitary_values['client_auth_method'] = $stored_auth_method;
+					add_settings_error(
+						'aadsso_settings',
+						'aadsso_invalid_certificate',
+						sprintf(
+							__( 'Certificate credentials were not saved: %s', 'aad-sso-wordpress' ),
+							$exception->getMessage()
+						),
+						'error'
+					);
+				}
+			}
+		}
+
+		if ( 'certificate' === $sanitary_values['client_auth_method']
+			&& ( empty( $sanitary_values['client_certificate'] )
+				|| empty( $sanitary_values['client_private_key_encrypted'] ) )
+		) {
+			$sanitary_values['client_auth_method'] =
+				'certificate' === $stored_auth_method ? 'secret' : $stored_auth_method;
+			add_settings_error(
+				'aadsso_settings',
+				'aadsso_missing_certificate',
+				__( 'Certificate authentication cannot be enabled until a certificate and private key are saved.', 'aad-sso-wordpress' ),
+				'error'
+			);
 		}
 
 		// Default prompt is empty (omit parameter).
@@ -395,6 +775,7 @@ class AADSSO_Settings_Page {
 		// Booleans: when key == value, this is considered true, otherwise false.
 		$boolean_settings = array(
 			'enable_auto_provisioning',
+			'enable_profile_photo_sync',
 			'enable_auto_forward_to_aad',
 			'enable_aad_group_to_wp_role',
 			'match_on_upn_alias',
@@ -512,14 +893,153 @@ class AADSSO_Settings_Page {
 	}
 
 	/**
+	 * Renders the client authentication method control.
+	 */
+	public function client_auth_method_callback() {
+		$selected = isset( $this->settings['client_auth_method'] )
+			? $this->settings['client_auth_method'] : 'secret';
+		$options = array(
+			'secret' => __( 'Client secret', 'aad-sso-wordpress' ),
+			'certificate' => __( 'Certificate (private key JWT)', 'aad-sso-wordpress' ),
+		);
+
+		echo '<fieldset>';
+		foreach ( $options as $value => $label ) {
+			printf(
+				'<label><input type="radio" name="aadsso_settings[client_auth_method]" value="%s"%s /> %s</label><br />',
+				esc_attr( $value ),
+				checked( $selected, $value, false ),
+				esc_html( $label )
+			);
+		}
+		echo '</fieldset>';
+	}
+
+	/**
 	 * Renders the `client_secret` form control
 	 **/
 	public function client_secret_callback() {
-		$this->render_text_field( 'client_secret' );
+		printf(
+			'<input class="regular-text" type="password" autocomplete="new-password" '
+			. 'name="aadsso_settings[client_secret]" id="client_secret" value="" />'
+		);
+		if ( ! empty( $this->settings['client_secret'] ) ) {
+			echo '<p><strong>' . esc_html__( 'A client secret is currently stored.', 'aad-sso-wordpress' ) . '</strong></p>';
+			echo '<label><input type="checkbox" name="aadsso_settings[remove_client_secret]" value="1" /> '
+				. esc_html__( 'Remove the stored client secret', 'aad-sso-wordpress' ) . '</label>';
+		}
 		printf(
 			'<p class="description">%s</p>',
-			__( 'A secret key for the Microsoft Entra ID application representing this blog.', 'aad-sso-wordpress' )
+			__( 'Leave blank to keep the stored secret. Used only when Client secret authentication is selected.', 'aad-sso-wordpress' )
 		);
+	}
+
+	/**
+	 * Renders the public certificate control and stored certificate details.
+	 */
+	public function client_certificate_callback() {
+		$stored_certificate = ! empty( $this->settings['client_certificate'] )
+			? $this->settings['client_certificate'] : '';
+		echo '<textarea class="large-text code" rows="8" name="aadsso_settings[client_certificate]" '
+			. 'id="client_certificate" autocomplete="off" placeholder="-----BEGIN CERTIFICATE-----">'
+			. esc_textarea( $stored_certificate ) . '</textarea>';
+		echo '<p class="description">'
+			. esc_html__( 'The stored PEM X.509 public certificate. Replace it together with its matching private key when using manually supplied credentials.', 'aad-sso-wordpress' )
+			. '</p>';
+
+		if ( ! empty( $this->settings['client_certificate'] ) ) {
+			try {
+				$thumbprint = AADSSO_CredentialHelper::get_certificate_thumbprint(
+					$this->settings['client_certificate']
+				);
+				$details = AADSSO_CredentialHelper::get_certificate_details(
+					$this->settings['client_certificate']
+				);
+				echo '<p><strong>' . esc_html__( 'A certificate is currently stored.', 'aad-sso-wordpress' ) . '</strong><br />';
+				echo esc_html__( 'SHA-256 thumbprint:', 'aad-sso-wordpress' ) . ' <code>'
+					. esc_html( $thumbprint ) . '</code>';
+				if ( is_array( $details ) && ! empty( $details['validTo_time_t'] ) ) {
+					echo '<br />' . esc_html__( 'Expires:', 'aad-sso-wordpress' ) . ' '
+						. esc_html( date_i18n( get_option( 'date_format' ), $details['validTo_time_t'] ) );
+				}
+				echo '</p>';
+				$download_url = $this->get_certificate_download_url();
+				echo '<p><a class="button" href="' . esc_url( $download_url ) . '">'
+					. esc_html__( 'Download public certificate (.cer)', 'aad-sso-wordpress' )
+					. '</a></p>';
+				echo '<details><summary>'
+					. esc_html__( 'View PEM public certificate', 'aad-sso-wordpress' )
+					. '</summary><textarea class="large-text code" rows="8" readonly>'
+					. esc_textarea( $this->settings['client_certificate'] )
+					. '</textarea></details>';
+			} catch ( Exception $exception ) {
+				echo '<p class="description">'
+					. esc_html__( 'The stored certificate could not be inspected.', 'aad-sso-wordpress' )
+					. '</p>';
+			}
+		}
+
+		echo '<hr /><p><strong>'
+			. esc_html__( 'Generate a self-signed certificate', 'aad-sso-wordpress' )
+			. '</strong></p>';
+		echo '<p><label for="aadsso_certificate_valid_days">'
+			. esc_html__( 'Validity period:', 'aad-sso-wordpress' )
+			. '</label> <select id="aadsso_certificate_valid_days" '
+			. 'name="aadsso_certificate_valid_days">'
+			. '<option value="365">' . esc_html__( '1 year', 'aad-sso-wordpress' ) . '</option>'
+			. '<option value="730" selected>' . esc_html__( '2 years', 'aad-sso-wordpress' ) . '</option>'
+			. '<option value="1095">' . esc_html__( '3 years', 'aad-sso-wordpress' ) . '</option>'
+			. '</select></p>';
+		wp_nonce_field(
+			'aadsso_generate_certificate',
+			'aadsso_generate_nonce',
+			false
+		);
+		if ( ! empty( $this->settings['client_certificate'] )
+			|| ! empty( $this->settings['client_private_key_encrypted'] )
+		) {
+			echo '<p><label><input type="checkbox" name="aadsso_replace_certificate" value="1" /> '
+				. esc_html__( 'I understand this replaces the stored certificate and may interrupt SSO until the new public certificate is uploaded to Entra.', 'aad-sso-wordpress' )
+				. '</label></p>';
+		}
+		printf(
+			'<button type="submit" class="button" formmethod="post" formaction="%1$s">%2$s</button>',
+			esc_url(
+				admin_url(
+					'options-general.php?page=aadsso_settings&aadsso_action=generate_certificate'
+				)
+			),
+			esc_html__( 'Generate self-signed certificate', 'aad-sso-wordpress' )
+		);
+		echo '<p class="description">'
+			. esc_html__( 'Generates a 3072-bit RSA private key on this server. The private key is encrypted in the database and is never displayed; only the public certificate can be downloaded.', 'aad-sso-wordpress' )
+			. '</p>';
+	}
+
+	/**
+	 * Renders write-only private key controls.
+	 */
+	public function client_private_key_callback() {
+		echo '<textarea class="large-text code" rows="8" name="aadsso_settings[client_private_key]" '
+			. 'id="client_private_key" autocomplete="new-password" '
+			. 'placeholder="-----BEGIN PRIVATE KEY-----"></textarea>';
+		echo '<p><label for="client_private_key_passphrase">'
+			. esc_html__( 'Private key passphrase (only needed while saving):', 'aad-sso-wordpress' )
+			. '</label><br /><input class="regular-text" type="password" autocomplete="new-password" '
+			. 'name="aadsso_settings[client_private_key_passphrase]" '
+			. 'id="client_private_key_passphrase" value="" /></p>';
+		echo '<p class="description">'
+			. esc_html__( 'The passphrase is never stored. The private key is normalized, encrypted, and integrity-protected before database storage.', 'aad-sso-wordpress' )
+			. '</p>';
+
+		if ( ! empty( $this->settings['client_private_key_encrypted'] ) ) {
+			echo '<p><strong>'
+				. esc_html__( 'An encrypted private key is currently stored.', 'aad-sso-wordpress' )
+				. '</strong></p>';
+			echo '<label><input type="checkbox" name="aadsso_settings[remove_certificate_credentials]" value="1" /> '
+				. esc_html__( 'Remove the stored certificate and private key', 'aad-sso-wordpress' )
+				. '</label>';
+		}
 	}
 
 	/**
@@ -654,6 +1174,19 @@ class AADSSO_Settings_Page {
 	}
 
 	/**
+	 * Renders the site-wide profile photo synchronization control.
+	 */
+	public function enable_profile_photo_sync_callback() {
+		$this->render_checkbox_field(
+			'enable_profile_photo_sync',
+			__( 'Automatically import a missing profile photo during Entra sign-in and allow users to refresh it from their profile.', 'aad-sso-wordpress' )
+		);
+		echo '<p class="description">'
+			. esc_html__( 'Turning this off stops all automatic and user-initiated Graph photo synchronization. Existing locally stored photos are not deleted.', 'aad-sso-wordpress' )
+			. '</p>';
+	}
+
+	/**
 	 * Renders the `enable_auto_forward_to_aad` checkbox control.
 	 */
 	public function enable_auto_forward_to_aad_callback() {
@@ -687,7 +1220,7 @@ class AADSSO_Settings_Page {
 			__( 'Set default', 'aad-sso-wordpress'),
 			__( 'The OpenID Connect configuration endpoint to use. To support Microsoft Accounts and external '
 			  . 'users (users invited in from other Microsoft Entra ID directories, known sometimes as "B2B users") you '
-			  . 'must use: <code>https://login.microsoftonline.com/{tenant-id}/.well-known/openid-configuration</code>, '
+			  . 'must use: <code>https://login.microsoftonline.com/{tenant-id}/v2.0/.well-known/openid-configuration</code>, '
 			  . 'where <code>{tenant-id}</code> is the tenant ID or a verified domain name of your directory.',
 				'aad-sso-wordpress' )
 		);

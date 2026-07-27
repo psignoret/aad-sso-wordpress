@@ -25,7 +25,8 @@ class AADSSO_GraphHelper
 	 * @return mixed The response to the checkMemberGroups request.
 	 */
 	public static function user_check_member_groups( $user_id, $group_ids ) {
-		$url = self::get_base_url() . '/users/' . $user_id . '/checkMemberGroups';
+		$user_path = 'me' === $user_id ? '/me' : '/users/' . rawurlencode( $user_id );
+		$url = self::get_base_url() . $user_path . '/checkMemberGroups';
 		return self::post_request( $url, array(), array( 'groupIds' => $group_ids ) );
 	}
 
@@ -37,6 +38,47 @@ class AADSSO_GraphHelper
 	public static function get_user( $user_id ) {
 		$url = self::get_base_url() . '/users/' . $user_id;
 		return self::get_request( $url );
+	}
+
+	/**
+	 * Downloads the signed-in user's largest available Microsoft Graph profile photo.
+	 *
+	 * @return array|WP_Error Raw bytes and content type, or an error.
+	 */
+	public static function get_current_user_photo() {
+		$url = self::get_base_url() . '/me/photo/$value';
+		$response = wp_remote_get(
+			$url,
+			array(
+				'timeout' => 20,
+				'headers' => self::get_required_headers_and_settings(),
+			)
+		);
+		if ( is_wp_error( $response ) ) {
+			return $response;
+		}
+
+		$status_code = wp_remote_retrieve_response_code( $response );
+		if ( 404 === $status_code ) {
+			return new WP_Error(
+				'graph_photo_not_found',
+				__( 'No Microsoft profile photo is available.', 'aad-sso-wordpress' )
+			);
+		}
+		if ( 200 !== $status_code ) {
+			return new WP_Error(
+				'graph_photo_request_failed',
+				sprintf(
+					__( 'Microsoft Graph returned HTTP %d while retrieving the profile photo.', 'aad-sso-wordpress' ),
+					$status_code
+				)
+			);
+		}
+
+		return array(
+			'bytes' => wp_remote_retrieve_body( $response ),
+			'content_type' => wp_remote_retrieve_header( $response, 'content-type' ),
+		);
 	}
 
 	/**
