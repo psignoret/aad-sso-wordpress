@@ -245,7 +245,17 @@ class AADSSO_Settings {
 		$instance = self::get_instance();
 
 		// First, retrieve the settings stored in the WordPress database.
-		$stored_settings = get_option( 'aadsso_settings' );
+		$stored_settings = get_option( 'aadsso_settings', null );
+		$backup_settings = get_option( 'aadsso_settings_backup', null );
+		if ( ( ! is_array( $stored_settings ) || empty( $stored_settings ) )
+			&& is_array( $backup_settings )
+			&& ! empty( $backup_settings )
+		) {
+			$stored_settings = $backup_settings;
+			update_option( 'aadsso_settings', $stored_settings );
+		} elseif ( is_array( $stored_settings ) && ! empty( $stored_settings ) ) {
+			update_option( 'aadsso_settings_backup', $stored_settings );
+		}
 		if ( is_array( $stored_settings )
 			&& isset( $stored_settings['openid_configuration_endpoint'] )
 			&& preg_match(

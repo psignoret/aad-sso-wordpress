@@ -176,6 +176,20 @@ controls. It does not delete or stop displaying already imported photos. Deactiv
 `um-graph-photo-sync` when enabling this functionality to avoid duplicate avatar filters and sync
 attempts.
 
+### Preserving settings during updates
+
+Plugin configuration is preserved during activation, replacement, deactivation, and uninstall by
+default. The plugin maintains a backup of the last non-empty `aadsso_settings` option and restores
+it automatically if the primary option is unexpectedly removed. The explicit **Reset Settings**
+control removes both copies.
+
+For a deliberate data-removing uninstall, define the following in `wp-config.php` before deleting
+the plugin:
+
+```php
+define( 'AADSSO_DELETE_DATA_ON_UNINSTALL', true );
+```
+
 ### 4. (Optional) Set WordPress roles based on Microsoft Entra ID group membership
 
 The Single Sign-on with Microsoft Entra ID plugin can be configured to set different WordPress roles based on the user's membership to a set of user-defined groups. This is a great way to control who has access to the site, and under what role.

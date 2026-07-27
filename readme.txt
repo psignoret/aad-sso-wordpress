@@ -4,7 +4,7 @@ Tags: entra-id, azure-ad, sso, azure-active-directory, office-365, microsoft-ent
 Requires at least: 4.1
 Tested up to: 5.2.3
 Requires PHP: 5.6
-Stable tag: 0.11.4
+Stable tag: 0.11.5
 License: MIT
 License URI: https://github.com/psignoret/aad-sso-wordpress/blob/master/LICENSE.md
 

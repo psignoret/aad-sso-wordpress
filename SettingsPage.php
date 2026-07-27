@@ -84,6 +84,7 @@ class AADSSO_Settings_Page {
 		                          && wp_verify_nonce( $_GET['aadsso_nonce'], 'aadsso_reset_settings' );
 		if ( $should_reset_settings ) {
 			delete_option( 'aadsso_settings' );
+			delete_option( 'aadsso_settings_backup' );
 			wp_redirect( admin_url( 'options-general.php?page=aadsso_settings&aadsso_reset=success' ) );
 		}
 	}
