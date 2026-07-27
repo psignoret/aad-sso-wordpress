@@ -225,11 +225,13 @@ class JWT
         switch($function) {
             case 'openssl':
                 $success = openssl_verify($msg, $signature, $key, $algorithm);
-                if (!$success) {
-                    throw new DomainException("OpenSSL unable to verify data: " . openssl_error_string());
-                } else {
-                    return $signature;
+                if (1 === $success) {
+                    return true;
                 }
+                if (0 === $success) {
+                    return false;
+                }
+                throw new DomainException("OpenSSL unable to verify data: " . openssl_error_string());
             case 'hash_hmac':
             default:
                 $hash = hash_hmac($algorithm, $msg, $key, true);

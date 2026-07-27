@@ -24,6 +24,21 @@ class AADSSO_Settings {
 	public $client_secret = '';
 
 	/**
+	 * @var string Client authentication method: "secret" or "certificate".
+	 */
+	public $client_auth_method = 'secret';
+
+	/**
+	 * @var string Public X.509 certificate in PEM format.
+	 */
+	public $client_certificate = '';
+
+	/**
+	 * @var string Encrypted private-key storage envelope.
+	 */
+	public $client_private_key_encrypted = '';
+
+	/**
 	 * @var string The URL to redirect to after signing in. Must also be configured in AAD.
 	 */
 	public $redirect_uri = '';
@@ -79,6 +94,11 @@ class AADSSO_Settings {
 	*/
 	public $enable_auto_provisioning = false;
 
+	/**
+	 * @var boolean Whether Microsoft Graph profile photo synchronization is enabled site-wide.
+	 */
+	public $enable_profile_photo_sync = true;
+
 
 	/**
 	* Indicates if unauthenticated users are automatically redirecteded to AAD for login, instead of
@@ -123,7 +143,12 @@ class AADSSO_Settings {
 	/**
 	 * @var string The OpenID Connect configuration discovery endpoint.
 	 */
-	public $openid_configuration_endpoint = 'https://login.microsoftonline.com/common/.well-known/openid-configuration';
+	public $openid_configuration_endpoint = 'https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration';
+
+	/**
+	 * @var string Expected ID token issuer from OpenID Connect discovery.
+	 */
+	public $issuer = '';
 
 	/**
 	 * @var string The OAuth 2.0 authorization endpoint.
@@ -156,6 +181,11 @@ class AADSSO_Settings {
 	public $graph_version = 'v1.0';
 
 	/**
+	 * Current v2 OpenID Connect discovery endpoint.
+	 */
+	const DEFAULT_OPENID_CONFIGURATION_ENDPOINT = 'https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration';
+
+	/**
 	 * Returns a sensible set of defaults for the plugin.
 	 *
 	 * If key is provided, only that default is returned.
@@ -168,16 +198,18 @@ class AADSSO_Settings {
 
 		$defaults = array(
 			'org_display_name' => get_bloginfo( 'name' ),
+			'client_auth_method' => 'secret',
 			'prompt' => '',
 			'field_to_match_to_upn' => 'email',
 			'default_wp_role' => null,
 			'enable_auto_provisioning' => false,
+			'enable_profile_photo_sync' => true,
 			'match_on_upn_alias' => false,
 			'enable_auto_forward_to_aad' => false,
 			'enable_aad_group_to_wp_role' => false,
 			'redirect_uri' => wp_login_url(),
 			'logout_redirect_uri' => wp_login_url(),
-			'openid_configuration_endpoint' => 'https://login.microsoftonline.com/common/.well-known/openid-configuration',
+			'openid_configuration_endpoint' => self::DEFAULT_OPENID_CONFIGURATION_ENDPOINT,
 		);
 
 		if ( null === $key ) {
@@ -213,7 +245,23 @@ class AADSSO_Settings {
 		$instance = self::get_instance();
 
 		// First, retrieve the settings stored in the WordPress database.
-		$instance->load_settings( get_option( 'aadsso_settings' ) );
+		$stored_settings = get_option( 'aadsso_settings' );
+		if ( is_array( $stored_settings )
+			&& isset( $stored_settings['openid_configuration_endpoint'] )
+			&& preg_match(
+				'#^(https://(?:login\.microsoftonline\.com|login\.microsoftonline\.us|'
+				. 'login\.chinacloudapi\.cn|login\.microsoftonline\.de)/[^/]+)'
+				. '/\.well-known/openid-configuration$#i',
+				$stored_settings['openid_configuration_endpoint'],
+				$legacy_endpoint_matches
+			)
+		) {
+			$stored_settings['openid_configuration_endpoint'] = $legacy_endpoint_matches[1]
+				. '/v2.0/.well-known/openid-configuration';
+			update_option( 'aadsso_settings', $stored_settings );
+			delete_transient( 'aadsso_openid_configuration' );
+		}
+		$instance->load_settings( $stored_settings );
 
 		/*
 		 * Then, add the settings stored in the OpenID Connect configuration endpoint.

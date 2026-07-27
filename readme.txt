@@ -4,11 +4,13 @@ Tags: entra-id, azure-ad, sso, azure-active-directory, office-365, microsoft-ent
 Requires at least: 4.1
 Tested up to: 5.2.3
 Requires PHP: 5.6
-Stable tag: 0.7.0
+Stable tag: 0.11.4
 License: MIT
 License URI: https://github.com/psignoret/aad-sso-wordpress/blob/master/LICENSE.md
 
 Sign in to WordPress using your organization's Microsoft Entra ID accounts (the same ones used to sign in to Office 365).
+
+Uses Microsoft identity platform v2 endpoints and is compatible with PHP 5.6 through PHP 8.5.
 
 == Description ==
 
@@ -16,6 +18,7 @@ A WordPress plugin that allows organizations to use their Microsoft Entra ID (fo
 
 * Microsoft Entra ID group membership can be used to determine access and role.
 * New users can be registered on-the-fly based on their Microsoft Entra ID profile.
+* Missing profile photos can be imported from Microsoft Graph, with an optional user refresh control.
 * Can always fall back to regular username and password login.
 
 This is a work in progress, please feel free to contact me for help. This plugin is provided as-is, with no guarantees or assurances.
@@ -71,11 +74,11 @@ With these steps, you will create a Microsoft Entra ID app registration. This wi
 
     ![User.Read delegated permission for Microsoft Graph](https://user-images.githubusercontent.com/231140/66046005-23484400-e525-11e9-9712-fed4c5273040.png)
 
-   > **Note**: If you do wish to map Microsoft Entra ID groups to WordPress roles, you must also select the delegated permission *Directory.Read.All* (click "Add a permission" > Microsoft Graph > Delegated > *Directory.Read.All*).
+   > **Note**: Group-to-role mapping checks membership for the signed-in user through `/me/checkMemberGroups`. The delegated *User.Read* permission is sufficient for this operation.
     
    > **Important**: Some permissions *require* administrator consent before it can be used, and in some organizations, administrator consent is required for *any* permission. A tenant administrator can use the **Grant admin consent** option to grant the permissions (i.e. consent) on behalf of all users in the organization.
 
-6. Under **Certificates & secrets**, create a new client secret. Provide a description and choose a duration (I recommend no longer than two years). After clicking **Add**, the secret value will appear. Copy it, as this is the only time it will be available.
+6. Under **Certificates & secrets**, configure either a client secret or upload a public certificate. For certificate authentication, keep the matching PEM private key secure; it will be encrypted before the plugin stores it in WordPress.
 
     ![Creating a new secret key](https://user-images.githubusercontent.com/231140/66046096-52f74c00-e525-11e9-93ce-62581e097aaa.png)
 
@@ -86,6 +89,36 @@ With these steps, you will create a Microsoft Entra ID app registration. This wi
 ### 3. Configure the plugin
 
 Once the plugin is activated in WordPress (step 1), update your settings from the WordPress admin console under **Settings** > **Microsoft Entra ID**. Basic settings to include are:
+
+For certificate authentication, select **Certificate (private key JWT)** and paste the PEM public
+certificate uploaded to the Entra app registration together with its matching PEM RSA private key.
+The private key is encrypted and authenticated before database storage, using key material from
+`wp-config.php`. Its optional passphrase is used only while saving and is never stored. A dedicated
+key can be configured with
+`define( 'AADSSO_PRIVATE_KEY_ENCRYPTION_KEY', 'a-long-random-value-at-least-32-characters' );`.
+Keep that value backed up: changing it makes the stored private key unreadable.
+
+The plugin can also generate a 3072-bit RSA self-signed certificate on the settings page. Download
+the resulting public `.cer`, upload it under the Entra app registration's **Certificates &
+secrets > Certificates** page immediately after generation. Generation automatically selects
+certificate authentication and fills the stored public-certificate field. The generated private
+key is encrypted in the database and is never displayed or included in the download.
+
+### Microsoft Graph profile photo synchronization
+
+Enable **Microsoft Graph profile photo sync** under **Settings > Microsoft Entra ID** to import a
+user's Microsoft photo when they sign in and do not already have a local profile photo. The same
+delegated `User.Read` permission used by sign-in is sufficient; access tokens are not stored.
+
+Users can select **Sync latest photo from Microsoft** on their own WordPress profile or in the
+owner-only **Microsoft Photo** Ultimate Member profile tab. A user-requested sync replaces the
+existing local photo so a newer Microsoft photo can be imported.
+
+The setting is a site-wide switch. Turning it off prevents automatic imports and removes the
+user-initiated sync controls, but does not delete or stop displaying photos that have already been
+stored locally. Photo files and metadata are compatible with the `um-graph-photo-sync` plugin, so
+that plugin should be deactivated when this version is enabled.
+
 **Enable Microsoft Entra ID group to WordPress role association** - Check this to enable Microsoft Entra ID group-based WordPress roles.
 **Default WordPress role if not in Microsoft Entra ID group** - This is the default role that users will be assigned to if matching Microsoft Entra ID group to WordPress roles is enabled. If this is not set, and the user authenticating does not belong to any of the groups defined, they will be denied access.
 **WordPress role to Microsoft Entra ID group map** - For each of the blog's WordPress roles, there is a field for the ObjectId of the Microsoft Entra ID group that will be associated with that role.
